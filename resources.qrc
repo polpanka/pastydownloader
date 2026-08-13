@@ -1,0 +1,40 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+
+    <qresource prefix="images">
+
+        <!-- Pasty logo -->
+
+        <file alias="favicon.ico">resources/favicon.ico</file>
+        <file alias="paste.png">resources/paste.png</file>
+        <file alias="paste_revert.png">resources/paste_revert.png</file>
+
+
+        <!-- Theme -->
+        <!-- /usr/share/icons/Yaru/22x22/actions/edit-delete.png -->
+
+        <file alias="accessories-text-editor.png">resources/accessories-text-editor.png</file>
+        <file alias="application-exit">resources/application-exit.png</file>
+        <file alias="edit-copy.png">resources/edit-copy.png</file>
+        <file alias="edit-delete.png">resources/edit-delete.png</file>
+        <file alias="emblem-downloads.png">resources/emblem-downloads.png</file>
+        <file alias="help-about.png">resources/help-about.png</file>
+        <file alias="list-remove.png">resources/list-remove.png</file>
+        <file alias="media-playback-start">resources/media-playback-start.svg</file>
+        <file alias="process-stop.png">resources/process-stop.png</file>
+        <file alias="system-file-manager.png">resources/system-file-manager.png</file>
+        <file alias="system-run.svg">resources/system-run.svg</file>
+        <file alias="exit.svg">resources/exit.svg</file>
+        <file alias="software-update-available.png">resources/software-update-available.png</file>
+        <file alias="mediaplayer-app.png">resources/mediaplayer-app.png</file>
+
+    </qresource>
+
+
+    <qresource prefix="info">
+
+        <file alias="checkUpdates.json">api/checkUpdates.json</file>
+
+    </qresource>
+
+</RCC>

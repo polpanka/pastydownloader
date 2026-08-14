@@ -23,16 +23,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # libQt6Gui.so.6 (usata da qualsiasi plugin platform, incluso xcb che
-      # serve davvero) ha una dipendenza ELF diretta e obbligatoria su
-      # libEGL.so.1 - anche se l'app non usa mai OpenGL/EGL a runtime, senza
-      # questa libreria di sistema linuxdeploy si rifiuta di dispiegare
-      # qualunque plugin ("ERROR: Could not find dependency: libEGL.so.1").
-      # Il runner nudo non la include (a differenza di un desktop Linux vero,
-      # dove arriva quasi sempre con i driver GPU) - libegl1 la fornisce
-      # (Mesa), senza bisogno di una GPU reale ne' di X11 attivo
-      - name: Installa libEGL (richiesta da Qt6Gui, il runner non l'ha di default)
-        run: sudo apt-get update && sudo apt-get install -y libegl1
+      # Il runner nudo non ha le librerie di sistema che Qt6Gui e il plugin
+      # xcb richiedono sempre (anche se l'app non usa mai OpenGL/EGL o le
+      # estensioni X11 a runtime) - su un desktop Linux vero arrivano quasi
+      # sempre gia' con i driver GPU/l'ambiente grafico. Senza, linuxdeploy si
+      # rifiuta di dispiegare i plugin ("ERROR: Could not find dependency:
+      # ..."). Set standard e documentato per Qt6/xcb headless su Ubuntu -
+      # messo tutto insieme per evitare altri giri di "manca anche questa"
+      - name: Installa le librerie di sistema richieste da Qt6/xcb (il runner non le ha di default)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-sync1 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1
 
       - name: Compila l'AppImage
         # "bash build-appimage.sh" e non "./build-appimage.sh": non richiede il

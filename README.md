@@ -1,4 +1,4 @@
-# PastyDownloade
+# PastyDownloader
 ### The Pastylink helper to download the impossible from the Web                                                                                                                                                                                                                                                                                          
 
 Paste a link. Get your video. That's it.
@@ -13,7 +13,7 @@ PastyDownloader is a fast, no-nonsense desktop app for grabbing video and audio 
 - **Audio conversion** — convert to MP3 after download, keeping or discarding the source video
 - **Right-click power** — copy link, re-download, convert, stop, or remove, straight from the grid
 - **Zero setup** — everything it needs is fetched automatically on first run, no manual installs, no PATH wrangling; internal libraries keep themselves up to date in the background
-- **Speaks your language** — detects your OS language on first launch (English, Italiano, Français, Español, Deutsch, 简体中文, 日本語, Português, Русский, 한국어, Nederlands, العربية)
+- **Speaks your language** — detects your OS language on first launch (Deutsch, English, Español, Français, Italiano, Nederlands, Português, Русский, العربية, 日本語, 简体中文, 한국어)
 - **Cross-platform** — Windows, macOS, and Linux (AppImage included)
 - **[pasty.link](https://pasty.link) integration** — send links straight from the website into the app with one click
 

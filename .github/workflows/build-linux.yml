@@ -24,7 +24,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Compila l'AppImage
-        run: ./build-appimage.sh
+        # "bash build-appimage.sh" e non "./build-appimage.sh": non richiede il
+        # bit eseguibile sul file, che si perde facilmente se lo si ricarica a
+        # mano nel repo (es. upload via interfaccia web di GitHub)
+        run: bash build-appimage.sh
 
       - name: Verifica che l'AppImage parta (nessun crash)
         run: |

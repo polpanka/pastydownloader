@@ -121,6 +121,18 @@ EOF
 # se resta, fa fallire tutto il passo successivo di linuxdeploy
 rm -f "$APPDIR/usr/bin/_internal/PySide6/Qt/plugins/imageformats/libqtiff.so"
 
+# rimuovo i plugin "platform" per sistemi embedded/headless-GPU (eglfs,
+# framebuffer Linux, EGL minimale, Vulkan KHR display, VNC): l'app desktop
+# reale usa solo xcb (X11) o wayland, questi non vengono mai caricati a runtime
+# ma le loro dipendenze di sistema (libEGL.so.1, libvulkan.so.1...) non sono
+# installate sul runner nudo - se restano, fanno fallire linuxdeploy allo
+# stesso modo di libqtiff.so sopra. Tengo invece libqxcb/libqwayland (uso
+# reale), libqminimal (fallback minuscolo e innocuo) e libqoffscreen (usato
+# dal controllo "parte senza crash" qui sotto e dai test, via QT_QPA_PLATFORM=offscreen)
+for plugin in libqeglfs libqlinuxfb libqminimalegl libqvkkhrdisplay libqvnc; do
+    rm -f "$APPDIR/usr/bin/_internal/PySide6/Qt/plugins/platforms/$plugin.so"
+done
+
 # linuxdeploy: PySide6 non fornisce un qmake reale, quindi il suo plugin
 # "qt" (che lo richiede per trovare Qt) non e' utilizzabile - non serve
 # comunque, perche' PyInstaller ha gia' bundlato Qt e tutti i suoi plugin.

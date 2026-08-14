@@ -1,0 +1,93 @@
+name: Build macOS
+
+# Manuale (Actions -> Build macOS -> Run workflow) o automatico quando pushi un tag di versione, es. v0.9
+# ("on" tra virgolette: senza, alcuni parser YAML - non GitHub Actions, che lo gestisce correttamente - lo confondono col booleano true)
+"on":
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # serve solo per allegare l'app alla Release quando il trigger e' un tag
+
+# NIENTE NOTARIZATION, per scelta esplicita (nessun account Apple Developer,
+# nessun costo): l'app viene firmata solo "ad-hoc" da PyInstaller in modo
+# automatico (codesign_identity=None in main_mac.spec => firma ad-hoc di
+# default, non "nessuna firma") - questo basta a farla PARTIRE su Apple
+# Silicon (l'unica cosa che il kernel richiede sempre, vedi AMFI), ma NON
+# basta a evitare l'avviso di Gatekeeper "sviluppatore non identificato" per
+# chi la scarica da internet. Chi scarica l'app dovra' fare, una volta:
+# Impostazioni di Sistema -> Privacy e Sicurezza -> in fondo, "Apri comunque"
+# (su macOS Sequoia+ il vecchio tasto destro "Apri" non basta piu' da solo) -
+# vale la pena scriverlo chiaro nella pagina di download.
+jobs:
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Apple Silicon nativo
+          - arch: arm64
+            runner: macos-14
+          # Intel nativo - "macos-15-intel" e' l'ULTIMO runner x86_64 offerto
+          # da GitHub Actions per macOS, in dismissione ad agosto 2027: dopo
+          # quella data questa riga andra' rimossa o sostituita (a quel punto
+          # gli utenti Intel dovranno usare Rosetta 2 sulla build arm64, o
+          # andra' verificata la disponibilita' di un build universal2)
+          - arch: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa le dipendenze
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install PySide6 aiofiles aiohttp psutil requests pyinstaller
+
+      - name: Rigenera resources.py con la stessa versione di PySide6 appena installata
+        run: pyside6-rcc resources.qrc -o resources.py
+
+      - name: Compila con PyInstaller
+        run: pyinstaller main_mac.spec
+
+      - name: Verifica che l'app parta (nessun crash)
+        run: |
+          export QT_QPA_PLATFORM=offscreen
+          "dist/PastyDownloader.app/Contents/MacOS/PastyDownloader" &
+          pid=$!
+          sleep 5
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "OK: ancora in esecuzione dopo 5s, nessun crash"
+            kill "$pid"
+          else
+            wait "$pid"; code=$?
+            echo "L'app si e' chiusa da sola, exit code $code" >&2
+            exit 1
+          fi
+
+      - name: Comprimi l'app in zip
+        run: |
+          mkdir -p bin
+          # ditto (non zip): e' lo strumento di Apple pensato apposta per
+          # archiviare bundle .app preservando xattr/firma ad-hoc intatti
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/PastyDownloader.app" \
+            "bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip"
+
+      - name: Carica l'app come artefatto della run
+        uses: actions/upload-artifact@v4
+        with:
+          name: PastyDownloader-macos-${{ matrix.arch }}
+          path: bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip
+
+      - name: Allega l'app alla Release (solo per i tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip

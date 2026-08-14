@@ -30,11 +30,4 @@
 
     </qresource>
 
-
-    <qresource prefix="info">
-
-        <file alias="checkUpdates.json">api/checkUpdates.json</file>
-
-    </qresource>
-
 </RCC>

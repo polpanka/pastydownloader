@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, requests, asyncio, aiofiles, aiohttp, base64, tempfile, hashlib, time, threading, psutil
+import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, requests, asyncio, aiofiles, aiohttp, base64, tempfile, hashlib, time, threading, psutil, shutil
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QFile, QTextStream, QIODevice, QSettings, QStandardPaths
 from PySide6.QtGui import QClipboard
 from testi import MyText
+from constants import Constants
 
 import hashlib
 import logging
@@ -17,14 +18,20 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 class Tools():
-    # da finire di controllare l'url
-    # Windows - build "essentials", quella attualmente in uso:
-    # https://www.gyan.dev/ffmpeg/builds/
+    # ffmpeg non e' piu' imbarcato nell'eseguibile: viene scaricato al primo
+    # avvio da FfmpegInstaller e installato in ffmpegStorageDir() (vedi
+    # checkFFmpeg). Questi restano solo i nomi dei file attesi per SO, url di
+    # download in ffmpeg_installer.py
+
+    # Windows - build "essentials" (rolling, aggiornata ad ogni commit):
+    # https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z
+    # Nota: e' un .7z con filtro BCJ2, non estraibile in puro Python (py7zr non
+    # lo supporta) - per questo il download effettivo usa la build BtbN in .zip
+    # (stessa fonte gia' verificata per Linux), vedi FfmpegInstaller.URLS
     FFMPEG_BIN_WIN = 'ffmpeg.exe'
 
-    # da finire di controllare l'url
-    # macOS - quella attualmente in uso:
-    # https://evermeet.cx/ffmpeg/
+    # macOS - build ufficiale evermeet.cx (versionata, non rolling):
+    # https://evermeet.cx/ffmpeg/ffmpeg-9.0.1.zip
     FFMPEG_BIN_MAC = 'ffmpeg_mac'
 
     # Linux - build BtbN (dipende dalla glibc di sistema: richiede glibc >= 2.28,
@@ -55,11 +62,41 @@ class Tools():
     def getSettings():
         return QSettings(MyText().orgName, MyText().appName)
 
-    # Restituisce sempre il binario ffmpeg imbarcato con l'app
+    # Risolve il binario ffmpeg scaricato al primo avvio (vedi FfmpegInstaller/
+    # ffmpegStorageDir), se presente - mai un binario imbarcato (rimosso da
+    # binaries=[...] nei file .spec) ne' un'installazione di sistema.
+    # Non deve mai sollevare: ffmpegStorageDir() puo' fallire (permessi, disco
+    # pieno...) - i chiamanti (Pasty.initDependencies sul thread principale,
+    # FfmpegInstaller.ensureInstalled in un thread separato) non se lo aspettano
     @classmethod
     def checkFFmpeg(cls):
-        path = cls.resourcePath(cls.ffmpegBinaryName())
-        return path if os.path.exists(path) else None
+        try:
+            installed = os.path.join(cls.ffmpegStorageDir(), cls.ffmpegBinaryName())
+            return installed if os.path.exists(installed) else None
+        except Exception as err:
+            Tools.consoleLogs("Impossibile risolvere ffmpegStorageDir: " + str(err))
+            return None
+
+    # Cartella scrivibile per-utente dove FfmpegInstaller installa ffmpeg
+    # scaricato al primo avvio (mai la cartella di installazione, sola lettura)
+    @staticmethod
+    def ffmpegStorageDir():
+        base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        path = os.path.join(base, 'ffmpeg')
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    # Controllo di cortesia usato da FfmpegInstaller/YtDlpUpdater prima di
+    # scaricare (ffmpeg da solo, tra archivio e binario estratto, supera i
+    # 200MB) - volutamente non generosissimo: deve solo evitare un download
+    # su un disco palesemente troppo pieno, non bloccare un'installazione che
+    # invece andrebbe a buon fine
+    MIN_FREE_DISK_BYTES = 200 * 1024 * 1024
+
+    # True se la cartella ha almeno MIN_FREE_DISK_BYTES liberi
+    @staticmethod
+    def hasEnoughDiskSpace(path):
+        return shutil.disk_usage(path).free >= Tools.MIN_FREE_DISK_BYTES
 
     # Nome del file eseguibile ffmpeg corretto in base al sistema operativo
     @staticmethod
@@ -113,24 +150,23 @@ class Tools():
                 versions.append(name)
         return sorted(versions, key=cls.versionTuple)
 
-    # Percorso del binario "seed" di yt-dlp imbarcato nell'eseguibile, se presente
-    @classmethod
-    def bundledYtDlpPath(cls):
-        path = cls.resourcePath(cls.ytDlpBinaryName())
-        return path if os.path.exists(path) else None
-
-    # Risolve il binario yt-dlp da usare: l'ultima versione scaricata in autonomia
-    # se presente, altrimenti quella imbarcata di base - mai un'installazione di
-    # sistema, cosi' non c'e' ambiguita' su quale versione sia effettivamente in uso.
-    # Le versioni scaricate non vengono mai sovrascritte sul posto (vedi
-    # YtDlpUpdater), quindi un download gia' avviato continua a usare il path
-    # che aveva risolto all'inizio
+    # Risolve il binario yt-dlp scaricato al primo avvio (vedi YtDlpUpdater.
+    # ensureInstalled/ytDlpStorageDir), se presente - mai un binario imbarcato
+    # (rimosso da binaries=[...] nei file .spec) ne' un'installazione di sistema.
+    # Le versioni scaricate non vengono mai sovrascritte sul posto, quindi un
+    # download gia' avviato continua a usare il path che aveva risolto all'inizio.
+    # Non deve mai sollevare: ytDlpStorageDir() puo' fallire (permessi, disco
+    # pieno...) - i chiamanti (Pasty.initDependencies sul thread principale,
+    # YtDlpUpdater.ensureInstalled in un thread separato) non se lo aspettano
     @classmethod
     def checkYtDlp(cls):
-        versions = cls.installedYtDlpVersions()
-        if versions:
-            return os.path.join(cls.ytDlpStorageDir(), versions[-1], cls.ytDlpBinaryName())
-        return cls.bundledYtDlpPath()
+        try:
+            versions = cls.installedYtDlpVersions()
+            if versions:
+                return os.path.join(cls.ytDlpStorageDir(), versions[-1], cls.ytDlpBinaryName())
+        except Exception as err:
+            Tools.consoleLogs("Impossibile risolvere ytDlpStorageDir: " + str(err))
+        return None
 
     # Calcola lo sha256 di un file, per verificare l'integrita' di un download
     @staticmethod
@@ -192,10 +228,11 @@ class Tools():
     # prefisso degli url speciali generati dal sito pasty.link stesso, per
     # segnalare esplicitamente all'app "questo va aperto con yt-dlp" senza
     # che l'app debba indovinarlo (vedi isPastylinkUrl/decodePastylinkUrl)
-    PASTYLINK_URL_PREFIX = 'pastylink://'
+    PASTYLINK_URL_PREFIX = 'httpasty://'
 
     @classmethod
     def isPastylinkUrl(cls, url):
+        # httpasty://BASE64{"v1" : {"ytdlp" : "https://www.youtube.com/watch?v=jNQXAC9IVRw" }}
         return url.startswith(cls.PASTYLINK_URL_PREFIX)
 
     # marcatore che apre un manifest HLS testuale incollato per intero
@@ -213,22 +250,19 @@ class Tools():
 
     @classmethod
     def decodePastylinkUrl(cls, url):
-        """Decodifica un url 'pastylink://<base64 di un json>' generato dal
-        sito pasty.link. Il json decodificato e' un oggetto chiave-valore che
-        deve contenere la chiave 'url': il link vero da aprire con yt-dlp.
-        Tollerante sul padding mancante (comune quando il base64 finisce
-        dentro un url) e prova sia la variante url-safe che quella standard,
-        non essendoci qui modo di verificare quale usi davvero pasty.link.
-        Ritorna None se il formato non e' valido o manca la chiave 'url'."""
+        """Decodifica un url 'httpasty://<base64 di un json>' generato dal
+        sito pasty.link con base64_encode() di PHP (base64 standard, mai
+        url-safe). Il json decodificato deve avere la forma
+        {"v1": {"ytdlp": "<url da aprire con yt-dlp>"}}. Tollerante sul
+        padding mancante (comune quando il base64 finisce dentro un url).
+        Ritorna None se il formato non e' valido o manca la chiave 'ytdlp'."""
         payload = url[len(cls.PASTYLINK_URL_PREFIX):]
         padded = payload + '=' * (-len(payload) % 4)
-        for decodeFn in (base64.urlsafe_b64decode, base64.b64decode):
-            try:
-                data = json.loads(decodeFn(padded))
-                return data.get('url') or None
-            except Exception:
-                continue
-        return None
+        try:
+            data = json.loads(base64.b64decode(padded))
+            return (data.get('v1') or {}).get('ytdlp') or None
+        except Exception:
+            return None
 
     @staticmethod
     def uriValidator(x):
@@ -631,9 +665,9 @@ class Tools():
             return [False, str(err)]
 
     @staticmethod
-    def downloadNotAsyncGeneric(url, saveAs, isStopped=None):
+    def downloadNotAsyncGeneric(url, saveAs, isStopped=None, timeout=None):
         try:
-            with requests.get(url, stream=True, allow_redirects=True) as r:
+            with requests.get(url, stream=True, allow_redirects=True, timeout=timeout) as r:
                 r.raise_for_status()
                 # in caso di Content-Encoding: gzip
                 # r.raw.decode_content = True  ---oppure---  r.raw.read = functools.partial(r.raw.read, decode_content=True)
@@ -759,7 +793,7 @@ class Tools():
 
     @classmethod
     def getVersion(cls):
-        return cls.readFileJson(":/info/checkUpdates.json")['vers']
+        return Constants.APP_VERSION
 
     @classmethod
     def openFolder(cls, foldername):
@@ -803,6 +837,7 @@ class Tools():
 
     # https://cuteprogramming.wordpress.com/2021/10/18/packaging-pyqt5-app-with-pyinstaller-on-windows/
     # relative_path e' sempre il nome di un binario dentro bin/ (ffmpeg/yt-dlp imbarcati)
+    # non piu usato, prima per recuperare i binari di ffmpeg e ytdlp
     @staticmethod
     def resourcePath(relative_path):
         base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -837,12 +872,6 @@ class Tools():
     def replaceExtension(filename, newExt):
         return filename.rsplit('.', 1)[0] + '.' + newExt
 
-    @classmethod
-    def getIp(cls):
-        url = MyText().checkIp
-        req = cls.sendRequestGet(url)
-        return req.text.strip() if req else None
-
     # Controllo di connessione vero e veloce: un tentativo di connessione TCP verso
     # un DNS pubblico noto (Google, 8.8.8.8:53), non un server nostro o di terzi -
     # cosi' il risultato dice solo "c'e' rete o no", senza dipendere dalla
@@ -860,7 +889,6 @@ class Tools():
         url = MyText().saveStats
         new_data = {
             "ver": cls.getVersion(),
-            "ip": hashlib.md5(cls.getIp().encode()).hexdigest(), # ip => md5
             "os": cls.getOs(),
             "query": base64.b64encode(query.encode()),
         }

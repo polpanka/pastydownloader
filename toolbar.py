@@ -2,6 +2,7 @@
 #https://gist.github.com/peteristhegreat/c0ca6e1a57e5d4b9cd0bb1d7b3be1d6a
 
 from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import QSettings
 from libs import Tools
 from testi import MyText
 from settings import SettingsDialog
@@ -22,6 +23,7 @@ class Menu():
     settingsAction = None
     aboutAction = None
     populateAction = None
+    resetLanguageAction = None
 
     def initUi(self, app):
         self.app = app
@@ -76,8 +78,11 @@ class Menu():
         if app.DEVEL_MODE:
             self.populateAction = QAction('Populate', app)
             self.populateAction.triggered.connect(self.fakePopulate)
+            self.resetLanguageAction = QAction('Reset language', app)
+            self.resetLanguageAction.triggered.connect(self.resetLanguage)
             menuDEVEL = menu.addMenu('DEVEL')
             menuDEVEL.addAction(self.populateAction)
+            menuDEVEL.addAction(self.resetLanguageAction)
 
         # other
         self.setMenuType(self.TYPE_STANDARD)
@@ -123,6 +128,12 @@ class Menu():
         add('https://ubuntu.com/engage/secure-kubernetes-at-the-edge')                                                                                            # html page
         add('https://www.bilibili.com/video/BV13x41117TL')                                                                                                        # solo con PastyDownloader (con yt-dlp) check dell'ip che scarica
         add('https://ok.ru/video/3205586750138')                                                                                                                  # solo con PastyDownloader (con yt-dlp) check dell'ip che scarica
+
+    def resetLanguage(self):
+        # QSettings vuoto: al prossimo avvio MyText.getLanguage() la ridetecta
+        # dal sistema operativo invece di leggere una lingua scelta in precedenza
+        QSettings(MyText.orgName, MyText.appName).remove('language')
+        Tools.consoleLogs("Language reset - restart the app to redetect it from the OS")
 
     def openSettings(self):
         Tools.consoleLogs("Opening settings dialog")

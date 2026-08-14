@@ -27,9 +27,12 @@ from PySide6.QtCore import QSettings, QTimer, Signal
 from PySide6.QtGui import QIcon
 from libs import Tools
 from testi import MyText
+from constants import Constants
 from grid import PastyGrid
 from worker import AsyncWorker
 from ytdlp_updater import YtDlpUpdater
+from ffmpeg_installer import FfmpegInstaller
+from status_queue import StatusQueue
 from toolbar import Menu
 import resources # x le images
 
@@ -60,6 +63,7 @@ class Pasty(QMainWindow):
     referers = None
     is_running = False
     isOnline = True
+    dependenciesReady = False
     time_start_download = None
     stop = False
     settings = QSettings(MyText().orgName, MyText().appName)
@@ -104,7 +108,8 @@ class Pasty(QMainWindow):
 
         # statusbar
         self.statusBar = QStatusBar()
-        
+        self.statusQueue = StatusQueue(self.statusBar)
+
         # setting layout
         layout = QVBoxLayout()
         layout.addWidget(self.button)
@@ -114,14 +119,13 @@ class Pasty(QMainWindow):
         centralWidget.setLayout(layout)
         self.setCentralWidget(centralWidget)
 
-        # starting in default mode and content fitting
+        self.initDependencies()
         self.resetUi()
         self.pastyGrid.resizeEvent(self.width())
         self.checkDownloadFolder()
         self.initConnectivityCheck()
         # deferred so the window shows up immediately, without waiting on the network
         QTimer.singleShot(0, lambda: self.checkUpdates(False))
-        self.initYtDlpUpdater()
 
     def initConnectivityCheck(self):
         # controllo eseguito una sola volta all'avvio
@@ -135,20 +139,69 @@ class Pasty(QMainWindow):
         self.connectivityChecked.emit(Tools.hasInternetConnection())
 
     def onConnectivityChecked(self, isConnected):
+        wasUnlocked = self.isUiUnlocked()
         self.isOnline = isConnected
         if self.is_running:
             return # non toccare la UI mentre un batch e' gia' in corso
-        self.button.setEnabled(isConnected)
-        self.menu.setMenuType(Menu.TYPE_STANDARD if isConnected else Menu.TYPE_NO_INTERNET)
-        self.pastyGrid.setContextMenuType(PastyGrid.TYPE_FULL if isConnected else PastyGrid.TYPE_NO_INTERNET)
-        if isConnected:
-            self.statusBar.clearMessage()
-        else:
+        self._updateLockState(wasUnlocked)
+        if not isConnected:
             self.setStatusBar(MyText().internetError, 0)
 
-    def initYtDlpUpdater(self):
+    def isUiUnlocked(self):
+        return self.isOnline and self.dependenciesReady
+
+    def _refreshLockState(self):
+        self.button.setEnabled(self.isUiUnlocked())
+        self.menu.setMenuType(Menu.TYPE_STANDARD if self.isUiUnlocked() else Menu.TYPE_NO_INTERNET)
+        self.pastyGrid.setContextMenuType(PastyGrid.TYPE_FULL if self.isUiUnlocked() else PastyGrid.TYPE_NO_INTERNET)
+
+    def _updateLockState(self, wasUnlocked):
+        # da chiamare dopo aver aggiornato isOnline/dependenciesReady
+        self._refreshLockState()
+        if not wasUnlocked and self.isUiUnlocked():
+            self.statusQueue.showNow(MyText().setupCompleteMsg, 5)
+
+    # ffmpeg e yt-dlp si scaricano in cascata, mai in parallelo: prima ffmpeg,
+    # poi (solo se riuscito) yt-dlp - vedi onFfmpegReady/onYtDlpReady
+    def initDependencies(self):
+        self.ffmpegInstaller = FfmpegInstaller()
+        self.ffmpegInstaller.statusMessage.connect(self.setStatusBar)
+        self.ffmpegInstaller.ready.connect(self.onFfmpegReady)
         self.ytDlpUpdater = YtDlpUpdater()
         self.ytDlpUpdater.statusMessage.connect(self.setStatusBar)
+        self.ytDlpUpdater.statusMessageNow.connect(self.statusQueue.showNow)
+        self.ytDlpUpdater.ready.connect(self.onYtDlpReady)
+        self.dependenciesReady = bool(Tools.checkFFmpeg()) and bool(Tools.checkYtDlp())
+        if self.dependenciesReady:
+            self.startYtDlpPeriodicUpdates()
+        else:
+            threading.Thread(target=self.ffmpegInstaller.ensureInstalled, daemon=True).start()
+
+    def onFfmpegReady(self, success):
+        if not success:
+            self.showInstallFailedPopup()
+            return
+        threading.Thread(target=self.ytDlpUpdater.ensureInstalled, daemon=True).start()
+
+    def onYtDlpReady(self, success):
+        if not success:
+            self.showInstallFailedPopup()
+            return
+        wasUnlocked = self.isUiUnlocked()
+        self.dependenciesReady = True
+        self._updateLockState(wasUnlocked)
+        self.startYtDlpPeriodicUpdates()
+
+    def showInstallFailedPopup(self):
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Critical)
+        box.setWindowTitle(MyText.titleError)
+        box.setText(MyText().installFailedMsg)
+        box.addButton(MyText().btnClose, QMessageBox.AcceptRole)
+        box.exec()
+        self.close()  # is_running e' sempre False qui: chiude senza chiedere conferma (vedi closeEvent)
+
+    def startYtDlpPeriodicUpdates(self):
         # staggered after the app-version check, so it doesn't compete for
         # the same startup network burst
         QTimer.singleShot(5000, self.checkYtDlpUpdate)
@@ -171,13 +224,18 @@ class Pasty(QMainWindow):
         # msg=None: non tocca la barra di stato (lascia il messaggio gia'
         # eventualmente impostato da chi ha chiamato resetUi, es. pasteUrls())
         self.is_running = False
-        self.button.setEnabled(self.isOnline)
+        self._refreshLockState()
         self.button.setText(MyText().btnDefault)
         self.button.setIcon(QIcon(MyText().pasty_icon))
-        self.menu.setMenuType(Menu.TYPE_STANDARD if self.isOnline else Menu.TYPE_NO_INTERNET)
-        self.pastyGrid.setContextMenuType(PastyGrid.TYPE_FULL if self.isOnline else PastyGrid.TYPE_NO_INTERNET)
         if msg is not None:
-            self.setStatusBar(msg, 5)
+            # showNow(), non setStatusBar()/add(): un batch appena finito
+            # lascia quasi sempre un messaggio persistente "Riga N in
+            # corso..." (vedi progressInCorso). Con clear()+add() questo
+            # messaggio finale rischierebbe di accodarsi dietro un evento
+            # eventualmente promosso dal clear() (es. un "Contenuto copiato"
+            # rimasto in attesa durante il batch) invece di essere mostrato
+            # subito (vedi StatusQueue.showNow)
+            self.statusQueue.showNow(msg, 5)
         self.stop = False
     
     def centerScreen(self):
@@ -203,7 +261,7 @@ class Pasty(QMainWindow):
 
     def checkUpdates(self, forced=True):
         try:
-            thisVersion = float(Tools.readFileJson(":/info/checkUpdates.json")['vers'])
+            thisVersion = float(Constants.APP_VERSION)
             onlineVersion = float(Tools.readFileJson(MyText().checkUpdates, timeout=5)['vers'])
             isDifferentVers = (onlineVersion > thisVersion)
             if forced:
@@ -274,8 +332,12 @@ class Pasty(QMainWindow):
         self.fetchRows(showNoLinksMessage=False)
     
     def getReferers(self):
-        if not self.referers:
-            self.referers = Tools.readFileJson(MyText().referers)
+        if self.referers is None:
+            try:
+                self.referers = Tools.readFileJson(MyText().referers)
+            except Exception as err:
+                Tools.consoleLogs("Impossibile scaricare referer.json: " + str(err))
+                self.referers = {}
         return self.referers
 
     def stopAll(self):
@@ -317,10 +379,6 @@ class Pasty(QMainWindow):
             self.setStatusBar(MyText().internetError, 0) # persistente, non a scomparsa: resta offline finche' non torna la connessione
             return False
         ffmpeg = Tools.checkFFmpeg()
-        if not ffmpeg:
-            QMessageBox.critical(self, MyText.titleRequirements, MyText.ffmpegRequired)
-            self.resetUi()
-            return False
         if not self.checkDownloadFolder():
             self.resetUi()
             return False
@@ -343,7 +401,7 @@ class Pasty(QMainWindow):
         self.thread.start()
 
     def setStatusBar(self, txt, sec=0):
-        self.statusBar.showMessage(txt, sec*1000)
+        self.statusQueue.add(txt, sec)
 
     def progressInCorso(self, type, rowId):
         action = MyText().typeDownload if type == 'type_download' else MyText().typeConversion

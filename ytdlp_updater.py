@@ -7,7 +7,10 @@ from testi import MyText
 
 
 class YtDlpUpdater(QObject):
-    """Keeps the app's own yt-dlp build current in the background.
+    """Keeps the app's own yt-dlp build current in the background, e lo scarica
+    da zero al primo avvio se manca del tutto (vedi ensureInstalled - yt-dlp
+    non e' piu' imbarcato nell'eseguibile, rimosso da binaries=[...] nei file
+    .spec, stesso schema di FfmpegInstaller per ffmpeg).
 
     Unlike ffmpeg, yt-dlp is published directly by its own project on
     GitHub with a real "latest release" API and per-file sha256 checksums
@@ -17,11 +20,23 @@ class YtDlpUpdater(QObject):
     binary currently in place, so a download already running against an
     older version keeps working undisturbed, while any batch started after
     the swap picks up the new one via Tools.checkYtDlp(). Runs in a plain
-    background thread (see main.py:checkYtDlpUpdate), so statusMessage is
-    the only thing that reaches the GUI thread.
+    background thread (see main.py:checkYtDlpUpdate/installDependencies), so
+    statusMessage/statusMessageNow/ready sono l'unica cosa che raggiunge il
+    thread grafico.
     """
 
     statusMessage = Signal(str, int)
+    # messaggio "conclusivo" (es. "aggiornato"): a differenza di statusMessage
+    # non aspetta il proprio turno in coda, sostituisce subito il messaggio
+    # persistente "in corso" appena mostrato (vedi StatusQueue.showNow - con
+    # clear()+statusMessage normale rischierebbe di accodarsi dietro un
+    # evento nel frattempo promosso dal clear(), non venendo mostrato subito)
+    statusMessageNow = Signal(str, int)
+    # emesso solo da ensureInstalled() (mai da checkAndUpdate/_doCheck, che
+    # resta un aggiornamento opzionale in background): dice se al primo
+    # avvio, quando yt-dlp mancava del tutto, l'installazione e' riuscita -
+    # vedi Pasty.initDependencies/onYtDlpReady, che blocca la UI nel frattempo
+    ready = Signal(bool)
 
     CHECK_INTERVAL_HOURS = 6
     KEEP_VERSIONS = 2
@@ -46,31 +61,67 @@ class YtDlpUpdater(QObject):
     # il binario giusto per il sistema operativo corrente
     def _doCheck(self):
         try:
-            release = Tools.readFileJson(self.API_URL, timeout=10)
+            remoteVersion, asset, sumsAsset = self._fetchLatestRelease()
         except Exception as err:
             Tools.consoleLogs("yt-dlp update check failed: " + str(err))
             return
-        remoteVersion = release.get('tag_name') if isinstance(release, dict) else None
-        assets = (release.get('assets') or []) if isinstance(release, dict) else []
-        if not remoteVersion or not assets:
+        if not remoteVersion or not asset:
             return
         currentVersions = Tools.installedYtDlpVersions()
         currentVersion = currentVersions[-1] if currentVersions else None
         if currentVersion and Tools.versionTuple(remoteVersion) <= Tools.versionTuple(currentVersion):
             return
-        binName = Tools.ytDlpBinaryName()
-        asset = next((a for a in assets if a.get('name') == binName), None)
-        if not asset:
-            return
-        sumsAsset = next((a for a in assets if a.get('name') == 'SHA2-256SUMS'), None)
         Tools.consoleLogs("yt-dlp update found: " + remoteVersion)
         self.statusMessage.emit(MyText().ytDlpUpdating, 0)
         try:
-            expectedSha256 = self._expectedSha256(sumsAsset['browser_download_url'], binName) if sumsAsset else None
+            expectedSha256 = self._expectedSha256(sumsAsset['browser_download_url'], asset['name']) if sumsAsset else None
             self._downloadAndInstall(remoteVersion, asset['browser_download_url'], expectedSha256)
-            self.statusMessage.emit(MyText().ytDlpUpdateDone, 5)
+            self.statusMessageNow.emit(MyText().ytDlpUpdateDone, 5)
         except Exception as err:
             Tools.consoleLogs("yt-dlp update failed: " + str(err))
+
+    # Punto di ingresso per il primo avvio (vedi Pasty.onFfmpegReady, che lo
+    # avvia in cascata subito dopo l'installazione di ffmpeg): se yt-dlp non
+    # e' gia' installato (Tools.checkYtDlp() vuoto), scarica
+    # l'ultima release disponibile - a differenza di _doCheck() non confronta
+    # con nessuna versione attualmente installata (non ce n'e' nessuna),
+    # scarica sempre l'ultima. Va chiamato in un thread separato: fa
+    # richieste di rete e puo' metterci diversi secondi.
+    # Tutto il corpo e' dentro il try/except (anche il controllo iniziale, non
+    # solo il download): questo metodo gira in un threading.Thread grezzo, e
+    # un'eccezione non gestita qui lo farebbe morire in silenzio senza mai
+    # emettere ready, lasciando l'interfaccia bloccata per sempre (stesso
+    # principio di FfmpegInstaller.ensureInstalled)
+    def ensureInstalled(self):
+        try:
+            if Tools.checkYtDlp():
+                self.ready.emit(True)
+                return
+            Tools.consoleLogs("yt-dlp non presente, scaricamento in corso...")
+            self.statusMessage.emit(MyText().ytDlpUpdating, 0)
+            remoteVersion, asset, sumsAsset = self._fetchLatestRelease()
+            if not remoteVersion or not asset:
+                raise ValueError('No yt-dlp release asset found for this OS')
+            expectedSha256 = self._expectedSha256(sumsAsset['browser_download_url'], asset['name']) if sumsAsset else None
+            self._downloadAndInstall(remoteVersion, asset['browser_download_url'], expectedSha256)
+            Tools.consoleLogs("yt-dlp installato correttamente")
+            self.ready.emit(True)
+        except Exception as err:
+            Tools.consoleLogs("Installazione yt-dlp fallita: " + str(err))
+            self.ready.emit(False)
+
+    # Interroga la release ufficiale piu' recente su GitHub e ritorna
+    # (remoteVersion, asset, sumsAsset) per il binario di questo SO - asset e'
+    # None se questa release non pubblica un binario per questo SO. Condiviso
+    # da _doCheck() (aggiornamento periodico) ed ensureInstalled() (primo avvio)
+    def _fetchLatestRelease(self):
+        release = Tools.readFileJson(self.API_URL, timeout=10)
+        remoteVersion = release.get('tag_name') if isinstance(release, dict) else None
+        assets = (release.get('assets') or []) if isinstance(release, dict) else []
+        binName = Tools.ytDlpBinaryName()
+        asset = next((a for a in assets if a.get('name') == binName), None)
+        sumsAsset = next((a for a in assets if a.get('name') == 'SHA2-256SUMS'), None)
+        return remoteVersion, asset, sumsAsset
 
     # Legge il file SHA2-256SUMS pubblicato con la release e ne estrae lo sha256
     # atteso per il binario di questo sistema operativo
@@ -95,12 +146,22 @@ class YtDlpUpdater(QObject):
     # %APPDATA%/Pastylink/yt-dlp/2026.07.04/yt-dlp.exe su Windows - mai la cartella di
     # installazione dell'app, che potrebbe essere di sola lettura
     def _downloadAndInstall(self, version, url, sha256Expected):
+        if not Tools.hasEnoughDiskSpace(Tools.ytDlpStorageDir()):
+            raise IOError('Not enough disk space to install yt-dlp')
         binName = Tools.ytDlpBinaryName()
         destDir = os.path.join(Tools.ytDlpStorageDir(), version)
         finalBin = os.path.join(destDir, binName)
         with tempfile.TemporaryDirectory() as tmp:
             stagedBin = os.path.join(tmp, binName)
-            ok, msg = Tools.downloadNotAsyncGeneric(url, stagedBin)
+            # timeout esplicito (connessione, tra un chunk e il successivo):
+            # senza, un server che accetta la connessione e poi non risponde
+            # piu' bloccherebbe questo thread per sempre - e per ensureInstalled()
+            # (chiamato al primo avvio se yt-dlp manca del tutto) terrebbe
+            # l'intera interfaccia bloccata a tempo indeterminato, stesso
+            # principio di FfmpegInstaller._downloadAndInstall. Il read-timeout
+            # si applica tra un chunk e il successivo, non alla durata totale:
+            # un download lento ma che progredisce non viene interrotto
+            ok, msg = Tools.downloadNotAsyncGeneric(url, stagedBin, timeout=(10, 30))
             if not ok:
                 raise IOError('Download failed: ' + str(msg))
             if sha256Expected and Tools.sha256OfFile(stagedBin).lower() != str(sha256Expected).lower():

@@ -67,11 +67,18 @@ class AsyncWorker(QObject):
                 break
             if self.gridParent.getCellState(self.rowId) != self.gridParent.STATUS_CODE_WAITING:
                 continue
-            # creazione e analisi di PastedUrl rimandate fino a qui (siamo gia'
-            # in un thread separato da quello grafico, quindi non si blocca la UI)
-            rawUrl = self.gridParent.getCellUrl(self.rowId)
-            self.pastedUrl = PastedUrl(self.appParent, rawUrl, self.ffmpeg)
-            asyncio.run(self.manageSingleUrl())
+            # creazione e analisi di PastedUrl
+            # questo metodo gira in un threading.Thread grezzo (vedi Pasty.moveProcessInSeparatedThread),
+            # un'eccezione non gestita lo farebbe morire in silenzio senza mai chiamare allProcessesFinished() sotto, lasciando l'interfaccia bloccata
+            try:
+                rawUrl = self.gridParent.getCellUrl(self.rowId)
+                self.pastedUrl = PastedUrl(self.appParent, self.rowId, rawUrl, self.ffmpeg)
+                asyncio.run(self.manageSingleUrl())
+            except Exception as err:
+                Tools.consoleLogs("Error: generic #0 - " + str(err))
+                if Tools.isDevMode():
+                    traceback.print_exc()
+                self.setBothStates(self.gridParent.STATUS_CODE_ERROR, '', 'Unexpected crush #0')
         self.allProcessesFinished()
 
     async def manageSingleUrl(self):

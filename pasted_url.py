@@ -75,14 +75,16 @@ class PastedUrl():
     # non hanno nulla da estrarre, e non deve rallentare troppo l'incolla
     GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS = 20
 
-    def __init__(self, appParent, rawUrl, ffmpeg=None):
+    def __init__(self, appParent, rowId, rawUrl, ffmpeg=None):
         self.appParent = appParent
+        self.rowId = rowId
         self.ffmpeg = ffmpeg
         self.originalUrl = rawUrl
         decodedPastylinkUrl = Tools.decodePastylinkUrl(rawUrl) if Tools.isPastylinkUrl(rawUrl) else None
         self.isPastylink = bool(decodedPastylinkUrl)
         if self.isPastylink:
             self.url = decodedPastylinkUrl
+            self.appParent.pastyGrid.setCellUrl(self.rowId, self.url)
         elif Tools.isM3u8ManifestText(rawUrl):
             self.url = Tools.writeM3u8InFile(Tools.stripBom(rawUrl))
         else:

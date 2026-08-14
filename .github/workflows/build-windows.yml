@@ -1,0 +1,88 @@
+name: Build Windows
+
+# Manuale (Actions -> Build Windows -> Run workflow) o automatico quando pushi un tag di versione, es. v0.9
+# ("on" tra virgolette: senza, alcuni parser YAML - non GitHub Actions, che lo gestisce correttamente - lo confondono col booleano true)
+"on":
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # serve solo per allegare gli eseguibili alla Release quando il trigger e' un tag
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa le dipendenze
+        run: |
+          python -m pip install --upgrade pip
+          pip install PySide6 aiofiles aiohttp psutil requests pyinstaller
+
+      - name: Rigenera resources.py con la stessa versione di PySide6 appena installata
+        run: pyside6-rcc resources.qrc -o resources.py
+
+      # ------------------------------------------------------------------
+      # 1) Exe portatile onefile (main_win.spec) - il modo "classico" gia'
+      #    usato finora, un solo file zippato
+      # ------------------------------------------------------------------
+      - name: Compila l'exe portatile (onefile)
+        run: pyinstaller main_win.spec
+
+      - name: Verifica che l'exe portatile parta (nessun crash)
+        shell: pwsh
+        run: |
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $p = Start-Process -FilePath "dist\PastyDownloader.exe" -PassThru
+          Start-Sleep -Seconds 5
+          if ($p.HasExited) {
+            Write-Error "L'exe si e' chiuso da solo, exit code $($p.ExitCode)"
+            exit 1
+          }
+          Write-Host "OK: ancora in esecuzione dopo 5s, nessun crash"
+          Stop-Process -Id $p.Id
+
+      - name: Comprimi l'exe portatile in zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path bin | Out-Null
+          Compress-Archive -Path dist\PastyDownloader.exe -DestinationPath bin\PastyDownloader.exe.zip -Force
+
+      - name: Carica l'exe portatile come artefatto della run
+        uses: actions/upload-artifact@v4
+        with:
+          name: PastyDownloader-windows-portable
+          path: bin\PastyDownloader.exe.zip
+
+      # ------------------------------------------------------------------
+      # 2) Installer Inno Setup (main_win_installer.spec, onedir) - vedi
+      #    la conversazione sul perche' un installer serve onedir, non onefile
+      # ------------------------------------------------------------------
+      - name: Compila la cartella onedir per l'installer
+        run: pyinstaller main_win_installer.spec
+
+      - name: Compila l'installer con Inno Setup
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/pastydownloader.iss
+
+      - name: Carica l'installer come artefatto della run
+        uses: actions/upload-artifact@v4
+        with:
+          name: PastyDownloader-windows-setup
+          path: bin\PastyDownloader-Setup.exe
+
+      - name: Allega gli eseguibili alla Release (solo per i tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/PastyDownloader.exe.zip
+            bin/PastyDownloader-Setup.exe

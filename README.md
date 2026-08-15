@@ -21,6 +21,15 @@ PastyDownloader is a fast, no-nonsense desktop app for grabbing video and audio 
 
 Completely safe: no virus, no ads, no user tracking. No accounts, no browser extensions fighting for your attention. Just one lightweight, free app that does a single job — downloading — and does it well.
 
+## Releases
+
+- **2026-08** - version 0.8: complete refactor in PySide6 on Github repository
+- **2024-04** - version 0.7: fixed too long link error and other minor bug fixes
+- **2023-06** - version 0.6: mp3 conversion, Dailymotion Instagram and TikTok support
+- **2023-05** - version 0.5: minor bug fix
+- **2023-04** - version 0.4: added support to download non-video files
+- **2023-03** - version 0.3: first release, Pastylink integration
+
 ---
 
 Built for [pasty.link](https://pasty.link)

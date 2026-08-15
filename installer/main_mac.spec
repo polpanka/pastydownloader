@@ -1,6 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
 block_cipher = None
 
 
@@ -8,8 +10,19 @@ a = Analysis(
     ['../main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    # script .js di yt_dlp_ejs (dato, non import - vedi il commento esteso in
+    # installer/main_appimage.spec)
+    datas=collect_data_files('yt_dlp_ejs', includes=['**/*.js']),
+    # dipendenze opzionali di yt-dlp (extra 'default' su PyPI): yt-dlp e' un
+    # pacchetto scaricato a runtime e importato in-process da una cartella
+    # esterna (vedi Tools._importYtDlp in libs.py), mai importato da main.py -
+    # PyInstaller non le vede mai da solo, vanno elencate qui a mano (stesso
+    # commento esteso in installer/main_appimage.spec)
+    # yt_dlp_ejs va con collect_submodules, non come stringa semplice - vedi
+    # il commento esteso in installer/main_appimage.spec (il suo
+    # yt_dlp_ejs/yt/solver/__init__.py fa un import auto-referenziale che
+    # un hiddenimports=['yt_dlp_ejs'] semplice non bundla per intero)
+    hiddenimports=['brotli', 'certifi', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', *collect_submodules('yt_dlp_ejs')],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

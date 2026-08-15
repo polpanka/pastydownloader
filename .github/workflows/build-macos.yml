@@ -67,7 +67,16 @@ jobs:
         # avvio reale su un Mac macOS 11-13 dopo aver aggiornato questo pin.
         run: |
           python3 -m pip install --upgrade pip
-          pip install PySide6==6.7.3 aiofiles aiohttp psutil requests pyinstaller
+          pip install PySide6==6.7.3 aiofiles aiohttp psutil requests pyinstaller brotli certifi mutagen pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi
+          # quickjs-ng (motore JS embedded per risolvere le sfide di YouTube
+          # senza un runtime esterno, vedi Tools._registerEmbeddedQuickJsProvider
+          # in libs.py): pubblica un wheel precompilato solo per macOS
+          # arm64, non x86_64 - un pip install bloccante romperebbe l'intera
+          # build sul runner Intel (macos-15-intel). Installazione best-effort:
+          # se fallisce (Intel), l'app funziona comunque, semplicemente senza
+          # questo provider (stesso comportamento di prima di questa aggiunta,
+          # vedi il try/except in _registerEmbeddedQuickJsProvider)
+          pip install quickjs-ng || echo "quickjs-ng non disponibile per questa architettura (${{ matrix.arch }}), continuo senza"
 
       - name: Rigenera resources.py con la stessa versione di PySide6 appena installata
         run: pyside6-rcc resources.qrc -o resources.py

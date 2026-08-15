@@ -462,7 +462,8 @@ class PastylinkUrlTest(unittest.TestCase):
         self.app.pastyGrid.addRow(pastylinkUrl)  # riga grezza, esattamente come la lascerebbe pasteUrls
         self.app.pastyGrid.setCellConvert(0, self.app.ACTION_TO_MP4)
         worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
-        with mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
+        with mock.patch.object(Tools, 'checkYtDlp', return_value='/fake/ytdlp/pkgdir'), \
+             mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
             worker.runAllUrls()
         calledUrl = dl.call_args[0][2]  # downloadVideoByYtDlp(ytdlp, ffmpeg, url, saveAs, ...)
         self.assertEqual(calledUrl, YOUTUBE_URL)  # non l'url httpasty:// grezzo
@@ -482,7 +483,8 @@ class PastylinkUrlTest(unittest.TestCase):
         self.app.pastyGrid.addRow(pastylinkUrl)
         self.app.pastyGrid.setCellConvert(0, self.app.ACTION_TO_MP4)
         worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
-        with mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
+        with mock.patch.object(Tools, 'checkYtDlp', return_value='/fake/ytdlp/pkgdir'), \
+             mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
             worker.runAllUrls()
         self.assertEqual(dl.call_args.kwargs.get('referer'), refererValue)
 
@@ -491,7 +493,8 @@ class PastylinkUrlTest(unittest.TestCase):
         self.app.pastyGrid.addRow(pastylinkUrl)
         self.app.pastyGrid.setCellConvert(0, self.app.ACTION_TO_MP4)
         worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
-        with mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
+        with mock.patch.object(Tools, 'checkYtDlp', return_value='/fake/ytdlp/pkgdir'), \
+             mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
             worker.runAllUrls()
         self.assertIsNone(dl.call_args.kwargs.get('referer'))
 
@@ -688,6 +691,8 @@ class PasteGenericYtDlpFallbackTest(unittest.TestCase):
         vecchio approccio (estrai-un-url-e-scaricalo-con-ffmpeg) sarebbe stata
         scartata per non rischiare un video muto; ora che e' yt-dlp stesso a
         scaricare e fondere le tracce, il probe la riconosce come scaricabile."""
+        if not Tools.checkYtDlp():
+            self.skipTest('yt-dlp non installato in questo ambiente')
         pastedUrl = PastedUrl(self.app, 0, GENERIC_YTDLP_PAGE_URL, Tools.checkFFmpeg())
         self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_YT_DLP)
 
@@ -883,8 +888,8 @@ class YtDlpDirectDownloadTest(unittest.TestCase):
         if not Tools.hasInternetConnection():
             self.skipTest('nessuna connessione a internet')
         self.ffmpeg = Tools.checkFFmpeg()
-        self.ytdlp = Tools.checkYtDlp()
-        if not self.ffmpeg or not self.ytdlp:
+        self.ytDlpPackageDir = Tools.checkYtDlp()
+        if not self.ffmpeg or not self.ytDlpPackageDir:
             self.skipTest('ffmpeg o yt-dlp imbarcati non trovati')
         self.saveAs = os.path.join(Tools.getTempDirectory(), 'pasty_test_ytdlp_direct.mp4')
 
@@ -893,7 +898,7 @@ class YtDlpDirectDownloadTest(unittest.TestCase):
 
     def test_download_merges_video_and_audio_into_one_valid_file(self):
         result = asyncio.run(Tools.downloadVideoByYtDlp(
-            self.ytdlp, self.ffmpeg, YOUTUBE_URL, self.saveAs, None, None))
+            self.ytDlpPackageDir, self.ffmpeg, YOUTUBE_URL, self.saveAs, None, None))
         self.assertTrue(result[0], result)
         self.assertTrue(os.path.exists(self.saveAs))
         # verifica che il file abbia davvero sia una traccia video sia una audio
@@ -906,47 +911,27 @@ class YtDlpDirectDownloadTest(unittest.TestCase):
 
 class YtDlpProgressAccumulationTest(unittest.TestCase):
     """Quando le tracce non sono gia' combinate, yt-dlp le scarica una per
-    volta (prima il video, poi l'audio): i byte scaricati riportati da
-    --progress-template ripartono da zero al cambio fase. Verifica (senza
-    rete, con un processo finto) che _runYtDlpWithProgress sommi le fasi
-    gia' completate invece di far tornare indietro il progresso mostrato."""
-
-    class _FakeStdout(list):
-        def close(self):
-            pass
-
-    class _FakeStderr:
-        def read(self):
-            return ''
-
-        def close(self):
-            pass
-
-    class _FakeProcess:
-        def __init__(self, lines):
-            self.stdout = YtDlpProgressAccumulationTest._FakeStdout(lines)
-            self.stderr = YtDlpProgressAccumulationTest._FakeStderr()
-            self.returncode = 0
-
-        def poll(self):
-            return 0  # gia' terminato: niente thread watcher da avviare
-
-        def wait(self):
-            pass
+    volta (prima il video, poi l'audio): i byte scaricati riportati dal
+    progress_hook (vedi _ytDlpDownloadWorker in libs.py) ripartono da zero al
+    cambio fase. Verifica che _accumulateYtDlpProgress sommi le fasi gia'
+    completate invece di far tornare indietro il progresso mostrato."""
 
     def test_progress_does_not_go_backwards_across_video_and_audio_phases(self):
-        prefix = Tools.YTDLP_PROGRESS_PREFIX
-        lines = [
-            prefix + '1000', prefix + '100000', prefix + '220000',  # fase video
-            prefix + '1000', prefix + '120000', prefix + '250000',  # fase audio, riparte da zero
+        # (status, downloadedBytes) cosi' come li manderebbe yt-dlp: fase
+        # video che scarica e finisce, poi fase audio che riparte da zero
+        events = [
+            ('downloading', 1000), ('downloading', 100000), ('downloading', 220000), ('finished', 220000),
+            ('downloading', 1000), ('downloading', 120000), ('downloading', 250000), ('finished', 250000),
         ]
-        process = self._FakeProcess(lines)
-        seen = []
-        with mock.patch.object(Tools, '_spawnWithStopWatcher', return_value=(process, {'stopped': False}, None)), \
-             mock.patch.object(Tools, 'PROGRESS_THROTTLE_SECONDS', 0):
-            Tools._runYtDlpWithProgress(['fake'], onProgress=seen.append, isStoppedFn=None)
-        self.assertEqual(seen, [1000, 100000, 220000, 221000, 340000, 470000])
+        phaseState = {'total': 0}
+        seen = [Tools._accumulateYtDlpProgress(status, bytesDownloaded, phaseState) for status, bytesDownloaded in events]
+        self.assertEqual(seen, [1000, 100000, 220000, 220000, 221000, 340000, 470000, 470000])
         self.assertTrue(all(a <= b for a, b in zip(seen, seen[1:])), seen)
+
+    def test_unknown_status_is_ignored(self):
+        phaseState = {'total': 0}
+        self.assertIsNone(Tools._accumulateYtDlpProgress('error', 500, phaseState))
+        self.assertEqual(phaseState['total'], 0)  # uno status non gestito non deve toccare lo stato accumulato
 
 
 if __name__ == '__main__':

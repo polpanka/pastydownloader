@@ -32,8 +32,10 @@
 # -------------------------------------------------------
 #   - crea un virtualenv Python usa-e-getta in una cartella temporanea e ci
 #     installa dentro tutte le dipendenze (PySide6, aiofiles, aiohttp,
-#     psutil, requests, PyInstaller) - non tocca ne' l'installazione Python
-#     di sistema ne' un eventuale altro venv gia' presente
+#     psutil, requests, PyInstaller, piu' le dipendenze opzionali di yt-dlp -
+#     brotli/certifi/mutagen/pycryptodomex/websockets/urllib3, vedi il
+#     commento su hiddenimports in installer/main_appimage.spec) - non tocca
+#     ne' l'installazione Python di sistema ne' un eventuale altro venv gia' presente
 #   - rigenera resources.py, compila con PyInstaller, scarica ed esegue
 #     linuxdeploy + appimagetool (che bundlano anche le dipendenze di sistema
 #     - X11/xcb, glib, dbus, fontconfig... - che PyInstaller da solo non
@@ -76,7 +78,8 @@ curl -sL https://bootstrap.pypa.io/get-pip.py -o "$BUILD_DIR/get-pip.py"
 # richiedono manylinux_2_34 (glibc 2.34+) - quindi questo pin abbassa anche
 # il floor Linux (es. Ubuntu 20.04+/Debian 11+/RHEL 8+ invece di 22.04+/12+/9+)
 "$BUILD_DIR/venv/bin/python" -m pip install --upgrade \
-    "PySide6==6.7.3" aiofiles aiohttp psutil requests pyinstaller
+    "PySide6==6.7.3" aiofiles aiohttp psutil requests pyinstaller \
+    brotli certifi mutagen pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi quickjs-ng
 
 # rigenero resources.py con lo stesso PySide6 appena installato nel venv,
 # cosi' il formato binario e' sempre coerente con la versione usata per la build

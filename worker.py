@@ -150,10 +150,10 @@ class AsyncWorker(QObject):
             # caso special url / yt-dlp: yt-dlp scarica (e se serve fonde audio+video) da solo
             if engine == PastedUrl.URL_TYPE_YT_DLP:
                 Tools.consoleLogs("Used: yt-dlp direct download")
-                ytdlp = Tools.checkYtDlp()
-                if not ytdlp:
+                ytDlpPackageDir = Tools.checkYtDlp()
+                if not ytDlpPackageDir:
                     return self.smartReturn([False, 'yt-dlp not available'])
-                results = await Tools.downloadVideoByYtDlp(ytdlp, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer())
+                results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer())
             # caso di video normale
             else:
                 Tools.consoleLogs("Used: ffmpeg with default url")

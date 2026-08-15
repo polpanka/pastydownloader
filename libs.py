@@ -885,12 +885,11 @@ class Tools():
             return False
 
     @classmethod
-    def saveStatsUrls(cls, query):
+    def saveStatsUrls(cls):
         url = MyText().saveStats
         new_data = {
             "ver": cls.getVersion(),
             "os": cls.getOs(),
-            "query": base64.b64encode(query.encode()),
         }
         cls.sendRequestPost(url, new_data)
 

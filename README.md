@@ -23,6 +23,7 @@ Completely safe: no virus, no ads, no user tracking. No accounts, no browser ext
 
 ## Releases
 
+- **2026-08** - version 1.0: removed statistics for privacy
 - **2026-08** - version 0.8: complete refactor in PySide6 on Github repository
 - **2024-04** - version 0.7: fixed too long link error and other minor bug fixes
 - **2023-06** - version 0.6: mp3 conversion, Dailymotion Instagram and TikTok support

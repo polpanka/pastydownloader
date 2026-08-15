@@ -19,8 +19,8 @@
 ; disposizione per compilarlo) - alla prima compilazione controlla con calma
 ; eventuali errori di percorso/sintassi prima di distribuirlo.
 
-; Versione dell'app: tenuta allineata a mano con api/checkUpdates.json, come
-; gia' fai per gli altri passi manuali della release (vedi info/info.txt) -
+; Versione dell'app: tenuta allineata a mano via pastylink dalla pagina api/checkUpdates/,
+; come gia' fai per gli altri passi manuali della release (vedi info/info.txt) -
 ; niente di automatico qui per evitare di introdurre un parsing JSON non
 ; testato che potrebbe rompere silenziosamente la compilazione dello script
 #define MyAppVersion "0.8"

@@ -39,9 +39,9 @@ jobs:
             runner: macos-15-intel
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -81,7 +81,7 @@ jobs:
             "bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip"
 
       - name: Carica l'app come artefatto della run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-macos-${{ matrix.arch }}
           path: bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip

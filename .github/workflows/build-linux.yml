@@ -21,7 +21,7 @@ jobs:
     # praticamente raggiungibile con questa versione di PySide6.
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Il runner nudo non ha le librerie di sistema che Qt6Gui e il plugin
       # xcb richiedono sempre (anche se l'app non usa mai OpenGL/EGL o le
@@ -74,7 +74,7 @@ jobs:
           fi
 
       - name: Carica l'AppImage come artefatto della run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-x86_64.AppImage
           path: bin/PastyDownloader-x86_64.AppImage

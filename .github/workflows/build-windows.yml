@@ -15,9 +15,9 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -56,7 +56,7 @@ jobs:
           Compress-Archive -Path dist\PastyDownloader.exe -DestinationPath bin\PastyDownloader.exe.zip -Force
 
       - name: Carica l'exe portatile come artefatto della run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-windows-portable
           path: bin\PastyDownloader.exe.zip
@@ -74,7 +74,7 @@ jobs:
           path: installer/pastydownloader.iss
 
       - name: Carica l'installer come artefatto della run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-windows-setup
           path: bin\PastyDownloader-Setup.exe

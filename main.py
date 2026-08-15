@@ -350,7 +350,7 @@ class Pasty(QMainWindow):
         tokens = [pasted] if Tools.isM3u8ManifestText(pasted) else pasted.split()
         count, hasInvalidPastylink = self.pastyGrid.importUrls(tokens)
         if not self.DEVEL_MODE and count:
-            Tools.saveStatsUrls("\n".join(tokens))
+            Tools.saveStatsUrls()
         Tools.consoleLogs("Pasted %s urls, %s valid" % (len(tokens), count))
         if hasInvalidPastylink:
             statusMsg = MyText().msgInvalidPastylink

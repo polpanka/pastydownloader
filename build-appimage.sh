@@ -158,8 +158,11 @@ done
     --desktop-file "$BUILD_DIR/pastydownloader.desktop" \
     --icon-file "$BUILD_DIR/pastydownloader.png"
 
-# impacchetto l'AppDir completo nel singolo file .AppImage finale
+# impacchetto l'AppDir completo nel singolo file .AppImage finale - mkdir
+# esplicita: bin/ non e' detto esista gia' (es. un checkout pulito del repo
+# senza vecchi artefatti dentro bin/ committati), appimagetool non la crea da solo
 echo "== 6/6: genero l'AppImage =="
+mkdir -p bin
 ARCH=x86_64 "$BUILD_DIR/tools/appimagetool" "$APPDIR" bin/PastyDownloader-x86_64.AppImage
 
 echo

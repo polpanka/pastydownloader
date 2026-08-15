@@ -69,7 +69,7 @@ class Menu():
         self.aboutAction = QAction(MyText().actionAbout, app)
         self.aboutAction.setIcon(QIcon(":/images/help-about"))
         self.aboutAction.triggered.connect(lambda x: app.openPopup(MyText().actionAbout,
-            '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.app.VERSION) + '<br>' + MyText().aboutWebsite + '<br>'))
+            '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.app.VERSION) + '<br>' + MyText().aboutWebsite + '<br><br>' + MyText().aboutPrivacy + '<br>'))
         menuHelp = menu.addMenu(MyText().menuHelp)
         menuHelp.addAction(self.updatesAction)
         menuHelp.addAction(self.aboutAction)

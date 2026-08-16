@@ -71,7 +71,7 @@ class Menu():
         self.updatesAction.triggered.connect(lambda x: app.checkUpdates(True))
         self.aboutAction = QAction(MyText().actionAbout, app)
         self.aboutAction.setIcon(QIcon(":/images/help-about"))
-        self.aboutAction.triggered.connect(self.onAboutClicked)
+        self.aboutAction.triggered.connect(lambda x: app.openAboutPopup())
         menuHelp = menu.addMenu(MyText().menuHelp)
         menuHelp.addAction(self.updatesAction)
         menuHelp.addAction(self.aboutAction)
@@ -82,11 +82,6 @@ class Menu():
 
         # other
         self.setMenuType(self.TYPE_STANDARD)
-
-    def onAboutClicked(self):
-        self._trackDevelModeUnlock()
-        self.app.openPopup(MyText().actionAbout,
-            '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.app.VERSION) + '<br>' + MyText().aboutWebsite + '<br><br>' + MyText().aboutPrivacy + '<br>')
 
     def _trackDevelModeUnlock(self):
         if self.app.DEVEL_MODE:

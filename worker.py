@@ -42,6 +42,8 @@ class AsyncWorker(QObject):
         self.gridSaveAsUpdate.connect(self._applyGridSaveAs)
 
     def _applyGridState(self, rowId, stateText, tooltip):
+        if stateText == self.gridParent.STATUS_CODE_ERROR and not self.appParent.DEVEL_MODE:
+            tooltip = ''
         self.gridParent.setCellState(rowId, stateText, tooltip)
         self.gridParent.setCellStatusCode(rowId, stateText)
 

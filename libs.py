@@ -378,6 +378,16 @@ class Tools():
     # container vuoto/troncato, indipendentemente da cosa dice stderr
     MIN_VALID_OUTPUT_SIZE_BYTES = 1024
 
+    # quante volte ritentare un download yt-dlp fallito prima di arrendersi
+    # (vedi downloadVideoByYtDlp): il 403 di YouTube su alcuni client di
+    # fallback (es. android_vr, usato quando manca un runtime JS) e'
+    # intermittente - verificato ripetendo a mano lo stesso identico comando
+    # sullo stesso video: 1o tentativo bloccato, 2o e 3o riusciti subito dopo,
+    # senza alcuna modifica nel frattempo - quindi un semplice retry e' piu'
+    # efficace di qualunque cambio di formato/client
+    YTDLP_MAX_ATTEMPTS = 3
+    YTDLP_RETRY_DELAY_SECONDS = 2
+
     @staticmethod
     def _terminateProcessTree(pid):
         try:
@@ -478,9 +488,15 @@ class Tools():
         lastUpdate = 0
         totalFromFinishedPhases = 0
         bytesSoFarInCurrentPhase = 0
+        # righe non di progresso (es. "[info] Downloading 1 format(s): 398+251"):
+        # utili solo se il comando fallisce, per capire cosa yt-dlp ha tentato
+        # di fare - vedi downloadVideoByYtDlp, che le allega al messaggio d'errore
+        infoLines = []
         for line in process.stdout:
             line = line.strip()
-            if onProgress and line.startswith(Tools.YTDLP_PROGRESS_PREFIX):
+            if line.startswith(Tools.YTDLP_PROGRESS_PREFIX):
+                if not onProgress:
+                    continue
                 try:
                     reportedBytes = int(line[len(Tools.YTDLP_PROGRESS_PREFIX):])
                 except ValueError:
@@ -493,13 +509,15 @@ class Tools():
                 if now - lastUpdate >= Tools.PROGRESS_THROTTLE_SECONDS:
                     lastUpdate = now
                     onProgress(totalFromFinishedPhases + bytesSoFarInCurrentPhase)
+            elif line:
+                infoLines.append(line)
         process.stdout.close()
         process.wait()
         if watcher:
             watcher.join(timeout=1)
         stderr = process.stderr.read()
         process.stderr.close()
-        return stoppedHolder['stopped'], process.returncode, stderr
+        return stoppedHolder['stopped'], process.returncode, stderr, infoLines
 
     @staticmethod
     def _ffmpegSucceeded(returncode, saveAs, stderr):
@@ -737,14 +755,27 @@ class Tools():
                        '--progress-template', 'download:%s%%(progress.downloaded_bytes)s' % cls.YTDLP_PROGRESS_PREFIX]
             command += ['-o', saveAs, url]
             loop = asyncio.get_running_loop()
-            stopped, returncode, stderr = await loop.run_in_executor(None, Tools._runYtDlpWithProgress, command, onProgress, isStoppedFn)
-            if stopped:
-                return [None, 'Stop forced by the user']
-            if returncode == 0 and os.path.exists(saveAs) and os.path.getsize(saveAs) > cls.MIN_VALID_OUTPUT_SIZE_BYTES:
-                return [True, Tools.getSizeDynamic(saveAs)]
-            logging.error('yt-dlp error: ' + stderr)
+            errorDetail = ''
+            for attempt in range(cls.YTDLP_MAX_ATTEMPTS):
+                stopped, returncode, stderr, infoLines = await loop.run_in_executor(None, Tools._runYtDlpWithProgress, command, onProgress, isStoppedFn)
+                if stopped:
+                    return [None, 'Stop forced by the user']
+                if returncode == 0 and os.path.exists(saveAs) and os.path.getsize(saveAs) > cls.MIN_VALID_OUTPUT_SIZE_BYTES:
+                    return [True, Tools.getSizeDynamic(saveAs)]
+                # infoLines: righe "[info]"/"[youtube]" ecc. di yt-dlp su stdout
+                # (es. quali formati ha scelto) - da sole non arrivano mai nello
+                # stderr, ma nel tooltip d'errore sono spesso l'indizio decisivo
+                # (es. quale formato/client ha tentato) per capire un fallimento
+                # senza dover rilanciare yt-dlp a mano con -v
+                errorDetail = '\n'.join(infoLines[-5:] + ([stderr] if stderr else []))
+                if attempt < cls.YTDLP_MAX_ATTEMPTS - 1:
+                    Tools.consoleLogs('yt-dlp attempt %d/%d failed, retrying: %s' % (attempt + 1, cls.YTDLP_MAX_ATTEMPTS, errorDetail))
+                    await asyncio.sleep(cls.YTDLP_RETRY_DELAY_SECONDS)
+                    if isStoppedFn and isStoppedFn():
+                        return [None, 'Stop forced by the user']
+            logging.error('yt-dlp error: ' + errorDetail)
             logging.error(str(command))
-            return [False, stderr or 'yt-dlp produced no usable output']
+            return [False, errorDetail or 'yt-dlp produced no usable output']
         except Exception as err:
             logging.error(str(err))
             return [False, 'Download error #3']

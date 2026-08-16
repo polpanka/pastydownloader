@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import logging
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QTableView, QAbstractItemView, QMenu
 from PySide6.QtCore import Qt, QSettings
 from PySide6.QtGui import QIcon
@@ -120,8 +121,8 @@ class PastyGrid():
             item.setToolTip(tooltip)
             self.grid.setItem(rowId, colId, item)
             self.grid.viewport().update() # fix x Win
-        except Exception:
-            print('Error in setting cell')
+        except Exception as err:
+            logging.error('Error in setting cell: ' + str(err))
     
     def getCellUrl(self, rowId):
         return self.getCell(rowId, 0)

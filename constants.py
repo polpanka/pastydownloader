@@ -24,6 +24,27 @@ class Constants:
     STATUS_CODE_STOPPED     = 'Stopped'
     STATUS_CODE_CONVERTING  = 'Converting'
 
+    # tema scelto in Preferenze (chiave 'theme' in QSettings) - THEME_SYSTEM
+    # e' il default, segue il tema del sistema operativo com'era il comportamento
+    # implicito dell'app prima di questa scelta
+    THEME_SYSTEM = 'system'
+    THEME_LIGHT  = 'light'
+    THEME_DARK   = 'dark'
+
+    # Forza (o ripristina, con THEME_SYSTEM) lo schema colori dell'intera app -
+    # va chiamato dopo aver creato la QApplication, prima di costruire le
+    # finestre, cosi' isDarkTheme()/getGridStyle() sotto vedono gia' la scelta
+    # dell'utente invece di quella del sistema operativo
+    @staticmethod
+    def applyTheme(theme):
+        from PySide6.QtGui import QGuiApplication
+        from PySide6.QtCore import Qt
+        scheme = {
+            Constants.THEME_LIGHT: Qt.ColorScheme.Light,
+            Constants.THEME_DARK: Qt.ColorScheme.Dark,
+        }.get(theme, Qt.ColorScheme.Unknown)
+        QGuiApplication.styleHints().setColorScheme(scheme)
+
     @staticmethod
     def isDarkTheme():
         from PySide6.QtWidgets import QApplication

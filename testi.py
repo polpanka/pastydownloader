@@ -27,7 +27,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'All done, you can start!',
         'confirmExitTitle': 'Confirm exit',
         'confirmExitMsg': 'A download is in progress. Are you sure you want to exit? It will be stopped.',
-        'restartRequired': 'Restart {appName} for the language change to take effect.',
+        'restartRequired': 'Restart {appName} for the changes to take effect.',
         'titleError': 'Error',
         'titleUpdates': 'Updates',
         'titleRestart': 'Restart required',
@@ -73,6 +73,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Open the downloads folder',
         'doNothing': 'Do nothing',
         'languageLabel': 'Language',
+        'themeLabel': 'Theme',
+        'themeSystem': 'System (default)',
+        'themeLight': 'Light',
+        'themeDark': 'Dark',
     },
 
     # italiano
@@ -96,7 +100,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'Tutto fatto, puoi iniziare!',
         'confirmExitTitle': 'Conferma uscita',
         'confirmExitMsg': 'È in corso un download. Sei sicuro di voler uscire? Verrà interrotto.',
-        'restartRequired': 'Riavvia {appName} perché il cambio lingua abbia effetto.',
+        'restartRequired': 'Riavvia {appName} perché le modifiche abbiano effetto.',
         'titleError': 'Errore',
         'titleUpdates': 'Aggiornamenti',
         'titleRestart': 'Riavvio necessario',
@@ -142,6 +146,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Apri la cartella dei download',
         'doNothing': 'Non fare nulla',
         'languageLabel': 'Lingua',
+        'themeLabel': 'Tema',
+        'themeSystem': 'Sistema (predefinito)',
+        'themeLight': 'Chiaro',
+        'themeDark': 'Scuro',
     },
 
     # francese
@@ -165,7 +173,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'Tout est prêt, vous pouvez commencer !',
         'confirmExitTitle': 'Confirmer la fermeture',
         'confirmExitMsg': 'Un téléchargement est en cours. Voulez-vous vraiment quitter ? Il sera interrompu.',
-        'restartRequired': 'Redémarrez {appName} pour que le changement de langue prenne effet.',
+        'restartRequired': 'Redémarrez {appName} pour que les modifications prennent effet.',
         'titleError': 'Erreur',
         'titleUpdates': 'Mises à jour',
         'titleRestart': 'Redémarrage requis',
@@ -211,6 +219,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Ouvrir le dossier de téléchargements',
         'doNothing': 'Ne rien faire',
         'languageLabel': 'Langue',
+        'themeLabel': 'Thème',
+        'themeSystem': 'Système (par défaut)',
+        'themeLight': 'Clair',
+        'themeDark': 'Sombre',
     },
 
     # spagnolo
@@ -234,7 +246,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': '¡Todo listo, puedes empezar!',
         'confirmExitTitle': 'Confirmar salida',
         'confirmExitMsg': 'Hay una descarga en curso. ¿Seguro que quieres salir? Se detendrá.',
-        'restartRequired': 'Reinicia {appName} para que el cambio de idioma tenga efecto.',
+        'restartRequired': 'Reinicia {appName} para que los cambios tengan efecto.',
         'titleError': 'Error',
         'titleUpdates': 'Actualizaciones',
         'titleRestart': 'Reinicio necesario',
@@ -280,6 +292,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Abrir la carpeta de descargas',
         'doNothing': 'No hacer nada',
         'languageLabel': 'Idioma',
+        'themeLabel': 'Tema',
+        'themeSystem': 'Sistema (predeterminado)',
+        'themeLight': 'Claro',
+        'themeDark': 'Oscuro',
     },
 
     # tedesco
@@ -303,7 +319,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'Fertig, du kannst loslegen!',
         'confirmExitTitle': 'Beenden bestätigen',
         'confirmExitMsg': 'Ein Download läuft gerade. Möchtest du wirklich beenden? Er wird abgebrochen.',
-        'restartRequired': 'Starte {appName} neu, damit die Sprachänderung wirksam wird.',
+        'restartRequired': 'Starte {appName} neu, damit die Änderungen wirksam werden.',
         'titleError': 'Fehler',
         'titleUpdates': 'Updates',
         'titleRestart': 'Neustart erforderlich',
@@ -349,6 +365,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Download-Ordner öffnen',
         'doNothing': 'Nichts tun',
         'languageLabel': 'Sprache',
+        'themeLabel': 'Design',
+        'themeSystem': 'System (Standard)',
+        'themeLight': 'Hell',
+        'themeDark': 'Dunkel',
     },
 
     # cinese semplificato
@@ -372,7 +392,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': '一切就绪，可以开始了！',
         'confirmExitTitle': '确认退出',
         'confirmExitMsg': '有一个下载任务正在进行。确定要退出吗？该下载将被中止。',
-        'restartRequired': '重启 {appName} 以使语言更改生效。',
+        'restartRequired': '重启 {appName} 以使更改生效。',
         'titleError': '错误',
         'titleUpdates': '更新',
         'titleRestart': '需要重启',
@@ -418,6 +438,10 @@ _TRANSLATIONS = {
         'doOpenFolder': '打开下载文件夹',
         'doNothing': '不执行任何操作',
         'languageLabel': '语言',
+        'themeLabel': '主题',
+        'themeSystem': '系统（默认）',
+        'themeLight': '浅色',
+        'themeDark': '深色',
     },
 
     # giapponese
@@ -441,7 +465,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': '準備完了です、始められます！',
         'confirmExitTitle': '終了の確認',
         'confirmExitMsg': 'ダウンロードが進行中です。本当に終了しますか？ダウンロードは中止されます。',
-        'restartRequired': '言語の変更を反映するには {appName} を再起動してください。',
+        'restartRequired': '変更を反映するには {appName} を再起動してください。',
         'titleError': 'エラー',
         'titleUpdates': 'アップデート',
         'titleRestart': '再起動が必要です',
@@ -487,6 +511,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'ダウンロードフォルダを開く',
         'doNothing': '何もしない',
         'languageLabel': '言語',
+        'themeLabel': 'テーマ',
+        'themeSystem': 'システム（デフォルト）',
+        'themeLight': 'ライト',
+        'themeDark': 'ダーク',
     },
 
     # portoghese
@@ -510,7 +538,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'Tudo pronto, você pode começar!',
         'confirmExitTitle': 'Confirmar saída',
         'confirmExitMsg': 'Um download está em andamento. Tem certeza de que deseja sair? Ele será interrompido.',
-        'restartRequired': 'Reinicie o {appName} para que a alteração de idioma tenha efeito.',
+        'restartRequired': 'Reinicie o {appName} para que as alterações tenham efeito.',
         'titleError': 'Erro',
         'titleUpdates': 'Atualizações',
         'titleRestart': 'Reinicialização necessária',
@@ -556,6 +584,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Abrir a pasta de downloads',
         'doNothing': 'Não fazer nada',
         'languageLabel': 'Idioma',
+        'themeLabel': 'Tema',
+        'themeSystem': 'Sistema (padrão)',
+        'themeLight': 'Claro',
+        'themeDark': 'Escuro',
     },
 
     # russo
@@ -579,7 +611,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'Всё готово, можно начинать!',
         'confirmExitTitle': 'Подтвердите выход',
         'confirmExitMsg': 'Выполняется загрузка. Вы уверены, что хотите выйти? Она будет остановлена.',
-        'restartRequired': 'Перезапустите {appName}, чтобы изменение языка вступило в силу.',
+        'restartRequired': 'Перезапустите {appName}, чтобы изменения вступили в силу.',
         'titleError': 'Ошибка',
         'titleUpdates': 'Обновления',
         'titleRestart': 'Требуется перезапуск',
@@ -625,6 +657,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'Открыть папку загрузок',
         'doNothing': 'Ничего не делать',
         'languageLabel': 'Язык',
+        'themeLabel': 'Тема',
+        'themeSystem': 'Системная (по умолчанию)',
+        'themeLight': 'Светлая',
+        'themeDark': 'Тёмная',
     },
 
     # coreano
@@ -648,7 +684,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': '준비 완료, 시작할 수 있습니다!',
         'confirmExitTitle': '종료 확인',
         'confirmExitMsg': '다운로드가 진행 중입니다. 정말 종료하시겠습니까? 다운로드가 중단됩니다.',
-        'restartRequired': '언어 변경을 적용하려면 {appName}을(를) 다시 시작하세요.',
+        'restartRequired': '변경 사항을 적용하려면 {appName}을(를) 다시 시작하세요.',
         'titleError': '오류',
         'titleUpdates': '업데이트',
         'titleRestart': '재시작 필요',
@@ -694,6 +730,10 @@ _TRANSLATIONS = {
         'doOpenFolder': '다운로드 폴더 열기',
         'doNothing': '아무 작업도 하지 않음',
         'languageLabel': '언어',
+        'themeLabel': '테마',
+        'themeSystem': '시스템(기본값)',
+        'themeLight': '라이트',
+        'themeDark': '다크',
     },
 
     # olandese
@@ -717,7 +757,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'Helemaal klaar, je kunt beginnen!',
         'confirmExitTitle': 'Afsluiten bevestigen',
         'confirmExitMsg': 'Er is een download bezig. Weet je zeker dat je wilt afsluiten? Deze wordt gestopt.',
-        'restartRequired': 'Start {appName} opnieuw op zodat de taalwijziging van kracht wordt.',
+        'restartRequired': 'Start {appName} opnieuw op zodat de wijzigingen van kracht worden.',
         'titleError': 'Fout',
         'titleUpdates': 'Updates',
         'titleRestart': 'Opnieuw opstarten vereist',
@@ -763,6 +803,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'De downloadmap openen',
         'doNothing': 'Niets doen',
         'languageLabel': 'Taal',
+        'themeLabel': 'Thema',
+        'themeSystem': 'Systeem (standaard)',
+        'themeLight': 'Licht',
+        'themeDark': 'Donker',
     },
 
     # arabo
@@ -786,7 +830,7 @@ _TRANSLATIONS = {
         'setupCompleteMsg': 'اكتمل كل شيء، يمكنك البدء الآن!',
         'confirmExitTitle': 'تأكيد الخروج',
         'confirmExitMsg': 'هناك عملية تنزيل جارية. هل تريد الخروج فعلاً؟ سيتم إيقافها.',
-        'restartRequired': 'أعد تشغيل {appName} لتفعيل تغيير اللغة.',
+        'restartRequired': 'أعد تشغيل {appName} لتفعيل التغييرات.',
         'titleError': 'خطأ',
         'titleUpdates': 'التحديثات',
         'titleRestart': 'إعادة التشغيل مطلوبة',
@@ -832,6 +876,10 @@ _TRANSLATIONS = {
         'doOpenFolder': 'فتح مجلد التنزيلات',
         'doNothing': 'عدم القيام بأي شيء',
         'languageLabel': 'اللغة',
+        'themeLabel': 'المظهر',
+        'themeSystem': 'النظام (افتراضي)',
+        'themeLight': 'فاتح',
+        'themeDark': 'داكن',
     },
 }
 

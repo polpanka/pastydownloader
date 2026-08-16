@@ -445,6 +445,8 @@ if __name__ == '__main__':
     app.setApplicationName(MyText().appName)
     app.setOrganizationName(MyText().orgName)
     app.setOrganizationDomain(MyText().orgDomain)
+    if not Tools.acquireSingleInstanceLock():
+        sys.exit(0)  # un'altra istanza e' gia' in esecuzione
     Constants.applyTheme(QSettings(MyText().orgName, MyText().appName).value('theme') or Constants.THEME_SYSTEM)
     window = Pasty()
     sys.exit(app.exec())

@@ -2,8 +2,8 @@ class Constants:
     # versione dell'app: da tenere allineata a mano con pastylink all'url .../api/checkUpdates/
     # sul server (vedi MyText.checkUpdates), che e' il file confrontato per
     # sapere se c'e' un aggiornamento disponibile (vedi Pasty.checkUpdates)
-    APP_VERSION = '1.0'
-    APP_VERSION_DATE = '2026.08.15'
+    APP_VERSION = '1.1'
+    APP_VERSION_DATE = '2026.08.16'
 
     # colors
     COLOR_BLUE              = '#004e63'

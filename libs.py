@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QFile, QTextStream, QIODevice, QSettings, QStandardPaths
+from PySide6.QtCore import QFile, QTextStream, QIODevice, QSettings, QStandardPaths, QLockFile
 from PySide6.QtGui import QClipboard
 from testi import MyText
 from constants import Constants
@@ -136,6 +136,24 @@ class Tools():
         path = os.path.join(base, 'yt-dlp')
         os.makedirs(path, exist_ok=True)
         return path
+
+    # tenuto vivo per tutta la sessione: se questo oggetto venisse
+    # garbage-collected il lock si rilascerebbe subito
+    _singleInstanceLock = None
+
+    # Impedisce che un utente impaziente (es. doppio click ripetuto sull'exe
+    # mentre le dipendenze si scaricano al primo avvio, specialmente lento su
+    # Windows tra autoestrazione onefile e download di ffmpeg/yt-dlp) avvii
+    # piu' istanze in parallelo
+    @classmethod
+    def acquireSingleInstanceLock(cls):
+        base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        os.makedirs(base, exist_ok=True)
+        lock = QLockFile(os.path.join(base, 'instance.lock'))
+        if not lock.tryLock(100):
+            return False
+        cls._singleInstanceLock = lock
+        return True
 
     # Elenca le versioni di yt-dlp scaricate e con un binario utilizzabile su disco,
     # ordinate dalla piu' vecchia alla piu' recente

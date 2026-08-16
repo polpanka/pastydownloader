@@ -113,10 +113,13 @@ class AsyncWorker(QObject):
         return result
 
     def onSizeProgress(self, bytesWritten):
+        if not self.downloadStarted:
+            self.downloadStarted = True
+            self.setInDownload()
         self.sizeUpdate.emit(self.rowId, Tools.formatSize(bytesWritten))
 
     async def runDownload(self):
-        self.setInDownload()
+        self.downloadStarted = False
         try:
             url = self.pastedUrl.getUrl()
             saveAs = self.pastedUrl.getSaveAs()

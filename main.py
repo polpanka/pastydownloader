@@ -379,6 +379,10 @@ class Pasty(QMainWindow):
             self.setStatusBar(MyText().internetError, 0) # persistente, non a scomparsa: resta offline finche' non torna la connessione
             return False
         ffmpeg = Tools.checkFFmpeg()
+        if not ffmpeg:
+            self.resetUi()
+            self.showInstallFailedPopup()
+            return False
         if not self.checkDownloadFolder():
             self.resetUi()
             return False

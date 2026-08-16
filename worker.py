@@ -13,6 +13,8 @@ class AsyncWorker(QObject):
     finished = Signal()
     progress = Signal(str, int)
     sizeUpdate = Signal(int, str)
+    gridStateUpdate = Signal(int, str, str)   # rowId, stateText, tooltip
+    gridSaveAsUpdate = Signal(int, str)       # rowId, saveAs
     settings = QSettings(MyText().orgName, MyText().appName)
     appParent = None
     gridParent = None
@@ -30,22 +32,36 @@ class AsyncWorker(QObject):
         self.gridParent = appParent.pastyGrid
         self.rowsToDownload = rows
         self.ffmpeg = ffmpeg
+        # auto-connesso qui (non da chi crea AsyncWorker): Qt risolve da solo
+        # Direct vs Queued in base al thread di chi emette rispetto a questo
+        # oggetto (creato sempre nel thread GUI) - quando runAllUrls() gira
+        # sul threading.Thread di background la chiamata arriva comunque nel
+        # thread giusto, mentre nei test che chiamano runAllUrls() in modo
+        # sincrono (stesso thread) resta una chiamata diretta immediata
+        self.gridStateUpdate.connect(self._applyGridState)
+        self.gridSaveAsUpdate.connect(self._applyGridSaveAs)
 
-    def setBothStates(self, stateText, statusCode, tooltip=''):
-        self.gridParent.setCellState(self.rowId, stateText, tooltip)
-        if statusCode != None:
-            self.gridParent.setCellStatusCode(self.rowId, statusCode if statusCode != '' else stateText)
+    def _applyGridState(self, rowId, stateText, tooltip):
+        self.gridParent.setCellState(rowId, stateText, tooltip)
+        self.gridParent.setCellStatusCode(rowId, stateText)
+
+    def _applyGridSaveAs(self, rowId, saveAs):
+        self.gridParent.setCellSaveAs(rowId, saveAs)
+
+    def setBothStates(self, stateText, tooltip=''):
+        # emesso, mai chiamato direttamente sulla griglia
+        self.gridStateUpdate.emit(self.rowId, stateText, tooltip)
 
     def isStopped(self):
         return self.appParent.stop
 
     def setInDownload(self):
         self.progress.emit('type_download', self.rowId)
-        self.setBothStates(self.gridParent.STATUS_CODE_DOWNLOADING, '')
+        self.setBothStates(self.gridParent.STATUS_CODE_DOWNLOADING)
 
     def setInConvertion(self):
         self.progress.emit('type_convert', self.rowId)
-        self.setBothStates(self.gridParent.STATUS_CODE_CONVERTING, '')
+        self.setBothStates(self.gridParent.STATUS_CODE_CONVERTING)
 
     def allProcessesFinished(self):
         self.finished.emit()
@@ -78,7 +94,7 @@ class AsyncWorker(QObject):
                 Tools.consoleLogs("Error: generic #0 - " + str(err))
                 if Tools.isDevMode():
                     traceback.print_exc()
-                self.setBothStates(self.gridParent.STATUS_CODE_ERROR, '', 'Unexpected crush #0')
+                self.setBothStates(self.gridParent.STATUS_CODE_ERROR, 'Unexpected crush #0')
         self.allProcessesFinished()
 
     async def manageSingleUrl(self):
@@ -89,7 +105,7 @@ class AsyncWorker(QObject):
             if Tools.isDevMode():
                 traceback.print_exc()
             results = [self.gridParent.STATUS_CODE_ERROR, 'Unexpected crush #1']
-        self.setBothStates(results[0], '', results[1])
+        self.setBothStates(results[0], results[1])
 
     async def runSingleUrl(self):
         Tools.consoleLogs("\nRunning url: " + self.pastedUrl.getUrl())
@@ -108,7 +124,7 @@ class AsyncWorker(QObject):
         if result[0] == self.gridParent.STATUS_CODE_COMPLETED and self.isToKeepOnlyInMp3():
             Tools.consoleLogs("Action: Deleting")
             Tools.removeFile(videoPath)
-            self.gridParent.setCellSaveAs(self.rowId, '')
+            self.gridSaveAsUpdate.emit(self.rowId, '')
         # result
         return result
 
@@ -145,7 +161,7 @@ class AsyncWorker(QObject):
                 results = await Tools.downloadVideoByFFmpeg(self.ffmpeg, url, referer, saveAs, self.onSizeProgress, self.isStopped)
             # results
             if results and results[0] == True:
-                self.gridParent.setCellSaveAs(self.rowId, saveAs)
+                self.gridSaveAsUpdate.emit(self.rowId, saveAs)
             return self.smartReturn(results)
         except Exception as err:
             Tools.consoleLogs("Error: generic #2 - " + str(err))

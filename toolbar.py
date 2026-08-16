@@ -14,6 +14,9 @@ class Menu():
     TYPE_DOWNLOADING = 'dl'
     TYPE_NO_INTERNET = 'no-internet'
 
+    UNLOCK_CLICKS_REQUIRED = 10
+    _unlockClickCount = 0
+
     app = None
     openAction = None
     exitAction = None
@@ -68,24 +71,41 @@ class Menu():
         self.updatesAction.triggered.connect(lambda x: app.checkUpdates(True))
         self.aboutAction = QAction(MyText().actionAbout, app)
         self.aboutAction.setIcon(QIcon(":/images/help-about"))
-        self.aboutAction.triggered.connect(lambda x: app.openPopup(MyText().actionAbout,
-            '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.app.VERSION) + '<br>' + MyText().aboutWebsite + '<br><br>' + MyText().aboutPrivacy + '<br>'))
+        self.aboutAction.triggered.connect(self.onAboutClicked)
         menuHelp = menu.addMenu(MyText().menuHelp)
         menuHelp.addAction(self.updatesAction)
         menuHelp.addAction(self.aboutAction)
 
         # DEVEL
         if app.DEVEL_MODE:
-            self.populateAction = QAction('Populate', app)
-            self.populateAction.triggered.connect(self.fakePopulate)
-            self.resetLanguageAction = QAction('Reset language', app)
-            self.resetLanguageAction.triggered.connect(self.resetLanguage)
-            menuDEVEL = menu.addMenu('DEVEL')
-            menuDEVEL.addAction(self.populateAction)
-            menuDEVEL.addAction(self.resetLanguageAction)
+            self.enableDevelMenu()
 
         # other
         self.setMenuType(self.TYPE_STANDARD)
+
+    def onAboutClicked(self):
+        self._trackDevelModeUnlock()
+        self.app.openPopup(MyText().actionAbout,
+            '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.app.VERSION) + '<br>' + MyText().aboutWebsite + '<br><br>' + MyText().aboutPrivacy + '<br>')
+
+    def _trackDevelModeUnlock(self):
+        if self.app.DEVEL_MODE:
+            return  # gia' sbloccato (o gia' una build di sviluppo): niente da contare
+        self._unlockClickCount += 1
+        if self._unlockClickCount >= self.UNLOCK_CLICKS_REQUIRED:
+            self.app.enableDevelMode()
+            self.enableDevelMenu()
+
+    def enableDevelMenu(self):
+        if self.populateAction is not None:
+            return  # gia' presente
+        self.populateAction = QAction('Populate', self.app)
+        self.populateAction.triggered.connect(self.fakePopulate)
+        self.resetLanguageAction = QAction('Reset language', self.app)
+        self.resetLanguageAction.triggered.connect(self.resetLanguage)
+        menuDEVEL = self.app.menuBar().addMenu('DEVEL')
+        menuDEVEL.addAction(self.populateAction)
+        menuDEVEL.addAction(self.resetLanguageAction)
 
     def closeAll(self):
         Tools.consoleLogs("Closing application")

@@ -9,6 +9,9 @@ __pycache__
 .claude
 .idea/
 
+# rigenerato ad ogni build da resources.qrc (pyside6-rcc)
+resources.py
+
 # Node artifact files
 node_modules/
 dist/

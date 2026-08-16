@@ -18,7 +18,8 @@ AsyncWorker.runAllUrls, che gira gia' in un thread separato da quello grafico.
 La maggior parte di questi test quindi non tocca la rete per il solo incolla;
 la toccano invece i test che costruiscono un PastedUrl direttamente (simulando
 cosa succede al momento dello scaricamento). Eccezioni che scaricano per
-davvero (poco, file piccoli): YtDlpDirectDownloadTest, NonAacAudioDownloadTest.
+davvero (poco, file piccoli): YtDlpDirectDownloadTest, NonAacAudioDownloadTest,
+FullMultiTrackM3u8DownloadTest.
 
 Uso gli stessi url (o dello stesso tipo) presenti in toolbar.py -> Menu.fakePopulate,
 il pannello "Populate" visibile in DEVEL_MODE.
@@ -28,9 +29,9 @@ aiohttp, psutil, requests - nessuna libreria di test aggiuntiva, solo unittest
 della standard library):
     python3 -m unittest discover -s tests
 
-Alcuni test scaricano file grossi/lenti (es. l'intero manifest multi-traccia
-con sottotitoli, ~240MB): sono raggruppati in classi disabilitate di default
-(vedi RUN_SLOW_TESTS_ENV_VAR piu' sotto) e si attivano solo esplicitamente:
+Nessun test e' attualmente cosi' grosso/lento da dover essere disabilitato di
+default, ma l'infrastruttura resta pronta per il caso servisse in futuro (vedi
+RUN_SLOW_TESTS_ENV_VAR piu' sotto):
     PASTY_RUN_SLOW_TESTS=1 python3 -m unittest discover -s tests
 """
 
@@ -78,17 +79,19 @@ YOUTUBE_URL = 'https://www.youtube.com/watch?v=jNQXAC9IVRw'
 # Scelti perche' sono fixture di test pensate per restare stabili nel tempo
 PDF_URL = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
 HTML_PAGE_URL = 'https://example.com/'
-IMAGE_URL = 'https://httpbin.org/image/jpeg'
+IMAGE_URL = 'https://placehold.co/64x64.jpg'
 # pagina di news con un video incorporato, non riconoscibile in anticipo
 # (non e' un url httpasty://): da toolbar.py -> fakePopulate, dove e'
 # gia' commentata "# yt-dlp"
 GENERIC_YTDLP_PAGE_URL = 'https://www.cbsnews.com/video/becker-hardly-a-week-goes-by-without-trump-administration-threatening-election-official-arrests/'
-# manifest HLS master con traccia audio separata (GENERIC_YTDLP_PAGE_URL punta
-# proprio qui dietro le quinte): #EXT-X-STREAM-INF referenzia un AUDIO group a
-# parte, quindi serve che ffmpeg (non yt-dlp) sappia associare le due tracce da
-# solo leggendo il manifest. Il server lo serve con content-type
-# "application/x-mpegURL" (non minuscolo) - usato apposta per coprire quel caso
-MULTI_TRACK_M3U8_URL = 'https://prod.vodvideo.cbsnews.com/cbsnews/vr/hls/4685365_hls/master.m3u8'
+# manifest HLS master con traccia audio E sottotitoli separati (3 varianti
+# video, ciascuna con il proprio AUDIO group e SUBTITLES group referenziati da
+# #EXT-X-STREAM-INF): serve che ffmpeg (non yt-dlp) sappia associare le tracce
+# da solo leggendo il manifest. Fixture pubblica pensata apposta per questo
+# tipo di test (usata anche dalla suite di test di hls.js) - video breve
+# (~60s, ~2-3MB alla risoluzione migliore), a differenza del manifest reale
+# usato in precedenza (~240MB, ~11 minuti)
+MULTI_TRACK_M3U8_URL = 'https://mtoczko.github.io/hls-test-streams/test-group/playlist.m3u8'
 # audio mp3 (non aac) diretto: il bitstream filter aac_adtstoasc, pensato per
 # l'audio aac-adts tipico dell'HLS, rifiuta di aprire il file di output se il
 # codec e' un altro (qui mp3) - piccolo (1.5MB), ok per la suite normale
@@ -627,9 +630,9 @@ class PasteMultiTrackM3u8Test(unittest.TestCase):
     """Un manifest HLS master incollato direttamente (non una pagina che lo
     nasconde) con audio su una traccia separata (EXT-X-MEDIA + AUDIO group
     referenziato da EXT-X-STREAM-INF): qui e' ffmpeg stesso, non yt-dlp, a
-    dover leggere il manifest e associare le due tracce. Il file reale e'
-    grande (~240MB, 11 minuti): verifichiamo solo la classificazione, non il
-    download completo (vedi FullMultiTrackM3u8DownloadTest per quello)."""
+    dover leggere il manifest e associare le due tracce. Qui verifichiamo solo
+    la classificazione, non il download completo (vedi
+    FullMultiTrackM3u8DownloadTest per quello)."""
 
     def setUp(self):
         if not Tools.hasInternetConnection():
@@ -664,13 +667,11 @@ class PasteMultiTrackM3u8Test(unittest.TestCase):
         self.assertFalse(hasSubtitle)
 
 
-@unittest.skipUnless(RUN_SLOW_TESTS, 'test lento e pesante (~240MB, ~1 minuto): imposta %s=1 per eseguirlo' % RUN_SLOW_TESTS_ENV_VAR)
 class FullMultiTrackM3u8DownloadTest(unittest.TestCase):
     """Come PasteMultiTrackM3u8Test, ma scarica per intero il manifest master
-    (~240MB, ~1 minuto) invece di limitarsi alla classificazione: verifica che
-    il file finale abbia davvero la risoluzione migliore, l'audio e i
-    sottotitoli come traccia soft. Disabilitato di default, da attivare
-    esplicitamente quando serve un controllo end-to-end."""
+    (~2-3MB, pochi secondi) invece di limitarsi alla classificazione: verifica
+    che il file finale abbia davvero la risoluzione migliore, l'audio e i
+    sottotitoli come traccia soft."""
 
     def setUp(self):
         if not Tools.hasInternetConnection():

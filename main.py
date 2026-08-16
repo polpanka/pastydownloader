@@ -22,8 +22,8 @@ Funzionalita':
 """
 
 import os, sys, time, threading
-from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QVBoxLayout, QWidget
-from PySide6.QtCore import QSettings, QTimer, Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
+from PySide6.QtCore import QSettings, QTimer, Signal, Qt
 from PySide6.QtGui import QIcon
 from libs import Tools
 from testi import MyText
@@ -259,6 +259,35 @@ class Pasty(QMainWindow):
     
     def openPopup(self, title, msg):
         QMessageBox.about(self, title, msg)
+
+    # popup About dedicato
+    def openAboutPopup(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle(MyText().actionAbout)
+
+        iconLabel = QLabel()
+        iconLabel.setPixmap(QIcon(MyText().pasty_favicon).pixmap(64, 64))
+        iconLabel.mousePressEvent = lambda event: self.menu._trackDevelModeUnlock()
+
+        textLabel = QLabel('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br><br>' + MyText().aboutPrivacy + '<br>')
+        textLabel.setTextFormat(Qt.RichText)
+        textLabel.setOpenExternalLinks(True)
+        textLabel.setWordWrap(True)
+        textLabel.setMaximumWidth(320) # x mandare a capo testo tr lungo
+
+        contentRow = QHBoxLayout()
+        contentRow.addWidget(iconLabel, 0, Qt.AlignTop)
+        contentRow.addWidget(textLabel, 1)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+        buttons.accepted.connect(dialog.accept)
+
+        layout = QVBoxLayout()
+        layout.addLayout(contentRow)
+        layout.addWidget(buttons)
+
+        dialog.setLayout(layout)
+        dialog.exec()
 
     def checkDownloadFolder(self):
         path = Tools.downloadPath()

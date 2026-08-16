@@ -109,8 +109,7 @@ class PastyGrid():
     
     def setHiddenColumns(self):
         for i, visible in enumerate([item['visible'] for item in self.COLUMNS_TABLE]):
-            if not visible:
-                self.grid.setColumnHidden(i, True)
+            self.grid.setColumnHidden(i, not visible)
 
     def getCell(self, rowId, colId):
         return self.grid.item(rowId, colId).text()

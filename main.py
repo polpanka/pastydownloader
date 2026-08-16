@@ -177,6 +177,14 @@ class Pasty(QMainWindow):
         else:
             threading.Thread(target=self.ffmpegInstaller.ensureInstalled, daemon=True).start()
 
+    def enableDevelMode(self):
+        if self.DEVEL_MODE:
+            return
+        self.DEVEL_MODE = True
+        self.pastyGrid.initColumns(True)
+        self.pastyGrid.resizeEvent(self.width())
+        self.setStatusBar('DEVEL_MODE enabled', 5)
+
     def onFfmpegReady(self, success):
         if not success:
             self.showInstallFailedPopup()
@@ -349,7 +357,7 @@ class Pasty(QMainWindow):
         pasted = Tools.stripBom(Tools.pasteFromClipboard())
         tokens = [pasted] if Tools.isM3u8ManifestText(pasted) else pasted.split()
         count, hasInvalidPastylink = self.pastyGrid.importUrls(tokens)
-        if not self.DEVEL_MODE and count:
+        if not Tools.isDevMode() and count:
             Tools.saveStatsUrls()
         Tools.consoleLogs("Pasted %s urls, %s valid" % (len(tokens), count))
         if hasInvalidPastylink:

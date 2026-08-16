@@ -441,5 +441,6 @@ if __name__ == '__main__':
     app.setApplicationName(MyText().appName)
     app.setOrganizationName(MyText().orgName)
     app.setOrganizationDomain(MyText().orgDomain)
+    Constants.applyTheme(QSettings(MyText().orgName, MyText().appName).value('theme') or Constants.THEME_SYSTEM)
     window = Pasty()
     sys.exit(app.exec())

@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QG
 from PySide6.QtCore import QSettings
 from libs import Tools
 from testi import MyText
+from constants import Constants
 
 class SettingsDialog(QDialog):
 
@@ -13,9 +14,11 @@ class SettingsDialog(QDialog):
     formGroupBox1 = None
     formGroupBox2 = None
     formGroupBox3 = None
+    formGroupBox4 = None
     language = None
     dlFolder = None
     ytConversion = None
+    theme = None
     buttonBox = None
     settings = QSettings(MyText().orgName, MyText().appName)
 
@@ -29,6 +32,7 @@ class SettingsDialog(QDialog):
         self.addForm1()
         self.addForm2()
         self.addForm3()
+        self.addForm4()
         self.addExitButtons()
 
         # creating a vertical layout
@@ -37,6 +41,7 @@ class SettingsDialog(QDialog):
         mainLayout.addWidget(self.formGroupBox1)
         mainLayout.addWidget(self.formGroupBox2)
         mainLayout.addWidget(self.formGroupBox3)
+        mainLayout.addWidget(self.formGroupBox4)
         mainLayout.addWidget(self.buttonBox)
         self.setLayout(mainLayout)
 
@@ -93,6 +98,21 @@ class SettingsDialog(QDialog):
         layout.addRow(self.doOpen)
         self.formGroupBox3.setLayout(layout)
 
+    # riquadro "Theme": System (default, segue il sistema operativo) / Light / Dark
+    def addForm4(self):
+        self.formGroupBox4 = QGroupBox(MyText().themeLabel)
+        self.theme = QComboBox()
+        themeOpts = [(MyText().themeSystem, Constants.THEME_SYSTEM), (MyText().themeLight, Constants.THEME_LIGHT), (MyText().themeDark, Constants.THEME_DARK)]
+        for k, v in themeOpts:
+            self.theme.addItem(k, v)
+        current = self.settings.value('theme') or Constants.THEME_SYSTEM
+        indexFound = self.theme.findData(current)
+        if indexFound != -1:
+            self.theme.setCurrentIndex(indexFound)
+        layout = QFormLayout()
+        layout.addRow(self.theme)
+        self.formGroupBox4.setLayout(layout)
+
     # pulsanti OK/Annulla in fondo
     def addExitButtons(self):
         self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -115,8 +135,12 @@ class SettingsDialog(QDialog):
         # open folder
         settingOpen = self.doOpen.currentData()
         self.settings.setValue('doOpen', settingOpen)
-        Tools.consoleLogs("Settings saved: language=%s downloadPath=%s ytConversion=%s doOpen=%s" % (settingLang, settingDL, settingYT, settingOpen))
-        if languageChanged:
+        # theme
+        settingTheme = self.theme.currentData()
+        themeChanged = settingTheme != (self.settings.value('theme') or Constants.THEME_SYSTEM)
+        self.settings.setValue('theme', settingTheme)
+        Tools.consoleLogs("Settings saved: language=%s downloadPath=%s ytConversion=%s doOpen=%s theme=%s" % (settingLang, settingDL, settingYT, settingOpen, settingTheme))
+        if languageChanged or themeChanged:
             QMessageBox.information(self, MyText().titleRestart, MyText().restartRequired)
         return self.accept()
     

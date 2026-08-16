@@ -177,6 +177,17 @@ class Tools():
                 digest.update(chunk)
         return digest.hexdigest()
 
+    # kwargs extra per nascondere la finestra console che Windows aprirebbe
+    # altrimenti per ogni processo figlio (ffmpeg/yt-dlp), dato che l'app
+    # stessa e' windowed (nessuna console propria) - CREATE_NO_WINDOW esiste
+    # solo nel modulo subprocess su Windows, per questo il controllo di
+    # piattaforma va fatto PRIMA di leggere l'attributo
+    @staticmethod
+    def _noConsoleWindowKwargs():
+        if platform.system() == 'Windows':
+            return {'creationflags': subprocess.CREATE_NO_WINDOW}
+        return {}
+
     # args e' una lista di argomenti (mai una stringa shell): evita che un
     # url incollato dall'utente con caratteri speciali (", `, $(...), ;) possa
     # spezzare fuori dalle virgolette ed eseguire comandi di shell arbitrari.
@@ -187,7 +198,7 @@ class Tools():
     @staticmethod
     def runCommand(args, timeout=None, isStoppedFn=None):
         process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                    encoding='utf-8', errors='replace')
+                                    encoding='utf-8', errors='replace', **Tools._noConsoleWindowKwargs())
         interruptedHolder = {'interrupted': False}
         watcher = None
         if timeout or isStoppedFn:
@@ -388,21 +399,30 @@ class Tools():
     YTDLP_MAX_ATTEMPTS = 3
     YTDLP_RETRY_DELAY_SECONDS = 2
 
+    # Grace period concesso dopo il SIGTERM prima di passare al SIGKILL: un
+    # processo bloccato in I/O (es. su una connessione di rete che non risponde
+    # piu') puo' ignorare il SIGTERM, lasciando altrimenti process.wait() in
+    # attesa indefinita dopo uno Stop utente o un timeout
+    TERMINATE_GRACE_SECONDS = 3
+
     @staticmethod
     def _terminateProcessTree(pid):
         try:
             parent = psutil.Process(pid)
         except psutil.NoSuchProcess:
             return
-        for child in parent.children(recursive=True):
+        procs = parent.children(recursive=True) + [parent]
+        for p in procs:
             try:
-                child.terminate()
+                p.terminate()
             except psutil.NoSuchProcess:
                 pass
-        try:
-            parent.terminate()
-        except psutil.NoSuchProcess:
-            pass
+        _, stillAlive = psutil.wait_procs(procs, timeout=Tools.TERMINATE_GRACE_SECONDS)
+        for p in stillAlive:
+            try:
+                p.kill()
+            except psutil.NoSuchProcess:
+                pass
 
     @staticmethod
     def _spawnWithStopWatcher(command, isStoppedFn=None):
@@ -413,8 +433,14 @@ class Tools():
         alla fine naturale del processo. 'command' e' sempre una lista di
         argomenti (mai una stringa shell), cosi' un url con caratteri speciali
         non puo' spezzare fuori dalle virgolette ed eseguire comandi arbitrari."""
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    encoding='utf-8', errors='replace', bufsize=1)
+        # stderr=STDOUT (non PIPE separata): se lette solo a fine processo,
+        # tante righe su stderr (es. warning ripetuti di
+        # ffmpeg su uno stream instabile/corrotto) possono riempire il buffer
+        # del pipe del SO e bloccare il processo figlio in scrittura, che a
+        # sua volta blocca per sempre il ciclo di lettura di stdout qui sotto
+        # (deadlock classico dei subprocess con piu' pipe non drenate insieme)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    encoding='utf-8', errors='replace', bufsize=1, **Tools._noConsoleWindowKwargs())
         stoppedHolder = {'stopped': False}
         watcher = None
         if isStoppedFn:
@@ -445,22 +471,28 @@ class Tools():
         unblocks the stdout read via EOF."""
         process, stoppedHolder, watcher = Tools._spawnWithStopWatcher(command, isStoppedFn)
         lastUpdate = 0
+        # righe non di progresso: con stderr ora unita a stdout (vedi
+        # _spawnWithStopWatcher) sono l'unico posto dove finiscono i
+        # warning/errori veri di ffmpeg - servono a _ffmpegSucceeded e al
+        # messaggio d'errore in caso di fallimento
+        outputLines = []
         for line in process.stdout:
             line = line.strip()
-            if onProgress and line in ('progress=continue', 'progress=end'):
-                now = time.time()
-                if now - lastUpdate >= Tools.PROGRESS_THROTTLE_SECONDS:
-                    lastUpdate = now
-                    size = Tools.getSizeInByte(saveAs)
-                    if size:
-                        onProgress(size)
+            if line in ('progress=continue', 'progress=end'):
+                if onProgress:
+                    now = time.time()
+                    if now - lastUpdate >= Tools.PROGRESS_THROTTLE_SECONDS:
+                        lastUpdate = now
+                        size = Tools.getSizeInByte(saveAs)
+                        if size:
+                            onProgress(size)
+            elif line:
+                outputLines.append(line)
         process.stdout.close()
         process.wait()
         if watcher:
             watcher.join(timeout=1)
-        stderr = process.stderr.read()
-        process.stderr.close()
-        return stoppedHolder['stopped'], process.returncode, stderr
+        return stoppedHolder['stopped'], process.returncode, '\n'.join(outputLines)
 
     # prefisso usato per riconoscere le righe di progresso generate apposta da
     # yt-dlp (vedi downloadVideoByYtDlp): evita di dover fare parsing fragile
@@ -488,9 +520,6 @@ class Tools():
         lastUpdate = 0
         totalFromFinishedPhases = 0
         bytesSoFarInCurrentPhase = 0
-        # righe non di progresso (es. "[info] Downloading 1 format(s): 398+251"):
-        # utili solo se il comando fallisce, per capire cosa yt-dlp ha tentato
-        # di fare - vedi downloadVideoByYtDlp, che le allega al messaggio d'errore
         infoLines = []
         for line in process.stdout:
             line = line.strip()
@@ -515,9 +544,7 @@ class Tools():
         process.wait()
         if watcher:
             watcher.join(timeout=1)
-        stderr = process.stderr.read()
-        process.stderr.close()
-        return stoppedHolder['stopped'], process.returncode, stderr, infoLines
+        return stoppedHolder['stopped'], process.returncode, infoLines
 
     @staticmethod
     def _ffmpegSucceeded(returncode, saveAs, stderr):
@@ -710,7 +737,8 @@ class Tools():
     def logYtDlpVersion(ytdlp):
         try:
             result = subprocess.run([ytdlp, '--version'], stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE, timeout=10, encoding='utf-8', errors='replace')
+                                     stderr=subprocess.PIPE, timeout=10, encoding='utf-8', errors='replace',
+                                     **Tools._noConsoleWindowKwargs())
             version = result.stdout.strip() if result.returncode == 0 else 'unknown'
         except Exception:
             version = 'unknown'
@@ -731,7 +759,8 @@ class Tools():
                 return False
             result = subprocess.run([ytdlp, '--simulate', '--no-warnings', '--no-playlist', url],
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     timeout=timeout, encoding='utf-8', errors='replace')
+                                     timeout=timeout, encoding='utf-8', errors='replace',
+                                     **Tools._noConsoleWindowKwargs())
             return result.returncode == 0
         except Exception as err:
             cls.consoleLogs("Error: yt-dlp simulate - " + str(err))
@@ -757,17 +786,17 @@ class Tools():
             loop = asyncio.get_running_loop()
             errorDetail = ''
             for attempt in range(cls.YTDLP_MAX_ATTEMPTS):
-                stopped, returncode, stderr, infoLines = await loop.run_in_executor(None, Tools._runYtDlpWithProgress, command, onProgress, isStoppedFn)
+                stopped, returncode, infoLines = await loop.run_in_executor(None, Tools._runYtDlpWithProgress, command, onProgress, isStoppedFn)
                 if stopped:
                     return [None, 'Stop forced by the user']
                 if returncode == 0 and os.path.exists(saveAs) and os.path.getsize(saveAs) > cls.MIN_VALID_OUTPUT_SIZE_BYTES:
                     return [True, Tools.getSizeDynamic(saveAs)]
-                # infoLines: righe "[info]"/"[youtube]" ecc. di yt-dlp su stdout
-                # (es. quali formati ha scelto) - da sole non arrivano mai nello
-                # stderr, ma nel tooltip d'errore sono spesso l'indizio decisivo
-                # (es. quale formato/client ha tentato) per capire un fallimento
-                # senza dover rilanciare yt-dlp a mano con -v
-                errorDetail = '\n'.join(infoLines[-5:] + ([stderr] if stderr else []))
+                # infoLines: righe "[info]"/"[youtube]" ecc. di yt-dlp (stdout ed
+                # errori veri, uniti - vedi _spawnWithStopWatcher) - nel tooltip
+                # d'errore sono spesso l'indizio decisivo (es. quale formato/
+                # client ha tentato) per capire un fallimento senza dover
+                # rilanciare yt-dlp a mano con -v
+                errorDetail = '\n'.join(infoLines[-5:])
                 if attempt < cls.YTDLP_MAX_ATTEMPTS - 1:
                     Tools.consoleLogs('yt-dlp attempt %d/%d failed, retrying: %s' % (attempt + 1, cls.YTDLP_MAX_ATTEMPTS, errorDetail))
                     await asyncio.sleep(cls.YTDLP_RETRY_DELAY_SECONDS)

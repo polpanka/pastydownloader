@@ -17,6 +17,12 @@ PastyDownloader is a fast, no-nonsense desktop app for grabbing video and audio 
 - **Cross-platform** — Windows, macOS, and Linux (AppImage included)
 - **[pasty.link](https://pasty.link) integration** — send links straight from the website into the app with one click
 
+## Requirements
+
+- **Windows** — Windows 10 (64-bit) or later
+- **macOS** — 13 (Ventura) or later
+- **Linux** — a distro with glibc 2.35+ (e.g. Ubuntu 22.04+, Debian 12+, Fedora 36+, RHEL 9+)
+
 ## Why PastyDownloader
 
 Completely safe: no virus, no ads, no user tracking. No accounts, no browser extensions fighting for your attention. Just one lightweight, free app that does a single job — downloading — and does it well.

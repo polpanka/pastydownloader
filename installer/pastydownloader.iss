@@ -3,8 +3,9 @@
 ;
 ; USO
 ; ---
-; 1. Compila prima l'app in modalita' onedir (non onefile) con PyInstaller:
-;      pyinstaller main_win_installer.spec
+; 1. Compila prima l'app in modalita' onedir (non onefile) con PyInstaller,
+;    lanciato dalla root del progetto:
+;      pyinstaller installer/main_win_installer.spec
 ;    (NON main_win.spec, che e' onefile e produce un singolo .exe - questo
 ;    script si aspetta invece dist\PastyDownloader\PastyDownloader.exe con
 ;    la cartella _internal accanto, vedi main_win_installer.spec)

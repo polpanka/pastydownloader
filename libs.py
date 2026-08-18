@@ -963,15 +963,6 @@ class Tools():
             return False
 
     @classmethod
-    def saveStatsUrls(cls):
-        url = MyText().saveStats
-        new_data = {
-            "ver": cls.getVersion(),
-            "os": cls.getOs(),
-        }
-        cls.sendRequestPost(url, new_data)
-
-    @classmethod
     def sendRequestGet(cls, url, timeout = 10):
         try:
             cls.consoleLogs("Sent 'get' request to " + url)

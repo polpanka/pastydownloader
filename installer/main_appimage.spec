@@ -9,7 +9,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['main.py'],
+    ['../main.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -45,7 +45,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="resources/favicon.ico",
+    icon="../resources/favicon.ico",
 )
 coll = COLLECT(
     exe,

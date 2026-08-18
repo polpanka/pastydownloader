@@ -4,7 +4,7 @@ Test di funzionamento di base per l'incolla-e-riconosci di PastyDownloader:
 - URL diretto a un mp4
 - manifest HLS (#EXTM3U) incollato per intero, con e senza BOM UTF-8
 - URL YouTube
-- media non-video: pdf, pagina html, immagine (devono restare sul downloader generico)
+- media non-video: pdf, immagine (devono restare sul downloader generico); pagina html (mai salvata)
 - fallback yt-dlp su pagine generiche non appartenenti alle piattaforme note
 - url httpasty://<base64> generati dal sito pasty.link
 
@@ -75,9 +75,11 @@ M3U8_SOURCE_URL = 'https://ms-027.host-cdn.net/hls/llzefbb2x4hnmttc2rvmpoooq7hxq
 # YouTube (di proprieta' di YouTube stesso), praticamente permanente e stabile
 YOUTUBE_URL = 'https://www.youtube.com/watch?v=jNQXAC9IVRw'
 
-# media non-video: devono finire tutti sul downloader generico, non su ffmpeg/yt-dlp.
-# Scelti perche' sono fixture di test pensate per restare stabili nel tempo
+# media non-video: pdf e immagine finiscono sul downloader generico, non su
+# ffmpeg/yt-dlp. Scelti perche' sono fixture di test pensate per restare
+# stabili nel tempo
 PDF_URL = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+# usata solo per verificare che il downloader generico rifiuti l'html, vedi GenericDownloadRejectsHtmlTest
 HTML_PAGE_URL = 'https://example.com/'
 IMAGE_URL = 'https://placehold.co/64x64.jpg'
 # pagina di news con un video incorporato, non riconoscibile in anticipo
@@ -542,15 +544,16 @@ class InstallFailedPopupTest(unittest.TestCase):
 
 
 class PasteGenericMediaTest(unittest.TestCase):
-    """pdf, pagina html, immagine: nessuno dei tre e' un video. Devono finire
-    tutti sul downloader generico (mai scambiati per video da ffmpeg - vedi
-    il caso immagine, che ffmpeg saprebbe aprire come 'video' di 1 frame -
-    e mai tentati con yt-dlp)."""
+    """pdf, immagine: nessuno dei due e' un video. Devono finire entrambi sul
+    downloader generico (mai scambiati per video da ffmpeg - vedi il caso
+    immagine, che ffmpeg saprebbe aprire come 'video' di 1 frame - e mai
+    tentati con yt-dlp). La pagina html e' un caso a parte, vedi
+    GenericDownloadRejectsHtmlTest: non deve mai essere salvata, altrimenti
+    l'utente crederebbe di aver scaricato un video che in realta' non c'e'."""
 
     # media -> (url, estensione attesa, firma/contenuto atteso all'inizio del file)
     CASES = {
         'pdf': (PDF_URL, '.pdf', b'%PDF'),
-        'html': (HTML_PAGE_URL, '.html', b'<'),
         'image': (IMAGE_URL, '.jpeg', b'\xff\xd8\xff'),  # magic number JPEG
     }
 
@@ -593,6 +596,27 @@ class PasteGenericMediaTest(unittest.TestCase):
                 with open(saveAs, 'rb') as f:
                     content = f.read(16)
                 self.assertTrue(content.startswith(magic), '%s: contenuto inatteso %r' % (name, content))
+
+
+class GenericDownloadRejectsHtmlTest(unittest.TestCase):
+    """Un utente che incolla un link (es. un video "protetto" che yt-dlp non
+    riesce a estrarre) non deve mai ritrovarsi con una pagina html salvata al
+    posto del video, scambiandola per un download riuscito: il downloader
+    generico deve rifiutare esplicitamente il content-type text/html, senza
+    scrivere alcun file."""
+
+    def setUp(self):
+        self.saveAs = os.path.join(Tools.getTempDirectory(), 'pasty_test_html_rejected.html')
+
+    def tearDown(self):
+        Tools.removeFile(self.saveAs)
+
+    def test_html_response_is_not_saved_and_is_reported_as_failure(self):
+        if not Tools.hasInternetConnection():
+            self.skipTest('nessuna connessione a internet')
+        result = asyncio.run(Tools.downloadAsyncGeneric(HTML_PAGE_URL, self.saveAs))
+        self.assertFalse(result[0], result)
+        self.assertFalse(os.path.exists(self.saveAs))
 
 
 class PasteGenericYtDlpFallbackTest(unittest.TestCase):

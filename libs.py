@@ -708,6 +708,10 @@ class Tools():
                 # criptico anche se il server e la pagina sono perfettamente validi
                 async with session.get(src_url, headers={'Accept-Encoding': 'gzip, deflate'}) as resp:
                     resp.raise_for_status()  # es. 403/404: senza questo, la pagina d'errore verrebbe salvata e riportata come download riuscito
+                    responseContentType = resp.headers.get('Content-Type', '')
+                    if responseContentType.split(';')[0].strip().lower().startswith('text/html'):
+                        # una pagina html non e' mai il contenuto che l'utente vuole scaricare qui
+                        return [False, 'The content is a webpage, not a downloadable file']
                     async with aiofiles.open(saveAs, 'wb') as fd:
                         async for chunk in resp.content.iter_chunked(chunk_size):
                             await fd.write(chunk)

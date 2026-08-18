@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['main.py'],
+    ['../main.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -48,6 +48,6 @@ exe = EXE(
 app = BUNDLE(
     exe,
     name='PastyDownloader.app',
-    icon='resources/paste.icns',
+    icon='../resources/paste.icns',
     bundle_identifier=None,
 )

@@ -122,7 +122,7 @@ class FakeAppParent:
 
     def __init__(self, grid):
         self.pastyGrid = grid
-        self.DEVEL_MODE = True  # evita la POST reale di saveStatsUrls
+        self.DEVEL_MODE = True
         self.stop = False  # letto da AsyncWorker.isStopped(), usato dal watcher di Tools.runCommand
         self.lastStatus = None
 

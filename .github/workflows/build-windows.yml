@@ -34,7 +34,7 @@ jobs:
       #    usato finora, un solo file zippato
       # ------------------------------------------------------------------
       - name: Compila l'exe portatile (onefile)
-        run: pyinstaller main_win.spec
+        run: pyinstaller installer/main_win.spec
 
       - name: Verifica che l'exe portatile parta (nessun crash)
         shell: pwsh
@@ -66,7 +66,7 @@ jobs:
       #    la conversazione sul perche' un installer serve onedir, non onefile
       # ------------------------------------------------------------------
       - name: Compila la cartella onedir per l'installer
-        run: pyinstaller main_win_installer.spec
+        run: pyinstaller installer/main_win_installer.spec
 
       - name: Compila l'installer con Inno Setup
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2

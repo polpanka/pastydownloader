@@ -82,7 +82,7 @@ echo "== 2/6: rigenero resources.py con la stessa versione di PySide6 =="
 echo "== 3/6: PyInstaller (onedir) =="
 "$BUILD_DIR/venv/bin/pyinstaller" \
     --distpath "$BUILD_DIR/dist" --workpath "$BUILD_DIR/pywork" --noconfirm \
-    main_appimage.spec
+    installer/main_appimage.spec
 
 # tool ufficiali AppImage, presi dal canale "continuous" (sempre l'ultima build)
 echo "== 4/6: scarico linuxdeploy + appimagetool =="

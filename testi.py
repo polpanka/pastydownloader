@@ -889,7 +889,6 @@ class MyText():
     # api
     referers = 'https://pasty.info/other/pasty_downloader/api/referer.json'
     checkUpdates = 'https://pasty.info/other/pasty_downloader/api/checkUpdates/'
-    saveStats = 'https://pasty.info/other/pasty_downloader/api/saveStats/'
 
     # info
     appName = 'PastyDownloader'

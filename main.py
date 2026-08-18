@@ -22,9 +22,45 @@ Funzionalita':
 """
 
 import os, sys, time, threading
-from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
-from PySide6.QtCore import QSettings, QTimer, Signal, Qt
-from PySide6.QtGui import QIcon
+
+try:
+    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
+    from PySide6.QtCore import QSettings, QTimer, Signal, Qt
+    from PySide6.QtGui import QIcon
+except ImportError:
+    # Nessun toolkit grafico disponibile (tipicamente OS troppo vecchio per i
+    # binari bundlati) - niente QMessageBox possibile qui, serve un dialogo
+    # nativo del SO; se anche quello non e' disponibile va bene il solo
+    # stderr, l'app comunque non puo' partire
+    _startup_error_msg = (
+        "PastyDownloader failed to start because a required system component "
+        "could not be loaded.\n\nThis usually happens when your operating "
+        "system is too old. Please update it and try again, or get in touch "
+        "at pasty.link if the problem persists."
+    )
+    if sys.platform == "darwin":
+        import subprocess
+        # niente "\n" nel testo: un ritorno a capo letterale dentro la
+        # stringa passata a -e rischia di rompere il parsing dell'AppleScript
+        _mac_msg = _startup_error_msg.replace("\n\n", " ")
+        subprocess.run(
+            ["osascript", "-e",
+             f'display dialog "{_mac_msg}" with title "PastyDownloader" '
+             f'buttons {{"OK"}} default button "OK" with icon caution'],
+            check=False,
+        )
+    elif sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(0, _startup_error_msg, "PastyDownloader", 0x10)
+    else:
+        import shutil, subprocess
+        if shutil.which("zenity"):
+            subprocess.run(["zenity", "--error", "--title=PastyDownloader", f"--text={_startup_error_msg}"], check=False)
+        elif shutil.which("kdialog"):
+            subprocess.run(["kdialog", "--error", _startup_error_msg, "--title", "PastyDownloader"], check=False)
+    print(_startup_error_msg, file=sys.stderr)
+    sys.exit(1)
+
 from libs import Tools
 from testi import MyText
 from constants import Constants
@@ -386,8 +422,6 @@ class Pasty(QMainWindow):
         pasted = Tools.stripBom(Tools.pasteFromClipboard())
         tokens = [pasted] if Tools.isM3u8ManifestText(pasted) else pasted.split()
         count, hasInvalidPastylink = self.pastyGrid.importUrls(tokens)
-        if not Tools.isDevMode() and count:
-            Tools.saveStatsUrls()
         Tools.consoleLogs("Pasted %s urls, %s valid" % (len(tokens), count))
         if hasInvalidPastylink:
             statusMsg = MyText().msgInvalidPastylink

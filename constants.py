@@ -39,11 +39,20 @@ class Constants:
     def applyTheme(theme):
         from PySide6.QtGui import QGuiApplication
         from PySide6.QtCore import Qt
+        styleHints = QGuiApplication.styleHints()
+        # setColorScheme esiste solo da Qt/PySide6 6.8 in poi: la build
+        # ufficiale (mac/windows/linux) e' pinnata a PySide6 6.7.3 (vedi i
+        # workflow .github/workflows/build-*.yml e build-appimage.sh), quindi
+        # su quella l'attributo non c'e' - senza questo guard l'app crasha
+        # all'avvio. Se manca, si resta sul tema di sistema (comportamento
+        # implicito precedente all'introduzione della scelta in Preferenze)
+        if not hasattr(styleHints, 'setColorScheme'):
+            return
         scheme = {
             Constants.THEME_LIGHT: Qt.ColorScheme.Light,
             Constants.THEME_DARK: Qt.ColorScheme.Dark,
         }.get(theme, Qt.ColorScheme.Unknown)
-        QGuiApplication.styleHints().setColorScheme(scheme)
+        styleHints.setColorScheme(scheme)
 
     @staticmethod
     def isDarkTheme():

@@ -82,6 +82,7 @@ class PastedUrl():
         self.originalUrl = rawUrl
         decodedPastylinkUrl = Tools.decodePastylinkUrl(rawUrl) if Tools.isPastylinkUrl(rawUrl) else None
         self.isPastylink = bool(decodedPastylinkUrl)
+        self.pastylinkReferer = Tools.decodePastylinkReferer(rawUrl) if self.isPastylink else None
         if self.isPastylink:
             self.url = decodedPastylinkUrl
             self.appParent.pastyGrid.setCellUrl(self.rowId, self.url)
@@ -96,6 +97,9 @@ class PastedUrl():
 
     def getUrl(self):
         return self.url
+
+    def getPastylinkReferer(self):
+        return self.pastylinkReferer
 
     def getOriginalUrl(self):
         return self.originalUrl

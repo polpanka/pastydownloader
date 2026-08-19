@@ -372,6 +372,22 @@ class PastylinkUrlTest(unittest.TestCase):
         encoded = base64.b64encode(json.dumps({'v1': {'title': 'senza ytdlp'}}).encode()).decode().rstrip('=')
         self.assertIsNone(Tools.decodePastylinkUrl(Tools.PASTYLINK_URL_PREFIX + encoded))
 
+    def test_decode_referer_key(self):
+        # chiave opzionale 'referer' dentro 'v1', usata per i player embed che
+        # rifiutano di servire il video senza un Referer valido (es. Vimeo)
+        encoded = base64.b64encode(json.dumps(
+            {'v1': {'ytdlp': YOUTUBE_URL, 'referer': 'https://www.cinematheque.fr/'}}).encode()).decode().rstrip('=')
+        url = Tools.PASTYLINK_URL_PREFIX + encoded
+        self.assertEqual(Tools.decodePastylinkUrl(url), YOUTUBE_URL)
+        self.assertEqual(Tools.decodePastylinkReferer(url), 'https://www.cinematheque.fr/')
+
+    def test_decode_referer_missing_returns_none(self):
+        url = makePastylinkUrl(YOUTUBE_URL)
+        self.assertIsNone(Tools.decodePastylinkReferer(url))
+
+    def test_decode_referer_invalid_payload_returns_none(self):
+        self.assertIsNone(Tools.decodePastylinkReferer('httpasty://non-e-base64-valido!!!'))
+
     def test_paste_pastylink_url_is_added_to_grid_raw(self):
         pastylinkUrl = makePastylinkUrl(YOUTUBE_URL)
         with mock.patch.object(Tools, 'pasteFromClipboard', return_value=pastylinkUrl):
@@ -452,6 +468,32 @@ class PastylinkUrlTest(unittest.TestCase):
         self.assertEqual(calledUrl, YOUTUBE_URL)  # non l'url httpasty:// grezzo
         self.assertEqual(worker.pastedUrl.getEngine(), PastedUrl.URL_TYPE_YT_DLP)
         self.assertEqual(self.app.pastyGrid.getCellUrl(0), YOUTUBE_URL)  # sostituito anche in griglia
+
+    def test_pastylink_url_download_passes_the_referer_to_ytdlp(self):
+        # caso reale: alcuni player embed (es. player.vimeo.com incassato su
+        # cinematheque.fr) rifiutano di servire il video senza un Referer
+        # valido - la chiave 'referer' del payload v1 deve arrivare fino al
+        # comando yt-dlp come --referer
+        vimeoUrl = 'https://player.vimeo.com/video/508006483'
+        refererValue = 'https://www.cinematheque.fr/'
+        encoded = base64.b64encode(json.dumps(
+            {'v1': {'ytdlp': vimeoUrl, 'referer': refererValue}}).encode()).decode().rstrip('=')
+        pastylinkUrl = Tools.PASTYLINK_URL_PREFIX + encoded
+        self.app.pastyGrid.addRow(pastylinkUrl)
+        self.app.pastyGrid.setCellConvert(0, self.app.ACTION_TO_MP4)
+        worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
+        with mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
+            worker.runAllUrls()
+        self.assertEqual(dl.call_args.kwargs.get('referer'), refererValue)
+
+    def test_pastylink_url_without_referer_passes_none(self):
+        pastylinkUrl = makePastylinkUrl(YOUTUBE_URL)
+        self.app.pastyGrid.addRow(pastylinkUrl)
+        self.app.pastyGrid.setCellConvert(0, self.app.ACTION_TO_MP4)
+        worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
+        with mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(return_value=[True, '1 KB'])) as dl:
+            worker.runAllUrls()
+        self.assertIsNone(dl.call_args.kwargs.get('referer'))
 
 
 class UiLockTest(unittest.TestCase):

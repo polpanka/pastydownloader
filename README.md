@@ -19,9 +19,9 @@ PastyDownloader is a fast, no-nonsense desktop app for grabbing video and audio 
 
 ## Requirements
 
-- **Windows** — Windows 10 (64-bit) or later
-- **macOS** — 13 (Ventura) or later
-- **Linux** — a distro with glibc 2.35+ (e.g. Ubuntu 22.04+, Debian 12+, Fedora 36+, RHEL 9+)
+- **Windows** — Windows 10 (64-bit, 1809 or later) or later
+- **macOS** — 11 (Big Sur) or later (Apple Silicon and Intel)
+- **Linux** — a distro with glibc 2.28+ (e.g. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
 
 ## Why PastyDownloader
 
@@ -29,7 +29,7 @@ Completely safe: no virus, no ads, no user tracking. No accounts, no browser ext
 
 ## Releases
 
-- **2026-08** - version 1.2: complete refactor in PySide6 on Github repository
+- **2026-08** - version 1.3: complete refactor in PySide6 on Github repository
 - **2024-04** - version 0.7: fixed too long link error and other minor bug fixes
 - **2023-06** - version 0.6: mp3 conversion, Dailymotion Instagram and TikTok support
 - **2023-05** - version 0.5: minor bug fix

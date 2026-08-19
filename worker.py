@@ -153,7 +153,7 @@ class AsyncWorker(QObject):
                 ytdlp = Tools.checkYtDlp()
                 if not ytdlp:
                     return self.smartReturn([False, 'yt-dlp not available'])
-                results = await Tools.downloadVideoByYtDlp(ytdlp, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped)
+                results = await Tools.downloadVideoByYtDlp(ytdlp, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer())
             # caso di video normale
             else:
                 Tools.consoleLogs("Used: ffmpeg with default url")

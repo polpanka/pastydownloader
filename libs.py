@@ -261,7 +261,7 @@ class Tools():
 
     @classmethod
     def isPastylinkUrl(cls, url):
-        # httpasty://BASE64{"v1" : {"ytdlp" : "https://www.youtube.com/watch?v=jNQXAC9IVRw" }}
+        # httpasty://BASE64{"v1" : {"ytdlp" : "https://www.youtube.com/watch?v=jNQXAC9IVRw", "referer" : "https://example.com/" }}
         return url.startswith(cls.PASTYLINK_URL_PREFIX)
 
     # marcatore che apre un manifest HLS testuale incollato per intero
@@ -278,20 +278,24 @@ class Tools():
         return text.lstrip('﻿').strip()
 
     @classmethod
-    def decodePastylinkUrl(cls, url):
-        """Decodifica un url 'httpasty://<base64 di un json>' generato dal
-        sito pasty.link con base64_encode() di PHP (base64 standard, mai
-        url-safe). Il json decodificato deve avere la forma
-        {"v1": {"ytdlp": "<url da aprire con yt-dlp>"}}. Tollerante sul
-        padding mancante (comune quando il base64 finisce dentro un url).
-        Ritorna None se il formato non e' valido o manca la chiave 'ytdlp'."""
+    def _decodePastylinkV1(cls, url):
         payload = url[len(cls.PASTYLINK_URL_PREFIX):]
         padded = payload + '=' * (-len(payload) % 4)
         try:
             data = json.loads(base64.b64decode(padded))
-            return (data.get('v1') or {}).get('ytdlp') or None
+            return data.get('v1') or {}
         except Exception:
             return None
+
+    @classmethod
+    def decodePastylinkUrl(cls, url):
+        v1 = cls._decodePastylinkV1(url)
+        return (v1 or {}).get('ytdlp') or None
+
+    @classmethod
+    def decodePastylinkReferer(cls, url):
+        v1 = cls._decodePastylinkV1(url)
+        return (v1 or {}).get('referer') or None
 
     @staticmethod
     def uriValidator(x):
@@ -329,6 +333,20 @@ class Tools():
         content = QTextStream(fd).readAll()
         fd.close()
         return content
+
+    @staticmethod
+    def parseSemVer(version):
+        if isinstance(version, (int, float)):
+            raise ValueError("Version must be a string, got %s: %r" % (type(version).__name__, version))
+        match = re.match(r'^v?(\d+)\.(\d+)(?:\.(\d+))?', str(version).strip())
+        if not match:
+            raise ValueError("Invalid version string: %s" % version)
+        major, minor, patch = match.groups()
+        return (int(major), int(minor), int(patch or 0))
+
+    @classmethod
+    def isNewerVersion(cls, onlineVersion, thisVersion):
+        return cls.parseSemVer(onlineVersion) > cls.parseSemVer(thisVersion)
 
     @classmethod
     def urlToFilename(cls, url):
@@ -796,7 +814,7 @@ class Tools():
     # ffmpeg produrrebbe un video muto), e non rischia di scaricare un url
     # temporaneo/firmato gia' scaduto nel frattempo
     @classmethod
-    async def downloadVideoByYtDlp(cls, ytdlp, ffmpegPath, url, saveAs, onProgress=None, isStoppedFn=None):
+    async def downloadVideoByYtDlp(cls, ytdlp, ffmpegPath, url, saveAs, onProgress=None, isStoppedFn=None, referer=None):
         try:
             cls.logYtDlpVersion(ytdlp)
             command = [ytdlp, '--no-warnings', '--no-playlist', '--newline',
@@ -804,6 +822,8 @@ class Tools():
                        '-f', 'bestvideo+bestaudio/best',
                        '--merge-output-format', 'mp4',
                        '--progress-template', 'download:%s%%(progress.downloaded_bytes)s' % cls.YTDLP_PROGRESS_PREFIX]
+            if referer:
+                command += ['--referer', referer]
             command += ['-o', saveAs, url]
             loop = asyncio.get_running_loop()
             errorDetail = ''

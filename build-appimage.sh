@@ -69,8 +69,14 @@ echo "== 1/6: venv + dipendenze =="
 python3 -m venv --without-pip "$BUILD_DIR/venv"
 curl -sL https://bootstrap.pypa.io/get-pip.py -o "$BUILD_DIR/get-pip.py"
 "$BUILD_DIR/venv/bin/python" "$BUILD_DIR/get-pip.py"
+# PySide6 pinnato alla 6.7.3 (vedi il commento esteso in build-macos.yml per
+# il ragionamento completo, nato per allargare la compatibilita' macOS a
+# 11+ invece di 13+): come bonus, il wheel Linux della 6.7.3 e' costruito
+# per manylinux_2_28 (glibc 2.28+), mentre le release 6.10+ non pinnate
+# richiedono manylinux_2_34 (glibc 2.34+) - quindi questo pin abbassa anche
+# il floor Linux (es. Ubuntu 20.04+/Debian 11+/RHEL 8+ invece di 22.04+/12+/9+)
 "$BUILD_DIR/venv/bin/python" -m pip install --upgrade \
-    PySide6 aiofiles aiohttp psutil requests pyinstaller
+    "PySide6==6.7.3" aiofiles aiohttp psutil requests pyinstaller
 
 # rigenero resources.py con lo stesso PySide6 appena installato nel venv,
 # cosi' il formato binario e' sempre coerente con la versione usata per la build

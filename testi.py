@@ -10,7 +10,6 @@ _TRANSLATIONS = {
     'en': {
         'aboutVersion': 'Version: %s',
         'aboutWebsite': 'Website: {website}',
-        'aboutPrivacy': 'Privacy: we anonymously collect app version and operating system for aggregate usage statistics.',
         'btnDefault': ' Paste and Download',
         'btnReverse': ' Please wait...',
         'downloadPathError': 'The download folder is not accessible',
@@ -83,7 +82,6 @@ _TRANSLATIONS = {
     'it': {
         'aboutVersion': 'Versione: %s',
         'aboutWebsite': 'Sito: {website}',
-        'aboutPrivacy': 'Privacy: raccogliamo in forma anonima versione dell\'app e sistema operativo per statistiche d\'uso aggregate.',
         'btnDefault': ' Incolla e Scarica',
         'btnReverse': ' Attendere...',
         'downloadPathError': 'La cartella di download non è accessibile',
@@ -156,7 +154,6 @@ _TRANSLATIONS = {
     'fr': {
         'aboutVersion': 'Version : %s',
         'aboutWebsite': 'Site : {website}',
-        'aboutPrivacy': 'Confidentialité : nous collectons de manière anonyme la version de l\'application et le système d\'exploitation à des fins de statistiques d\'utilisation agrégées.',
         'btnDefault': ' Coller et Télécharger',
         'btnReverse': ' Veuillez patienter...',
         'downloadPathError': "Le dossier de téléchargement n'est pas accessible",
@@ -229,7 +226,6 @@ _TRANSLATIONS = {
     'es': {
         'aboutVersion': 'Versión: %s',
         'aboutWebsite': 'Web: {website}',
-        'aboutPrivacy': 'Privacidad: recopilamos de forma anónima la versión de la app y el sistema operativo para estadísticas de uso agregadas.',
         'btnDefault': ' Pegar y Descargar',
         'btnReverse': ' Espere por favor...',
         'downloadPathError': 'La carpeta de descarga no es accesible',
@@ -302,7 +298,6 @@ _TRANSLATIONS = {
     'de': {
         'aboutVersion': 'Version: %s',
         'aboutWebsite': 'Webseite: {website}',
-        'aboutPrivacy': 'Datenschutz: Wir erfassen anonym die App-Version und das Betriebssystem für aggregierte Nutzungsstatistiken.',
         'btnDefault': ' Einfügen und Herunterladen',
         'btnReverse': ' Bitte warten...',
         'downloadPathError': 'Der Download-Ordner ist nicht zugänglich',
@@ -375,7 +370,6 @@ _TRANSLATIONS = {
     'zh': {
         'aboutVersion': '版本：%s',
         'aboutWebsite': '网站：{website}',
-        'aboutPrivacy': '隐私：我们匿名收集应用版本和操作系统信息，用于汇总使用统计。',
         'btnDefault': ' 粘贴并下载',
         'btnReverse': ' 请稍候...',
         'downloadPathError': '下载文件夹不可访问',
@@ -448,7 +442,6 @@ _TRANSLATIONS = {
     'ja': {
         'aboutVersion': 'バージョン: %s',
         'aboutWebsite': 'ウェブサイト: {website}',
-        'aboutPrivacy': 'プライバシー：集計利用統計のため、アプリのバージョンとOSを匿名で収集します。',
         'btnDefault': ' 貼り付けてダウンロード',
         'btnReverse': ' お待ちください...',
         'downloadPathError': 'ダウンロードフォルダにアクセスできません',
@@ -521,7 +514,6 @@ _TRANSLATIONS = {
     'pt': {
         'aboutVersion': 'Versão: %s',
         'aboutWebsite': 'Site: {website}',
-        'aboutPrivacy': 'Privacidade: coletamos de forma anônima a versão do app e o sistema operacional para estatísticas de uso agregadas.',
         'btnDefault': ' Colar e Baixar',
         'btnReverse': ' Aguarde...',
         'downloadPathError': 'A pasta de download não está acessível',
@@ -594,7 +586,6 @@ _TRANSLATIONS = {
     'ru': {
         'aboutVersion': 'Версия: %s',
         'aboutWebsite': 'Сайт: {website}',
-        'aboutPrivacy': 'Конфиденциальность: мы анонимно собираем версию приложения и операционную систему для агрегированной статистики использования.',
         'btnDefault': ' Вставить и скачать',
         'btnReverse': ' Подождите...',
         'downloadPathError': 'Папка загрузки недоступна',
@@ -667,7 +658,6 @@ _TRANSLATIONS = {
     'ko': {
         'aboutVersion': '버전: %s',
         'aboutWebsite': '웹사이트: {website}',
-        'aboutPrivacy': '개인정보: 집계된 사용 통계를 위해 앱 버전과 운영체제를 익명으로 수집합니다.',
         'btnDefault': ' 붙여넣고 다운로드',
         'btnReverse': ' 잠시만 기다려 주세요...',
         'downloadPathError': '다운로드 폴더에 접근할 수 없습니다',
@@ -740,7 +730,6 @@ _TRANSLATIONS = {
     'nl': {
         'aboutVersion': 'Versie: %s',
         'aboutWebsite': 'Website: {website}',
-        'aboutPrivacy': 'Privacy: we verzamelen anoniem de app-versie en het besturingssysteem voor geaggregeerde gebruiksstatistieken.',
         'btnDefault': ' Plakken en Downloaden',
         'btnReverse': ' Even geduld...',
         'downloadPathError': 'De downloadmap is niet toegankelijk',
@@ -813,7 +802,6 @@ _TRANSLATIONS = {
     'ar': {
         'aboutVersion': 'الإصدار: %s',
         'aboutWebsite': 'الموقع: {website}',
-        'aboutPrivacy': 'الخصوصية: نجمع إصدار التطبيق ونظام التشغيل بشكل مجهول لأغراض إحصاءات الاستخدام المجمعة.',
         'btnDefault': ' الصق وقم بالتنزيل',
         'btnReverse': ' يرجى الانتظار...',
         'downloadPathError': 'تعذّر الوصول إلى مجلد التنزيل',

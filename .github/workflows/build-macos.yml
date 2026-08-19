@@ -46,9 +46,28 @@ jobs:
           python-version: "3.12"
 
       - name: Installa le dipendenze
+        # PySide6 pinnato (non l'ultima versione disponibile): il floor minimo
+        # di macOS richiesto dal wheel PySide6/Qt e' salito nel tempo -
+        # 6.5.3-6.7.x richiedono macOS 11+ (Big Sur), 6.8.x-6.9.x macOS 12+
+        # (Monterey), 6.10+ macOS 13+ (Ventura) - installando "PySide6" senza
+        # versione si prende sempre l'ultima, quindi il floor si alza da solo
+        # ad ogni nuova release Qt anche senza che questo repo cambi nulla.
+        # 6.7.3 (settembre 2024) e' l'ultima release che sta ancora sul floor
+        # piu' basso (macOS 11), prima che salisse a 12 con la 6.8: e' il
+        # miglior compromesso reach/aggiornamento, dato che il wheel e'
+        # universal2 (arm64+x86_64 nello stesso file, stesso floor per
+        # entrambe le architetture). Andare piu' indietro (6.5.0-6.5.2,
+        # floor macOS 10.9) allargherebbe fino a Catalina, ma quell'OS non
+        # riceve piu' patch di sicurezza da Apple dal 2022: non vale il
+        # costo di restare ancora piu' indietro per un pubblico ormai residuale.
+        # NB: il floor dichiarato dal wheel PyPI e' quello "promesso", non e'
+        # detto coincida al 100% con quanto imbarcato nel binario finale dopo
+        # PyInstaller/codesign sul runner CI (vedi la Symbol-not-found vista su
+        # un Mac Catalina con la build 6.11 non pinnata) - verificare con un
+        # avvio reale su un Mac macOS 11-13 dopo aver aggiornato questo pin.
         run: |
           python3 -m pip install --upgrade pip
-          pip install PySide6 aiofiles aiohttp psutil requests pyinstaller
+          pip install PySide6==6.7.3 aiofiles aiohttp psutil requests pyinstaller
 
       - name: Rigenera resources.py con la stessa versione di PySide6 appena installata
         run: pyside6-rcc resources.qrc -o resources.py

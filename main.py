@@ -40,6 +40,17 @@ except ImportError:
     )
     if sys.platform == "darwin":
         import subprocess
+        # PySide6 e' pinnato alla 6.7.3 in build-macos.yml (wheel universal2,
+        # stesso floor macOS 11 "Big Sur" per arm64 e x86_64 - non serve piu'
+        # distinguere per architettura come prima di quel pin) - se il pin
+        # cambia, aggiornare anche questo messaggio. Va scritta qui a mano
+        # (non letta da un file condiviso) perche' a questo punto PySide6
+        # potrebbe non essere importabile, quindi neanche moduli del progetto
+        # che lo importano a loro volta
+        _startup_error_msg = _startup_error_msg.replace(
+            "system is too old.",
+            "system is too old (this version of PastyDownloader requires macOS 11 Big Sur or later).",
+        )
         # niente "\n" nel testo: un ritorno a capo letterale dentro la
         # stringa passata a -e rischia di rompere il parsing dell'AppleScript
         _mac_msg = _startup_error_msg.replace("\n\n", " ")
@@ -305,11 +316,9 @@ class Pasty(QMainWindow):
         iconLabel.setPixmap(QIcon(MyText().pasty_favicon).pixmap(64, 64))
         iconLabel.mousePressEvent = lambda event: self.menu._trackDevelModeUnlock()
 
-        textLabel = QLabel('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br><br>' + MyText().aboutPrivacy + '<br>')
+        textLabel = QLabel('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
         textLabel.setTextFormat(Qt.RichText)
         textLabel.setOpenExternalLinks(True)
-        textLabel.setWordWrap(True)
-        textLabel.setMaximumWidth(320) # x mandare a capo testo tr lungo
 
         contentRow = QHBoxLayout()
         contentRow.addWidget(iconLabel, 0, Qt.AlignTop)
@@ -334,9 +343,9 @@ class Pasty(QMainWindow):
 
     def checkUpdates(self, forced=True):
         try:
-            thisVersion = float(Constants.APP_VERSION)
-            onlineVersion = float(Tools.readFileJson(MyText().checkUpdates, timeout=5)['vers'])
-            isDifferentVers = (onlineVersion > thisVersion)
+            thisVersion = Constants.APP_VERSION
+            onlineVersion = Tools.readFileJson(MyText().checkUpdates, timeout=5)['vers']
+            isDifferentVers = Tools.isNewerVersion(onlineVersion, thisVersion)
             if forced:
                 msg = MyText().txtUpdatesHtml % onlineVersion if isDifferentVers else MyText().txtUpdatesNo
                 self.openPopup(MyText().titleUpdates, msg)

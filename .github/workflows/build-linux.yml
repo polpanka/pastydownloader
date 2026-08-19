@@ -16,9 +16,14 @@ jobs:
     # ubuntu-22.04 e non ubuntu-latest (24.04): un runner piu' vecchio ha una
     # glibc piu' vecchia (2.35 contro 2.39), quindi l'AppImage risultante
     # richiede meno ai sistemi su cui poi girera' - stesso principio discusso
-    # per ffmpeg_linux. Non ha senso scendere sotto 22.04: le wheel PySide6
-    # attuali sono gia' manylinux_2_34, quindi 2.35 e' comunque il minimo
-    # praticamente raggiungibile con questa versione di PySide6.
+    # per ffmpeg_linux. Da quando PySide6 e' pinnato alla 6.7.3 in
+    # build-appimage.sh (wheel manylinux_2_28, vedi il commento li') il vero
+    # collo di bottiglia e' tornato ad essere ffmpeg (BtbN build, richiede
+    # glibc >= 2.28 - vedi Tools.FFMPEG_BIN_WIN in libs.py): scendere sotto
+    # 22.04 in teoria abbasserebbe ulteriormente il floor fino a 2.28, ma non
+    # e' stato fatto qui - resta una possibile ottimizzazione futura, non
+    # implementata in questo pin (serve un runner ubuntu ancora piu' vecchio,
+    # se disponibile fra quelli offerti da GitHub Actions).
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7

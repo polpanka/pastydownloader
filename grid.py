@@ -2,11 +2,53 @@
 
 import logging
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QTableView, QAbstractItemView, QMenu
-from PySide6.QtCore import Qt, QSettings
+from PySide6.QtCore import Qt, QSettings, QTimer
 from PySide6.QtGui import QIcon
 from libs import Tools
 from testi import MyText
 from constants import Constants
+
+
+class _LongPressTableWidget(QTableWidget):
+    """Solo Android (vedi PastyGrid.initUi): Qt sintetizza da solo il tocco
+    in click sinistro (per questo la selezione riga funziona gia'), ma NON
+    il press-and-hold in click destro per le app QWidget come questa (lo fa
+    solo per QML) - customContextMenuRequested quindi non scatterebbe mai da
+    solo su un device touch, a differenza del vero click destro del mouse
+    sul desktop. Timer avviato al press: se non annullato da un rilascio o
+    da uno spostamento (probabile scroll, non un press-and-hold fermo) prima
+    che scada, emette lo stesso identico segnale che il desktop emette da
+    solo col click destro - da li' in poi percorso invariato (vedi
+    PastyGrid.initContextMenu/Pasty.onContextMenu)"""
+    LONG_PRESS_MS = 500
+    MOVE_TOLERANCE_PX = 15
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pressTimer = QTimer(self)
+        self._pressTimer.setSingleShot(True)
+        self._pressTimer.timeout.connect(self._onLongPress)
+        self._pressPos = None
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        if event.button() == Qt.LeftButton:
+            self._pressPos = event.position().toPoint()
+            self._pressTimer.start(self.LONG_PRESS_MS)
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        if self._pressPos is not None and (event.position().toPoint() - self._pressPos).manhattanLength() > self.MOVE_TOLERANCE_PX:
+            self._pressTimer.stop()
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        self._pressTimer.stop()
+
+    def _onLongPress(self):
+        if self._pressPos is not None:
+            self.customContextMenuRequested.emit(self._pressPos)
+
 
 class PastyGrid():
 
@@ -48,7 +90,7 @@ class PastyGrid():
         self.setHiddenColumns()
 
     def initUi(self):
-        self.grid = QTableWidget()
+        self.grid = _LongPressTableWidget() if Constants.IS_ANDROID else QTableWidget()
         self.grid.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.grid.verticalHeader().setVisible(False)
         self.grid.setEditTriggers(QTableView.NoEditTriggers)

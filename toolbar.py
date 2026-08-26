@@ -163,7 +163,8 @@ class Menu():
         add('https://vod05.msf.cdn.mediaset.net/farmunica/2024/03/1542611_18e5c175b37d01/mp4/hd_no_mpl.mp4')                                                      # mp4 buono
         add('https://s-delivery36.mxdcontent.net/v/276b9b717172699c270cadfc1d783c8a.mp4?s=mwDENkEANjGrNswZVgT0Lw&e=1678551980&_t=1678533246')                     # mp4 scaduto
         add('https://www.cbsnews.com/video/becker-hardly-a-week-goes-by-without-trump-administration-threatening-election-official-arrests/')                     # yt-dlp
-        add('https://www.youtube.com/watch?v=jNQXAC9IVRw')                                                                                                        # youtube
+        add('https://www.youtube.com/watch?v=jNQXAC9IVRw')                                                                                                        # youtube base senza blocchi
+        add('https://www.youtube.com/watch?v=sd1Yp7uoN3s')                                                                                                        # youtube normale
         add('https://www.dailymotion.com/video/x8ksj36')                                                                                                          # dailymotion
         add('https://www.instagram.com/p/CrlECZoto2O/')                                                                                                           # instagram
         add('https://www.tiktok.com/@polpanka/video/7164483565328092422')                                                                                         # tiktok

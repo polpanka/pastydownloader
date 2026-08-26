@@ -1,10 +1,12 @@
 # Esperimento: guscio Android
 
-Proof of concept per capire quanto è lontana la UI PySide6 di PastyDownloader
-da un APK che almeno si apre su Android. **Nessun download funziona**: ffmpeg,
-yt-dlp e gli aggiornamenti automatici sono disattivati di proposito (vedi
-`Constants.SHELL_ONLY_MODE` in `constants.py`) — l'obiettivo è solo vedere la
-finestra principale su un device/emulatore.
+Porting sperimentale della UI PySide6 di PastyDownloader su Android. ffmpeg
+(recipe locale python-for-android, vedi `android/recipes/ffmpeg/`) e yt-dlp
+(libreria Python pura scaricata a runtime) funzionano davvero — download
+generico, yt-dlp con merge audio+video, conversione mp3 — vedi
+`ANDROID_HISTORY.md` per il racconto di come ci si è arrivati. Build ancora
+in modalità "debug", non firmata per una vera release (vedi
+`.github/workflows/build-android.yml`).
 
 Richiede un host Linux o macOS (`pyside6-android-deploy` non gira su Windows).
 

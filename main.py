@@ -247,15 +247,6 @@ class Pasty(QMainWindow):
     # ffmpeg e yt-dlp si scaricano in cascata, mai in parallelo: prima ffmpeg,
     # poi (solo se riuscito) yt-dlp - vedi onFfmpegReady/onYtDlpReady
     def initDependencies(self):
-        # Guscio Android sperimentale (vedi Constants.SHELL_ONLY_MODE): ffmpeg
-        # resta sempre disattivato (nessun binario nativo bundlato, vedi
-        # ANDROID.md), ma yt-dlp e' libreria Python pura scaricata a runtime
-        # come su desktop - proviamo a farla partire comunque, per capire
-        # empiricamente se l'intera catena (download wheel, verifica in
-        # sottoprocesso, poi download vero) regge sul bootstrap Android.
-        if Constants.SHELL_ONLY_MODE and not Constants.IS_ANDROID:
-            self.dependenciesReady = True
-            return
         self.ffmpegInstaller = FfmpegInstaller()
         self.ffmpegInstaller.statusMessage.connect(self.setStatusBar)
         self.ffmpegInstaller.ready.connect(self.onFfmpegReady)
@@ -552,10 +543,7 @@ class Pasty(QMainWindow):
             self.setStatusBar(MyText().internetError, 0) # persistente, non a scomparsa: resta offline finche' non torna la connessione
             return False
         ffmpeg = Tools.checkFFmpeg()
-        # in SHELL_ONLY_MODE ffmpeg non c'e' mai (vedi ANDROID.md) - ma il
-        # motore generico (aiohttp/requests, vedi worker.runDownload) non lo
-        # usa comunque, quindi non blocchiamo il download solo per questo
-        if not ffmpeg and not Constants.SHELL_ONLY_MODE:
+        if not ffmpeg:
             self.resetUi()
             self.showInstallFailedPopup()
             return False

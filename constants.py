@@ -13,13 +13,6 @@ class Constants:
     # per Kivy). Vedi ANDROID.md.
     IS_ANDROID = 'ANDROID_ARGUMENT' in os.environ
 
-    # Guscio sperimentale Android (vedi pysidedeploy.spec, ANDROID.md): salta
-    # l'installazione/aggiornamento di ffmpeg e yt-dlp all'avvio - l'app parte
-    # e mostra la UI ma non puo' scaricare nulla. Si attiva da solo su
-    # Android, oppure a mano con PASTY_SHELL_ONLY=1 per provarlo anche su
-    # desktop Linux. Da NON attivare mai nelle build desktop reali.
-    SHELL_ONLY_MODE = os.environ.get('PASTY_SHELL_ONLY') == '1' or IS_ANDROID
-
     # colors
     COLOR_BLUE              = '#004e63'
     COLOR_RED               = '#da4633'

@@ -555,6 +555,25 @@ zero → l'app chiede davvero il permesso storage al primo avvio → concesso �
 Log di conferma in logcat (tag `PythonActivity`, verbose):
 `android.permission.WRITE_EXTERNAL_STORAGE granted=true`.
 
+## 9. Rotazione schermo
+
+Di default `buildozer` genera un manifest con `orientation = portrait`
+(vedi `default.spec` del pacchetto `buildozer`, mai sovrascritto dal
+generatore di `pyside6-android-deploy`) - l'Activity risultava bloccata in
+verticale, ruotare il telefono non generava nessun evento di resize. La UI
+Qt (tutta a `QVBoxLayout`/`QHBoxLayout`, colonne della griglia ricalcolate
+in `PastyGrid.resizeEvent` a ogni resize) si sarebbe gia' adattata da sola -
+mancava solo il permesso a livello di manifest. Fix, stesso `buildozer.py`
+patchato (vedi punto 8):
+
+```python
+self.set_value("app", "android.manifest.orientation", "unspecified")
+```
+
+`unspecified` lascia decidere al sistema/alla rotazione automatica
+dell'utente, come una normale app - non ancora verificato su device reale
+(richiede un rebuild).
+
 ## Cosa aspettarsi che si rompa ancora
 
 - **La build vera stessa**: fermata al primo giro su una dipendenza di

@@ -96,8 +96,6 @@ class Menu():
     def buildPopupMenu(self):
         popup = QMenu(self.app)
         menuFile = popup.addMenu(MyText().menuFile)
-        if not Constants.IS_ANDROID:
-            menuFile.addAction(self.openAction)
         menuFile.addAction(self.exitAction)
         menuEdit = popup.addMenu(MyText().menuEdit)
         menuEdit.addAction(self.starAction)

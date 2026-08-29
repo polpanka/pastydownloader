@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, os
+import os
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QGroupBox, QPushButton, QLineEdit, QFormLayout, QComboBox, QFileDialog, QMessageBox, QScrollArea, QWidget, QApplication
 from PySide6.QtCore import QSettings
 from libs import Tools
@@ -18,6 +18,7 @@ class SettingsDialog(QDialog):
     language = None
     dlFolder = None
     ytConversion = None
+    audioFormat = None
     theme = None
     buttonBox = None
     settings = QSettings(MyText().orgName, MyText().appName)
@@ -87,7 +88,9 @@ class SettingsDialog(QDialog):
         layout.addRow(self.btn, self.dlFolder)
         self.formGroupBox1.setLayout(layout)
 
-    # riquadro "Video": select con le 3 modalita' di conversione mp3 (mai / converti+elimina / converti+mantieni)
+    # riquadro "Video": select con le 3 modalita' di conversione audio (mai / converti+elimina / converti+mantieni)
+    # + select col formato audio da usare quando si converte (vedi
+    # Tools.AUDIO_FORMAT_EXTENSIONS/AUDIO_FORMAT_CODECS in libs.py)
     def addForm2(self):
         ytOpts = [(MyText().convNever,self.parentApp.ACTION_TO_MP4), (MyText().convDeleteVideo,self.parentApp.ACTION_TO_MP3), (MyText().convKeepVideo,self.parentApp.ACTION_TO_BOTH)]
         self.formGroupBox2 = QGroupBox(MyText().videoGroupLabel)
@@ -98,8 +101,20 @@ class SettingsDialog(QDialog):
         indexFound = self.ytConversion.findData(ext) if ext else -1
         if indexFound != -1:
             self.ytConversion.setCurrentIndex(indexFound)
+        # MP3 disponibile anche su Android da quando la recipe ffmpeg locale
+        # (android/recipes/ffmpeg/) include libshine come encoder MP3 (vedi
+        # android/recipes/libshine/ e ANDROID_HISTORY.md punto 19)
+        audioFormats = [('MP3', 'mp3'), ('AAC (M4A)', 'aac'), ('FLAC', 'flac'), ('WAV', 'wav'), ('Opus', 'opus')]
+        self.audioFormat = QComboBox()
+        for k, v in audioFormats:
+            self.audioFormat.addItem(k, v)
+        currentFormat = self.settings.value('audioFormat')
+        indexFound = self.audioFormat.findData(currentFormat) if currentFormat else -1
+        if indexFound != -1:
+            self.audioFormat.setCurrentIndex(indexFound)
         layout = QFormLayout()
         layout.addRow(self.ytConversion)
+        layout.addRow(MyText().audioFormatLabel, self.audioFormat)
         self.formGroupBox2.setLayout(layout)
 
     # riquadro "After download": select se aprire la cartella di download a fine lavoro o non fare nulla
@@ -156,6 +171,9 @@ class SettingsDialog(QDialog):
         # yt conv
         settingYT = self.ytConversion.currentData()
         self.settings.setValue('ytConversion', settingYT)
+        # audio format
+        settingAudioFormat = self.audioFormat.currentData()
+        self.settings.setValue('audioFormat', settingAudioFormat)
         # open folder
         settingOpen = self.doOpen.currentData()
         self.settings.setValue('doOpen', settingOpen)
@@ -163,7 +181,7 @@ class SettingsDialog(QDialog):
         settingTheme = self.theme.currentData()
         themeChanged = settingTheme != (self.settings.value('theme') or Constants.THEME_SYSTEM)
         self.settings.setValue('theme', settingTheme)
-        Tools.consoleLogs("Settings saved: language=%s downloadPath=%s ytConversion=%s doOpen=%s theme=%s" % (settingLang, settingDL, settingYT, settingOpen, settingTheme))
+        Tools.consoleLogs("Settings saved: language=%s downloadPath=%s ytConversion=%s audioFormat=%s doOpen=%s theme=%s" % (settingLang, settingDL, settingYT, settingAudioFormat, settingOpen, settingTheme))
         if languageChanged or themeChanged:
             QMessageBox.information(self, MyText().titleRestart, MyText().restartRequired)
         return self.accept()
@@ -172,7 +190,13 @@ class SettingsDialog(QDialog):
     def selectNewFolder(self):
         kwargs = {}
         if Constants.IS_ANDROID:
-            kwargs['options'] = QFileDialog.Option.DontUseNativeDialog
+            # getExistingDirectory() usa di suo ShowDirsOnly come default,
+            # ma solo quando 'options' non viene passato affatto: passandolo
+            # esplicitamente qui (serve per forzare il dialog non nativo su
+            # Android) quel default va perso, non si somma - va rimesso a
+            # mano, altrimenti su Android il picker mostrerebbe anche i
+            # singoli file oltre alle cartelle
+            kwargs['options'] = QFileDialog.Option.DontUseNativeDialog | QFileDialog.Option.ShowDirsOnly
         path = QFileDialog.getExistingDirectory(None, 'Select Folder', **kwargs)
         if path:
             self.dlFolder.setText(path)

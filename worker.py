@@ -159,6 +159,8 @@ class AsyncWorker(QObject):
                 # anche per yt-dlp (stessa lista, es. 'it'/'fr'/'de'...)
                 appLang = MyText.getLanguage()
                 subtitleLangs = [appLang] if appLang == 'en' else [appLang, 'en']
+                # i cookie da browser (se servono) sono gestiti in automatico
+                # dentro Tools._pickCookiesBrowser, nessuna scelta qui
                 results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer(), subtitleLangs=subtitleLangs)
             # caso di video normale
             else:
@@ -179,8 +181,13 @@ class AsyncWorker(QObject):
 
     async def runConversion(self, myVideo):
         self.setInConvertion()
-        self.saveAs = Tools.replaceExtension(myVideo, 'mp3')
-        results = await Tools.ConvertToMp3ByFFmpeg(self.ffmpeg, self.saveAs, myVideo, self.onSizeProgress, self.isStopped)
+        # il codec ffmpeg giusto per piattaforma/formato (mp3 e opus
+        # cambiano fra desktop e Android) e' gia' risolto da
+        # Tools.AUDIO_FORMAT_CODECS in libs.py
+        audioFormat = self.settings.value('audioFormat', 'mp3')
+        extension = Tools.AUDIO_FORMAT_EXTENSIONS.get(audioFormat, 'mp3')
+        self.saveAs = Tools.replaceExtension(myVideo, extension)
+        results = await Tools.ConvertAudioByFFmpeg(self.ffmpeg, self.saveAs, myVideo, audioFormat, self.onSizeProgress, self.isStopped)
         return self.smartReturn(results)
 
 

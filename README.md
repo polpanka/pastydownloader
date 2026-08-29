@@ -26,7 +26,7 @@ PastyDownloader is a fast, no-nonsense desktop app for grabbing video and audio 
 - 🖱️ **Right-click power** — copy link, re-download, convert, stop, or remove, straight from the grid
 - ⚡ **Zero hassle** — everything it needs is fetched automatically on first run, no manual installs, no PATH wrangling; internal libraries keep themselves up to date in the background
 - 🌍 **Speaks your language** — detects your OS language on first launch (Deutsch, English, Español, Français, Italiano, Nederlands, Português, Русский, العربية, 日本語, 简体中文, 한국어)
-- 💻 **Cross-platform** — Windows, macOS, and Linux (AppImage included)
+- 💻 **Cross-platform** — Windows, macOS, and Linux (AppImage included), plus an experimental Android build (see below)
 - 🔗 **[pasty.link](https://pasty.link) integration** — send links straight from the website into the app with one click
 
 ## 📥 Download
@@ -38,10 +38,17 @@ Grab the latest build for your OS from the [Releases](https://github.com/polpank
 - **Windows** — Windows 10 (64-bit, 1809 or later) or later
 - **macOS** — 11 (Big Sur) or later (Apple Silicon and Intel)
 - **Linux** — a distro with glibc 2.28+ (e.g. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
+- **Android** — Android 5.0 (API 21) or later, arm64 — experimental, not yet published in [Releases](https://github.com/polpanka/pastydownloader/releases/latest) (see [ANDROID.md](ANDROID.md))
 
 ## Why PastyDownloader
 
 Completely safe: no virus, no ads, no user tracking. No accounts, no browser extensions fighting for your attention. Just one lightweight, free app that does a single job — downloading — and does it well.
+
+## 🧪 About the Android port
+
+PastyDownloader started as a desktop app — the Android build isn't a separate app, it's the same [PySide6](https://www.qt.io/qt-for-python) codebase, cross-compiled. Real yt-dlp downloads run on-device, including genuine audio+video merging through a natively-compiled FFmpeg, not a stripped-down substitute.
+
+That combination looks uncommon: the well-known yt-dlp front-ends for Android — [Seal](https://github.com/JunkFood02/Seal), [YTDLnis](https://github.com/deniscerri/ytdlnis) — are native Kotlin apps written from scratch, sharing no code with any desktop version. Python ports that reuse an existing UI on Android usually go through [Kivy](https://kivy.org) (e.g. [yt-dlp-kivy](https://github.com/odrevet/yt-dlp-kivy)), not Qt — PySide6 isn't generally considered Android-ready, and getting it there took real effort. See [ANDROID.md](ANDROID.md) for the technical details.
 
 ## 🙏 Acknowledgements
 

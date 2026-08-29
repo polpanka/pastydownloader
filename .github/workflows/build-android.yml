@@ -12,11 +12,11 @@ name: Build Android APK (esperimento)
 # vera al posto della firma debug automatica).
 #
 # Riproduce in CI, passo per passo, l'esperimento fatto a mano in locale
-# (vedi ANDROID.md): cinque patch locali non versionabili
+# (vedi ANDROID.md): sette patch locali non versionabili
 # altrimenti (il tool pyside6-android-deploy non espone via CLI ne'
-# targetSdk/permessi/requirements/recipe custom ne' un modo di riusare un
-# checkout p4a persistente) vengono applicate qui da file .patch versionati
-# in android/patches/.
+# targetSdk/permessi/requirements/recipe custom/servizi nel manifest ne' un
+# modo di riusare un checkout p4a persistente) vengono applicate qui da
+# file .patch versionati in android/patches/.
 "on":
   workflow_dispatch:
 
@@ -77,26 +77,37 @@ jobs:
           pip install pyside6==6.11.2
           pip install -r .venv-android/lib/python3.11/site-packages/PySide6/scripts/requirements-android.txt
 
-      # Patch 1/5: il tool pyside6-android-deploy non espone via CLI ne'
+      # Patch 1/7: il tool pyside6-android-deploy non espone via CLI ne'
       # targetSdk (android.api) ne' permessi extra ne' pin di versione dei
       # requirements (incluso ffmpeg) ne' p4a.source_dir - l'unico modo e'
       # patchare il suo file interno (vedi
       # android/patches/buildozer_py_config.patch, generato con "git diff"
       # contro il file pristine della stessa identica versione
       # PySide6==6.11.2 pinnata sopra, quindi deve applicarsi pulito)
-      - name: "Patch 1/5: targetSdk, permessi storage, requirements, p4a.source_dir"
+      - name: "Patch 1/7: targetSdk, permessi storage, requirements, p4a.source_dir"
         run: |
           TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config.patch
 
-      # Patch 2/5: stesso file appena patchato sopra, stesso motivo (nessuna
+      # Patch 2/7: stesso file appena patchato sopra, stesso motivo (nessuna
       # chiave CLI) - qui il permesso POST_NOTIFICATIONS per la notifica di
       # sistema a fine download (vedi android_bridge.py e
       # pythonactivity_notify.patch sotto)
-      - name: "Patch 2/5: permesso POST_NOTIFICATIONS (buildozer.py)"
+      - name: "Patch 2/7: permesso POST_NOTIFICATIONS (buildozer.py)"
         run: |
           TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config_notify.patch
+
+      # Patch 3/7: stesso file ancora - permesso FOREGROUND_SERVICE e
+      # registrazione di DownloadForegroundService nel manifest (via
+      # --native-service, vedi p4a.extra_args) per tenere il processo
+      # esente dal freeze in background durante un download (vedi
+      # android_bridge.py, pythonactivity_foreground_service.patch sotto e
+      # ANDROID_HISTORY.md)
+      - name: "Patch 3/7: Foreground Service per i download in background (buildozer.py)"
+        run: |
+          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          patch -p1 "$TARGET" < android/patches/buildozer_py_config_foreground_service.patch
 
       # NDK/SDK Android (vedi ANDROID.md punto 2) - JAVA_HOME e' gia' in
       # ambiente grazie a setup-java sopra
@@ -135,14 +146,14 @@ jobs:
           curl -fLO https://download.qt.io/official_releases/QtForPython/pyside6/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
           curl -fLO https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
 
-      # Patch 3/5: python-for-android va clonato in un checkout separato
+      # Patch 4/7: python-for-android va clonato in un checkout separato
       # (persistente in locale, qui semplicemente fresco a ogni run, va bene
       # comunque - la persistenza serviva solo a risparmiare tempo di
       # sviluppo in locale, non e' necessaria in CI) cosi' pysidedeploy.spec
       # via p4a.source_dir (patchato sopra) lo trova gia' pronto invece di
       # farselo clonare da capo dal tool, perdendo la patch del permesso
       # runtime storage (vedi ANDROID.md punto 8)
-      - name: "Patch 3/5: richiesta permesso runtime storage + ANDROID_NATIVE_LIBS (PythonActivity.java)"
+      - name: "Patch 4/7: richiesta permesso runtime storage + ANDROID_NATIVE_LIBS (PythonActivity.java)"
         run: |
           git clone --branch develop --depth 1 \
             https://github.com/kivy/python-for-android.git \
@@ -150,26 +161,35 @@ jobs:
           cd "$HOME/.pyside6_android_deploy/python-for-android"
           git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_permissions.patch"
 
-      # Patch 4/5: stesso file appena patchato sopra - notifica di sistema
+      # Patch 5/7: stesso file appena patchato sopra - notifica di sistema
       # a fine download, vedi android_bridge.py
-      - name: "Patch 4/5: notifica di sistema a fine download (PythonActivity.java)"
+      - name: "Patch 5/7: notifica di sistema a fine download (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
           git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_notify.patch"
 
-      # Patch 5/5: find_recipe_dir() del tool forza sempre le recipe dentro
+      # Patch 6/7: stesso file ancora, piu' un file nuovo
+      # (DownloadForegroundService.java) - Foreground Service per i download
+      # in background, vedi android_bridge.py e ANDROID_HISTORY.md
+      - name: "Patch 6/7: Foreground Service per i download in background (PythonActivity.java)"
+        run: |
+          cd "$HOME/.pyside6_android_deploy/python-for-android"
+          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_foreground_service.patch"
+
+      # Patch 7/7: find_recipe_dir() del tool forza sempre le recipe dentro
       # "deployment/", cartella che pyside6-android-deploy ripulisce con
       # shutil.rmtree() a ogni run --force (vedi deploy_lib/deploy_util.py:
-      # cleanup) - la recipe ffmpeg custom (android/recipes/ffmpeg/)
-      # sparirebbe prima ancora che la build parta se non venisse ricopiata
-      # li' dentro ad ogni run. Senza questa patch la build userebbe la
-      # recipe ffmpeg originale di p4a, che fallisce (dependency graph/build
-      # order/ar mancante/simboli a runtime - vedi i commenti in
-      # android/recipes/ffmpeg/__init__.py per i quattro problemi risolti)
-      - name: "Patch 5/5: copia la recipe ffmpeg locale in deployment/recipes/ ad ogni run"
+      # cleanup) - le recipe custom (android/recipes/ffmpeg/,
+      # android/recipes/libshine/) sparirebbero prima ancora che la build
+      # parta se non venissero ricopiate li' dentro ad ogni run. Senza
+      # questa patch la build userebbe le recipe originali di p4a (nessuna
+      # recipe libshine statica ufficiale, e per ffmpeg fallirebbe -
+      # dependency graph/build order/ar mancante/simboli a runtime, vedi i
+      # commenti in android/recipes/ffmpeg/__init__.py)
+      - name: "Patch 7/7: copia le recipe locali in deployment/recipes/ ad ogni run"
         run: |
           TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/android_config.py"
-          patch -p1 "$TARGET" < android/patches/android_config_ffmpeg_recipe.patch
+          patch -p1 "$TARGET" < android/patches/android_config_local_recipes.patch
 
       - name: Build APK
         run: |

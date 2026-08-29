@@ -77,9 +77,18 @@ curl -sL https://bootstrap.pypa.io/get-pip.py -o "$BUILD_DIR/get-pip.py"
 # per manylinux_2_28 (glibc 2.28+), mentre le release 6.10+ non pinnate
 # richiedono manylinux_2_34 (glibc 2.34+) - quindi questo pin abbassa anche
 # il floor Linux (es. Ubuntu 20.04+/Debian 11+/RHEL 8+ invece di 22.04+/12+/9+)
+# secretstorage: serve solo per leggere i cookie salvati dai browser
+# basati su Chromium (Chrome/Edge/Brave/...) tramite il portachiavi di
+# sistema (GNOME Keyring/KWallet) - Firefox non ne ha bisogno (cookie non
+# cifrati). Senza, la scelta di un browser Chromium in Preferenze fa
+# fallire subito il tentativo (yt-dlp lo segnala chiaro, non e' un crash
+# silenzioso) - c'e' comunque un fallback automatico che ritenta senza
+# cookie, vedi Tools._ytDlpDownloadWorker in libs.py. Dipende solo da
+# 'cryptography'/'jeepney' (pip puri, nessuna libreria di sistema tipo
+# libdbus-dev richiesta, verificato sui requires_dist di PyPI)
 "$BUILD_DIR/venv/bin/python" -m pip install --upgrade \
     "PySide6==6.7.3" aiofiles aiohttp psutil requests pyinstaller \
-    brotli certifi mutagen pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi quickjs-ng
+    brotli certifi mutagen pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi quickjs-ng secretstorage
 
 # rigenero resources.py con lo stesso PySide6 appena installato nel venv,
 # cosi' il formato binario e' sempre coerente con la versione usata per la build

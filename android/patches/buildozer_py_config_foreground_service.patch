@@ -1,0 +1,40 @@
+--- a/PySide6/scripts/deploy_lib/android/buildozer.py
++++ b/PySide6/scripts/deploy_lib/android/buildozer.py
+@@ -87,6 +87,17 @@
+         # di requestNeededPermissions() (PythonActivity.java), nessun altro
+         # codice serve qui
+         permissions.add("android.permission.POST_NOTIFICATIONS")
++        # PATCH locale: Foreground Service per i download in background
++        # (vedi android_bridge.py, pythonactivity_foreground_service.patch e
++        # ANDROID_HISTORY.md) - permesso "normale" (concesso all'installazione,
++        # nessun popup runtime, a differenza di POST_NOTIFICATIONS sopra),
++        # richiesto da Android da API 28 in su per avviare un qualunque
++        # foreground service. Niente FOREGROUND_SERVICE_DATA_SYNC (obbligo
++        # aggiuntivo da API 34): il nostro android.api/targetSdk e' 28,
++        # sotto la soglia che lo richiede (verificato sulla documentazione
++        # ufficiale: quell'obbligo si applica solo alle app che dichiarano
++        # targetSdk 34+)
++        permissions.add("android.permission.FOREGROUND_SERVICE")
+         permissions = ", ".join(permissions)
+         self.set_value("app", "android.permissions", permissions)
+ 
+@@ -115,8 +126,18 @@
+         modules = ",".join(pysidedeploy_config.modules)
+         local_libs = ",".join(pysidedeploy_config.local_libs)
+         init_classes = ",".join(init_classes)
++        # PATCH locale: --native-service registra DownloadForegroundService
++        # nel manifest come <service> vero e proprio, nello stesso processo
++        # dell'app (nessun android:process, a differenza del meccanismo
++        # "servizio Python" nativo di p4a che gira in un processo/interprete
++        # a parte - qui basta un componente Java, il download resta nel
++        # thread Python di sempre) - vedi
++        # pythonactivity_foreground_service.patch e ANDROID_HISTORY.md.
++        # Individuato leggendo bootstraps/common/build/build.py di p4a
++        # (mappa native_services nel template del manifest)
+         extra_args = (f"--qt-libs={modules} --load-local-libs={local_libs}"
+-                      f" --init-classes={init_classes}")
++                      f" --init-classes={init_classes}"
++                      f" --native-service=org.kivy.android.DownloadForegroundService")
+         self.set_value("app", "p4a.extra_args", extra_args)
+ 
+         # TODO: does not work atm. Seems like a bug with buildozer

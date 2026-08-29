@@ -84,6 +84,7 @@ class PastyGrid():
     contextMenu = None
     actionCopy = None
     actionOpen = None
+    actionOpenFile = None
     actionRedownload = None
     actionStopRow = None
     actionClearRow = None
@@ -121,8 +122,21 @@ class PastyGrid():
         self.actionCopy.setIcon(QIcon(":/images/edit-copy"))
         if not Constants.IS_ANDROID:
             self.actionCopy.setShortcut('Ctrl+C')
-        self.actionOpen = self.contextMenu.addAction(MyText().ctxOpenFolder)
-        self.actionOpen.setIcon(QIcon(":/images/system-file-manager"))
+        # niente su Android: Tools.openFolder non fa nulla li' (nessun file
+        # manager di sistema raggiungibile allo stesso modo del desktop, vedi
+        # libs.py) - stessa ragione per cui la scelta doOpen e' disabilitata
+        # in Preferenze (vedi SettingsDialog.addForm3)
+        if not Constants.IS_ANDROID:
+            self.actionOpen = self.contextMenu.addAction(MyText().ctxOpenFolder)
+            self.actionOpen.setIcon(QIcon(":/images/system-file-manager"))
+        # apre il file della riga (non solo la cartella) con l'app
+        # predefinita del sistema - stessa azione gia' raggiungibile col
+        # doppio click su una riga completata (Tools.openFile, vedi
+        # Pasty.onRowDoubleClicked in main.py), qui accessibile anche da
+        # menu per chi non lo scopre/usa mai il doppio click (soprattutto su
+        # Android, dove "apri cartella" sopra non c'e' proprio)
+        self.actionOpenFile = self.contextMenu.addAction(MyText().ctxOpenFile)
+        self.actionOpenFile.setIcon(QIcon(":/images/media-playback-start"))
         self.actionRedownload = self.contextMenu.addAction(MyText().ctxDownloadNow)
         self.actionRedownload.setIcon(QIcon(":/images/emblem-downloads"))
         self.actionConvert = self.contextMenu.addAction(MyText().ctxConvertAudio)

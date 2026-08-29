@@ -9,6 +9,7 @@ from PySide6.QtCore import QFile, QTextStream, QIODevice, QSettings, QStandardPa
 from PySide6.QtGui import QClipboard
 from testi import MyText
 from constants import Constants
+from android_bridge import AndroidBridge
 
 import hashlib
 import logging
@@ -1501,6 +1502,30 @@ class Tools():
         else:
             os.startfile(foldername)
 
+    # Apre il file stesso (non solo la cartella) con l'app predefinita del
+    # sistema - usato dal doppio click su una riga gia' completata (vedi
+    # Pasty.onRowDoubleClicked in main.py). Su Linux 'xdg-open' invece del
+    # meccanismo dbus/ShowItems di openFolder sopra: quello serve solo a
+    # evidenziare un file nel file manager, non a lanciare l'app associata
+    # (es. il player video) - xdg-open e' lo standard freedesktop per questo,
+    # presente su qualunque desktop Linux con un file manager configurato.
+    # Su Android: vedi AndroidBridge.openFile
+    @classmethod
+    def openFile(cls, filepath):
+        if Constants.IS_ANDROID:
+            AndroidBridge.openFile(filepath)
+            return
+        try:
+            osName = cls.getOs()
+            if osName == 'linux':
+                subprocess.run(['xdg-open', filepath])
+            elif osName == 'mac':
+                subprocess.run(['open', filepath])
+            else:
+                os.startfile(filepath)
+        except Exception as err:
+            cls.consoleLogs("Impossibile aprire il file: " + str(err))
+
     @staticmethod
     def writeThisInFile(content, pathfile):
         try:
@@ -1517,7 +1542,7 @@ class Tools():
     def runType():
         if Constants.IS_ANDROID:
             return 'EXE'
-        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        elif getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             return 'EXE'
         else:
             return 'DEV'

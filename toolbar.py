@@ -95,6 +95,19 @@ class Menu():
     # initUi (Qt le tiene sincronizzate anche se aggiunte a piu' menu)
     def buildPopupMenu(self):
         popup = QMenu(self.app)
+        # senza, lo sfondo del popup (e dei suoi sotto-menu, che ereditano
+        # lo stesso foglio di stile per gerarchia QObject) resta trasparente
+        # su Android e si mimetizza con quello che c'e' sotto - stesso
+        # identico problema gia' risolto per il QDialog "Info" con
+        # setAutoFillBackground (vedi Pasty.openAboutPopup in main.py), ma
+        # QMenu non e' un widget "a finestra" nello stesso modo: la sua
+        # palette da sola non basta, serve un vero foglio di stile col
+        # colore esplicito. Stessi colori gia' usati per la griglia
+        # (Constants.getGridStyle), theme-aware allo stesso modo
+        isDark = Constants.isDarkTheme()
+        bg = Constants.COLOR_BG_GRID_DARK_DT if isDark else Constants.COLOR_BG_GRID_LIGHT
+        text = Constants.COLOR_WHITE if isDark else Constants.COLOR_BLACK
+        popup.setStyleSheet("QMenu { background-color: %s; color: %s; }" % (bg, text))
         menuFile = popup.addMenu(MyText().menuFile)
         menuFile.addAction(self.exitAction)
         menuEdit = popup.addMenu(MyText().menuEdit)

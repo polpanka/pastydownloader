@@ -1,14 +1,15 @@
 #!/usr/bin/python
 
 """
-Ponte Android per due funzionalita' lato Java (PythonActivity.java,
-patchato - vedi android/patches/pythonactivity_notify.patch e
-pythonactivity_foreground_service.patch): niente pyjnius disponibile su
-questo bootstrap (vedi android/patches/pythonactivity_permissions.patch),
-quindi Python non puo' chiamare direttamente l'API Java. Soluzione, in
-entrambi i casi: un file "a cassetta della posta" nella cartella privata
-dell'app (stessa di ANDROID_PRIVATE), scritto da Python e letto/consumato
-da un Handler Java in polling periodico:
+Ponte Android per tre funzionalita' lato Java (PythonActivity.java,
+patchato - vedi android/patches/pythonactivity_notify.patch,
+pythonactivity_foreground_service.patch e pythonactivity_openfile.patch):
+niente pyjnius disponibile su questo bootstrap (vedi
+android/patches/pythonactivity_permissions.patch), quindi Python non puo'
+chiamare direttamente l'API Java. Soluzione, in tutti i casi: un file "a
+cassetta della posta" nella cartella privata dell'app (stessa di
+ANDROID_PRIVATE), scritto da Python e letto/consumato da un Handler Java in
+polling periodico:
 
 - notify_outbox.txt: Pasty.progressFinished (main.py) ci scrive quando un
   batch finisce mentre l'app e' in background - Java legge, mostra la
@@ -20,6 +21,12 @@ da un Handler Java in polling periodico:
   processo esente dal freeze che Android applica alle app in background.
   Il contenuto del file (un messaggio gia' tradotto) e' quello che
   Java mostra nella notifica persistente, letto direttamente dal servizio
+- open_file_request.txt: Tools.openFile (libs.py), chiamato dal doppio
+  click su una riga gia' completata (Pasty.onRowDoubleClicked in main.py) -
+  ci scrive il percorso assoluto del file da aprire, Java lo legge e lo apre
+  con l'app predefinita del sistema (es. un player video) tramite un
+  content:// URI (FileProvider, vedi
+  android/patches/android_manifest_fileprovider.patch)
 
 NB: qui viveva anche il menu "Condividi" di sistema (link condivisi da
 altre app) - funzionalita' rimossa di proposito: il flusso di download
@@ -39,6 +46,7 @@ class AndroidBridge:
 
     NOTIFY_OUTBOX_FILENAME = 'notify_outbox.txt'
     DOWNLOAD_ACTIVE_FILENAME = 'download_active.txt'
+    OPEN_FILE_REQUEST_FILENAME = 'open_file_request.txt'
 
     @staticmethod
     def _privateDir():
@@ -105,3 +113,22 @@ class AndroidBridge:
                 os.remove(path)
         except OSError as err:
             logging.error('AndroidBridge: error removing download_active flag: ' + str(err))
+
+    @classmethod
+    def openFile(cls, filepath):
+        """Chiamato da Tools.openFile (libs.py) quando IS_ANDROID: scrive il
+        percorso assoluto, PythonActivity.pollOpenFileRequest lo consuma e
+        apre il file con l'app predefinita del sistema. 'w' (non 'a' come
+        notify_outbox): una sola richiesta alla volta ha senso qui, una
+        eventuale precedente non ancora consumata va sovrascritta, non
+        accodata"""
+        if not Constants.IS_ANDROID:
+            return
+        path = cls._pathFor(cls.OPEN_FILE_REQUEST_FILENAME)
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(filepath)
+        except OSError as err:
+            logging.error('AndroidBridge: error writing open file request: ' + str(err))

@@ -1,0 +1,28 @@
+--- a/pythonforandroid/bootstraps/qt/build/templates/AndroidManifest.tmpl.xml
++++ b/pythonforandroid/bootstraps/qt/build/templates/AndroidManifest.tmpl.xml
+@@ -102,6 +102,25 @@
+         <service android:name="{{ name }}" />
+         {% endfor %}
+ 
++        <!-- PATCH locale (PastyDownloader): FileProvider per aprire un file
++             gia' scaricato con l'app predefinita del sistema (es. un player
++             video) dal doppio click su una riga completata - vedi
++             PythonActivity.pollOpenFileRequest e
++             android/resources/xml/file_paths.xml. Nessun hook esistente nel
++             template per aggiungere un <provider> qui dentro (a differenza
++             di native_services/add_activity sotto), quindi valori fissi
++             invece di passarli da args - serve un solo provider statico,
++             non ne servira' mai un secondo -->
++        <provider
++                android:name="androidx.core.content.FileProvider"
++                android:authorities="{{ args.package }}.fileprovider"
++                android:exported="false"
++                android:grantUriPermissions="true">
++            <meta-data
++                    android:name="android.support.FILE_PROVIDER_PATHS"
++                    android:resource="@xml/file_paths" />
++        </provider>
++
+     {% for a in args.add_activity  %}
+     <activity android:name="{{ a }}"></activity>
+     {% endfor %}

@@ -463,6 +463,98 @@ nel log, file salvato nella cartella privata dell'app
 (`ANDROID_PRIVATE/Download`, vedi punto precedente). Prima vera
 funzionalita' di PastyDownloader che funziona su Android, non solo la UI.
 
+## 8. Cartella Download pubblica: targetSdk 28 + patch runtime permission
+
+Il download del punto 7 finiva nella cartella privata dell'app
+(`ANDROID_PRIVATE/Download`), non visibile all'utente in Files/Galleria.
+Obiettivo: farlo finire nella vera cartella pubblica `Download` condivisa.
+
+**Ipotesi iniziale sbagliata** (vedi ANDROID_HISTORY.md): si era concluso che
+servisse comunque un patch pyjnius/JNI per usare MediaStore,
+indipendentemente dal targetSdk. Non e' cosi': con `targetSdk <= 28` Android
+tratta l'app come "storage legacy" **indipendentemente dalla versione
+Android reale del device** - con questo e con `WRITE_EXTERNAL_STORAGE`
+concesso, un banale `open()`/`os.makedirs()` Python scrive direttamente in
+`/storage/emulated/0/Download/`, senza MediaStore e senza JNI.
+
+Restava un solo problema, verificato passo per passo:
+
+1. `targetSdk` abbassato a 28 nel `buildozer.py` patchato in locale (vedi
+   punto 4) - **28 e' anche il minimo richiesto da buildozer per
+   `android.enable_androidx`** (Qt6 lo richiede), non un valore a caso:
+   ```python
+   self.set_value("app", "android.api", "28")
+   ```
+2. `WRITE_EXTERNAL_STORAGE`/`READ_EXTERNAL_STORAGE` aggiunti a mano
+   all'elenco permessi (non derivano dalle dependency XML del wheel
+   PySide6):
+   ```python
+   permissions.add("android.permission.WRITE_EXTERNAL_STORAGE")
+   permissions.add("android.permission.READ_EXTERNAL_STORAGE")
+   ```
+3. `libs.py:downloadPath()` (branch Android) prova prima
+   `/storage/emulated/0/Download`, e solo se fallisce (`OSError`, es.
+   permesso non ancora concesso) ripiega sulla cartella privata
+   `ANDROID_PRIVATE/Download` di prima - nessuna regressione se qualcosa va
+   storto.
+4. **Verificato pero' via test manuale con `adb shell pm grant`** che il
+   permesso non veniva mai chiesto all'utente: install pulita, apertura app,
+   permesso restava `granted=false` per sempre, nessun popup a schermo.
+
+Causa reale (confermata leggendo il sorgente vero del bootstrap `qt` di
+python-for-android,
+`pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java`):
+`onCreate()` imposta le env var (`ANDROID_PRIVATE` ecc.) ma non chiama mai
+`requestPermissions()`. Il modulo Python `android.permissions` esisterebbe
+apposta per questo, ma e' costruito sopra pyjnius (verificato leggendo
+`pythonforandroid/recipes/android/src/android/permissions.py`), che qui non
+funziona (manca `WebView_AndroidGetJNIEnv`, vedi punto successivo). Anche
+l'API pubblica di Qt6 (`QPermission`) non copre lo storage (solo
+Bluetooth/Camera/Calendar/Contacts/Location/Microphone, verificato sia nei
+binding PySide6 sia su un thread ufficiale del forum Qt).
+
+**Fix: patch mirata su `PythonActivity.java`**, non generica su pyjnius.
+Aggiunto un metodo `requestNeededPermissions()` chiamato a inizio `onCreate`:
+legge i permessi "dangerous" dichiarati nel manifest via `PackageManager` e
+chiama `requestPermissions()` (API nativa Android, nessun bridge Python↔Java
+necessario per la chiamata in se') per quelli non ancora concessi. Nessun
+JNI dinamico coinvolto, quindi non tocca il simbolo rotto che frega pyjnius.
+
+Per farla sopravvivere al clone-and-purge di ogni build (il tool clona p4a
+da zero ad ogni run), serve un checkout persistente locale invece di
+lasciare che il tool lo scarichi da GitHub ogni volta:
+
+```bash
+git clone --branch develop --depth 1 https://github.com/kivy/python-for-android.git \
+  "$HOME/.pyside6_android_deploy/python-for-android"
+```
+
+poi patchare a mano
+`$HOME/.pyside6_android_deploy/python-for-android/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java`
+(aggiungere `requestNeededPermissions()` e la chiamata in `onCreate`), e nel
+`buildozer.py` locale puntarci con `p4a.source_dir` (chiave gia' prevista da
+buildozer, di default vuota) invece di lasciare `p4a.branch`/clone
+automatico fare il lavoro:
+
+```python
+self.set_value("app", "p4a.source_dir",
+               str(Path.home() / ".pyside6_android_deploy" / "python-for-android"))
+```
+
+Bonus non previsto: con `p4a.source_dir` impostato il tool salta
+completamente la clonazione fresca di p4a ad ogni build, quindi le build
+successive sono molto piu' veloci (secondi invece di minuti sulla fase
+Gradle, nessun re-clone).
+
+**Risultato: successo, verificato su device reale.** Install pulita da
+zero → l'app chiede davvero il permesso storage al primo avvio → concesso →
+`dumpsys package ... | grep WRITE_EXTERNAL_STORAGE` conferma
+`granted=true` → il download dello stesso
+`https://pdfobject.com/pdf/sample.pdf` di prima finisce in
+`/storage/emulated/0/Download/`, visibile nell'app Files del telefono.
+Log di conferma in logcat (tag `PythonActivity`, verbose):
+`android.permission.WRITE_EXTERNAL_STORAGE granted=true`.
+
 ## Cosa aspettarsi che si rompa ancora
 
 - **La build vera stessa**: fermata al primo giro su una dipendenza di

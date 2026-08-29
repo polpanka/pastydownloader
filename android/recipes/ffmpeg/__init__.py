@@ -5,8 +5,11 @@ from multiprocessing import cpu_count
 
 
 # PATCH locale (PastyDownloader): copia della recipe ufficiale p4a
-# (pythonforandroid/recipes/ffmpeg), unica
-# differenza: rimosso `depends = [('sdl2', 'sdl3')]`. Nel sorgente originale
+# (pythonforandroid/recipes/ffmpeg), con diverse differenze accumulate nel
+# tempo (ognuna commentata per esteso dove compare, marcatore "PATCH
+# locale") - per il diff completo rispetto all'ufficiale, vedi
+# UPSTREAM_DIFF_REFERENCE.patch in questa stessa cartella. La prima e più
+# semplice: rimosso `depends = [('sdl2', 'sdl3')]`. Nel sorgente originale
 # quel campo serve solo a forzare l'ordine di build ("Need this to build
 # correct recipe order", mai referenziato in get_recipe_env/build_arch), ma
 # essendo un depends "duro" il risolutore di dipendenze di p4a lo richiede in
@@ -32,7 +35,9 @@ class FFMpegRecipe(Recipe):
     # opts_depends non garantiva l'edge nel grafo per questa combinazione),
     # facendo fallire ./configure con "ld.lld: error: unable to find
     # library -lssl/-lcrypto" perche' openssl non era ancora compilato
-    depends = ['openssl']
+    # PATCH locale: libshine aggiunto per l'encoder MP3 (vedi build_arch
+    # sotto e android/recipes/libshine/) - ANDROID_HISTORY.md punto 18/19
+    depends = ['openssl', 'libshine']
     opts_depends = ['ffpyplayer_codecs', 'av_codecs']
     patches = ['patches/configure.patch', 'patches/backport-Android15-MediaCodec-fix.patch']
     # PATCH locale: libffmpegbin.so statico, non piu' un eseguibile linkato
@@ -66,7 +71,23 @@ class FFMpegRecipe(Recipe):
         with current_directory(self.get_build_dir(arch.arch)):
             env = arch.get_env()
 
-            flags = ['--disable-everything']
+            # PATCH locale: nella recipe ufficiale p4a questo '--disable-everything'
+            # viene scritto qui e poi immediatamente scartato dalla riassegnazione
+            # 'flags = [...]' due righe sotto (non 'flags += [...]') - dead code,
+            # gia' cosi' anche a monte (verificato contro la recipe ufficiale
+            # p4a), non un errore introdotto qui. La build quindi NON riparte
+            # da un ffmpeg minimale: usa il set di codec/formati di default di
+            # ffmpeg, a cui sotto vengono solo AGGIUNTI extra (openssl,
+            # libshine) o abilitate opzioni - le liste
+            # --enable-parser/decoder/muxer/demuxer piu' sotto (ramo 'else')
+            # NON sono percio' una restrizione effettiva, sono ridondanti col
+            # default gia' attivo. Rimosso qui per non suggerire un'intenzione
+            # di minimizzazione che non esiste: "fixarlo" per davvero
+            # (farlo funzionare sul serio) rischierebbe di disabilitare
+            # decoder/demuxer non elencati esplicitamente ma di cui l'app si
+            # affida implicitamente oggi (es. webm/vp9/opus, comuni su
+            # YouTube) - andrebbe fatto solo con un ripasso dedicato e test
+            # per formato, non di sfuggita qui
             cflags = []
             ldflags = []
 
@@ -87,6 +108,33 @@ class FFMpegRecipe(Recipe):
                     'openssl', self.ctx).get_build_dir(arch.arch)
                 cflags += ['-I' + build_dir + '/include/']
                 ldflags += ['-L' + build_dir, '-lssl', '-lcrypto']
+
+            # PATCH locale: encoder MP3 (libshine, vedi android/recipes/
+            # libshine/) - a differenza di libx264/libvpx/libshine nel ramo
+            # "if" sotto (attivo solo con ffpyplayer_codecs/av_codecs nei
+            # requirements, che noi non usiamo), qui va sempre, perche' e'
+            # l'unico codec extra che vogliamo (non "abilita tutto" come fa
+            # quel ramo). --enable-gpl e' richiesto da libshine stesso
+            # (licenza GPL, come --enable-libx264/--enable-libvpx sotto).
+            #
+            # Linkato a mano via -I/-L/-lshine (come openssl qui sopra),
+            # NON via pkg-config: due tentativi falliti prima di trovare
+            # questo (vedi ANDROID_HISTORY.md punto 19) hanno scoperto che
+            # patches/configure.patch - gia' esistente, scritta per bypassare
+            # pkg-config su openssl/x264 perche' inaffidabile in questo
+            # ambiente cross-compile - aveva gia' riscritto anche la riga di
+            # libshine nel configure di ffmpeg, da
+            # "require_pkg_config libshine shine shine/layer3.h
+            # shine_encode_buffer" a
+            # "require \"shine\" shine/layer3.h shine_encode_buffer -lshine
+            # -lm": un controllo manuale (via check_lib/-lshine), non
+            # pkg-config. Serve quindi che -lshine si risolva con i normali
+            # meccanismi -I/-L del compilatore, non con PKG_CONFIG_PATH
+            flags += ['--enable-gpl', '--enable-libshine']
+            libshine_build_dir = Recipe.get_recipe(
+                'libshine', self.ctx).get_build_dir(arch.arch)
+            cflags += ['-I' + libshine_build_dir + '/include/']
+            ldflags += ['-L' + libshine_build_dir + '/lib/', '-lshine']
 
             codecs_opts = {"ffpyplayer_codecs", "av_codecs"}
             if codecs_opts.intersection(self.ctx.recipe_build_order):
@@ -126,11 +174,14 @@ class FFMpegRecipe(Recipe):
                     '--enable-demuxers',
                 ]
             else:
-                # Enable codecs only for .mp4:
+                # Enable codecs only for .mp4 (+ mp3 muxer, per l'encoder
+                # libshine abilitato sopra - senza mp3 in questa lista un
+                # '.mp3' in output fallirebbe con "Unknown encoder/muxer"
+                # anche con l'encoder disponibile):
                 flags += [
                     '--enable-parser=aac,ac3,h261,h264,mpegaudio,mpeg4video,mpegvideo,vc1',
                     '--enable-decoder=aac,h264,mpeg4,mpegvideo',
-                    '--enable-muxer=h264,mov,mp4,mpeg2video',
+                    '--enable-muxer=h264,mov,mp4,mpeg2video,mp3',
                     '--enable-demuxer=aac,h264,m4v,mov,mpegvideo,vc1,rtsp',
                 ]
 
@@ -181,6 +232,15 @@ class FFMpegRecipe(Recipe):
                 # gioco solo con --enable-static, vedi sopra)
                 '--ar={}'.format(self.ctx.ndk.llvm_ar),
                 '--ranlib={}'.format(self.ctx.ndk.llvm_ranlib),
+                # PATCH locale: stesso identico problema di --ar sopra, ma
+                # per pkg-config - il default di ffmpeg diventa
+                # "<cross-prefix>pkg-config" (vedi pkg_config_default nel
+                # configure di ffmpeg), un binario che non esiste da nessuna
+                # parte (l'NDK non ne fornisce uno cross-prefissato). Senza
+                # questo, "ERROR: shine not found" anche con PKG_CONFIG_PATH
+                # giusto (vedi sopra): il comando pkg-config cercato non
+                # viene proprio trovato, non e' un problema di percorso .pc
+                '--pkg-config=pkg-config',
                 '--sysroot={}'.format(self.ctx.ndk.sysroot),
                 '--enable-neon',
                 '--prefix={}'.format(realpath('.')),
@@ -197,8 +257,24 @@ class FFMpegRecipe(Recipe):
             env['CFLAGS'] += ' ' + ' '.join(cflags)
             env['LDFLAGS'] += ' ' + ' '.join(ldflags)
 
+            # PATCH locale: se ./configure fallisce, salva il suo vero log
+            # diagnostico (ffbuild/config.log - mostra ogni singolo test di
+            # libreria/funzione tentato, molto piu' utile del semplice
+            # "ERROR: X not found" a schermo) in un posto che sopravvive -
+            # pyside6-android-deploy ripulisce .buildozer/ appena la build
+            # fallisce, senza questo il log diagnostico andrebbe perso prima
+            # di poterlo leggere (successo scoperto a caro prezzo mentre si
+            # capiva perche' l'encoder MP3 non si linkava, vedi
+            # ANDROID_HISTORY.md punto 19)
             configure = sh.Command('./configure')
-            shprint(configure, *flags, _env=env)
+            try:
+                shprint(configure, *flags, _env=env)
+            finally:
+                import shutil as _shutil
+                config_log_src = 'ffbuild/config.log'
+                if exists(config_log_src):
+                    _shutil.copy(config_log_src, '/tmp/ffmpeg_config_debug.log')
+
             shprint(sh.make, '-j', f"{cpu_count()}", _env=env)
             shprint(sh.make, 'install', _env=env)
             shprint(sh.cp, "ffmpeg", "./lib/libffmpegbin.so")

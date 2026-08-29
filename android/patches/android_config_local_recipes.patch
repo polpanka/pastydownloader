@@ -1,0 +1,24 @@
+--- a/PySide6/scripts/deploy_lib/android/android_config.py
++++ b/PySide6/scripts/deploy_lib/android/android_config.py
+@@ -455,4 +455,21 @@
+                           generated_files_path=self.generated_files_path)
+             recipe_dir = ((self.generated_files_path
+                            / "recipes").resolve())
++            # PATCH locale (PastyDownloader): questa funzione forza sempre
++            # recipe_dir dentro generated_files_path ("deployment/"), che
++            # pyside6-android-deploy ripulisce con shutil.rmtree() a ogni
++            # run --force (vedi deploy_lib/deploy_util.py:cleanup) - una
++            # recipe custom messa li' a mano sparirebbe prima ancora che la
++            # build parta. Le copiamo qui da una posizione tracciata e
++            # stabile (android/recipes/), fuori da qualunque cartella che il
++            # tool cancella - ogni sottocartella e' una recipe locale a se'
++            # (oggi ffmpeg e libshine, vedi ANDROID_HISTORY.md punto 18/19)
++            import shutil
++            local_recipes_dir = self.source_file.parent / "android" / "recipes"
++            if local_recipes_dir.is_dir():
++                for local_recipe in local_recipes_dir.iterdir():
++                    if not local_recipe.is_dir():
++                        continue
++                    shutil.copytree(local_recipe, recipe_dir / local_recipe.name, dirs_exist_ok=True)
++                    logging.info(f"[DEPLOY] Copiata recipe locale {local_recipe.name} in {recipe_dir / local_recipe.name}")
+         return recipe_dir

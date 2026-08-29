@@ -29,6 +29,18 @@ class _LongPressTableWidget(QTableWidget):
         self._pressTimer.setSingleShot(True)
         self._pressTimer.timeout.connect(self._onLongPress)
         self._pressPos = None
+        # se durante i 500ms di attesa la struttura della griglia cambia (una
+        # riga aggiunta/rimossa/spostata - es. un download che finisce e
+        # sparisce dalla lista proprio mentre l'utente sta tenendo premuto),
+        # la riga che si trova sotto _pressPos alla scadenza del timer
+        # potrebbe non essere piu' quella davvero premuta, anche se lo
+        # spostamento del dito e' rimasto sotto MOVE_TOLERANCE_PX (quel
+        # controllo copre solo lo scroll, non un riordino delle righe stesse)
+        # - annulla il long-press in quel caso, niente menu contestuale su
+        # una riga sbagliata
+        self.model().rowsInserted.connect(self._pressTimer.stop)
+        self.model().rowsRemoved.connect(self._pressTimer.stop)
+        self.model().rowsMoved.connect(self._pressTimer.stop)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -113,7 +125,7 @@ class PastyGrid():
         self.actionOpen.setIcon(QIcon(":/images/system-file-manager"))
         self.actionRedownload = self.contextMenu.addAction(MyText().ctxDownloadNow)
         self.actionRedownload.setIcon(QIcon(":/images/emblem-downloads"))
-        self.actionConvert = self.contextMenu.addAction(MyText().ctxConvertMp3)
+        self.actionConvert = self.contextMenu.addAction(MyText().ctxConvertAudio)
         self.actionConvert.setIcon(QIcon(":/images/mediaplayer-app"))
         self.contextMenu.addSeparator()
         self.actionStopRow = self.contextMenu.addAction(MyText().ctxStop)

@@ -183,8 +183,18 @@ class YtDlpUpdater(QObject):
             ok, msg = Tools.downloadNotAsyncGeneric(wheelUrl, wheelPath, timeout=(10, 30))
             if not ok:
                 raise IOError('Download failed: ' + str(msg))
-            if sha256Expected and Tools.sha256OfFile(wheelPath).lower() != str(sha256Expected).lower():
-                raise ValueError('Checksum mismatch for yt-dlp %s, discarding' % version)
+            if sha256Expected:
+                if Tools.sha256OfFile(wheelPath).lower() != str(sha256Expected).lower():
+                    raise ValueError('Checksum mismatch for yt-dlp %s, discarding' % version)
+            else:
+                # capita se la risposta JSON di PyPI per questo file non
+                # include affatto 'digests.sha256' - raro ma non impossibile,
+                # e non e' un motivo per bloccare l'installazione (resta
+                # comunque protetta dalla verifica funzionale sotto,
+                # verifyYtDlpImportable): va pero' loggato, non saltato in
+                # silenzio, perche' e' l'unico controllo di integrita' del
+                # download che stiamo perdendo in quel caso
+                Tools.consoleLogs("yt-dlp %s: nessun sha256 pubblicato da PyPI per questo file, controllo integrita' saltato" % version)
             # un wheel e' solo uno zip: nessun passo di build, e' gia' pura
             # Python (py3-none-any) - basta estrarlo cosi' com'e'
             extractDir = os.path.join(tmp, 'extracted')
@@ -240,14 +250,27 @@ class YtDlpUpdater(QObject):
     # successivo; su Linux/Mac cancellare i file di un processo in esecuzione
     # e' comunque innocuo di per se' (il kernel mantiene l'inode finche' il
     # processo lo tiene aperto, anche dopo la cancellazione della voce su disco)
+    # Tutto il corpo e' dentro un try/except generico (non solo la rimozione
+    # delle singole cartelle, gia' coperta sotto): entrambi i chiamanti
+    # (_downloadAndInstall, dopo un'installazione gia' riuscita, ed
+    # ensureInstalled, quando yt-dlp era gia' installato) non hanno un
+    # try/except proprio attorno a questa chiamata, quindi un problema qui
+    # (es. Tools.installedYtDlpVersions()/os.listdir(root) che sollevano per
+    # permessi o disco) si propagherebbe fino al loro try/except esterno - in
+    # ensureInstalled() questo significherebbe ready.emit(False), che chiude
+    # l'intera app (vedi Pasty.onYtDlpReady) per un problema di sola pulizia,
+    # non di installazione ne' funzionamento
     @classmethod
     def _pruneOldVersions(cls):
-        root = Tools.ytDlpStorageDir()
-        keep = set(Tools.installedYtDlpVersions()[-cls.KEEP_VERSIONS:])
-        for name in os.listdir(root):
-            if name in keep:
-                continue
-            try:
-                shutil.rmtree(os.path.join(root, name))
-            except OSError as err:
-                Tools.consoleLogs("Could not prune old yt-dlp %s yet: %s" % (name, err))
+        try:
+            root = Tools.ytDlpStorageDir()
+            keep = set(Tools.installedYtDlpVersions()[-cls.KEEP_VERSIONS:])
+            for name in os.listdir(root):
+                if name in keep:
+                    continue
+                try:
+                    shutil.rmtree(os.path.join(root, name))
+                except OSError as err:
+                    Tools.consoleLogs("Could not prune old yt-dlp %s yet: %s" % (name, err))
+        except Exception as err:
+            Tools.consoleLogs("yt-dlp: pulizia versioni vecchie fallita (non bloccante): " + str(err))

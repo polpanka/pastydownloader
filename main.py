@@ -256,6 +256,22 @@ class Pasty(QMainWindow):
         self.ytDlpUpdater.statusMessageNow.connect(self.statusQueue.showNow)
         self.ytDlpUpdater.ready.connect(self.onYtDlpReady)
         if Constants.IS_ANDROID:
+            if not Tools.checkFFmpeg():
+                # su Android ffmpeg e' bundlato nell'APK stesso (vedi
+                # Tools.checkFFmpeg), mai scaricato a runtime come su
+                # desktop: se manca qui e' un difetto della build (recipe non
+                # inclusa), non qualcosa che FfmpegInstaller possa risolvere -
+                # fallisce subito con lo stesso popup che fetchRows()
+                # mostrerebbe comunque al primo download, invece di lasciare
+                # l'app sembrare "pronta" fino a quel momento.
+                # QTimer.singleShot(0, ...) invece di chiamarlo qui
+                # direttamente: siamo ancora dentro il costruttore, prima che
+                # l'event loop giri e la finestra sia mostrata - stesso
+                # tempismo con cui il popup arriva gia' oggi dagli altri due
+                # rami (onFfmpegReady/onYtDlpReady, chiamati in modo asincrono
+                # da un thread in background)
+                QTimer.singleShot(0, self.showInstallFailedPopup)
+                return
             self.dependenciesReady = bool(Tools.checkYtDlp())
             if self.dependenciesReady:
                 self.startYtDlpPeriodicUpdates()
@@ -555,10 +571,22 @@ class Pasty(QMainWindow):
             # move process in separated thread
             Tools.consoleLogs("Starting download thread for rows: " + str(rows))
             self.setStatusBar(MyText().msgDownloadStarted)
+            # solo Android: tiene il processo esente dal freeze in
+            # background per tutta la durata del batch (vedi
+            # android_bridge.py e ANDROID_HISTORY.md) - scritto subito,
+            # prima ancora di sapere se l'app restera' in primo piano o no
+            AndroidBridge.startForegroundDownload(MyText().msgDownloadStarted)
             self.time_start_download = time.time()
             self.moveProcessInSeparatedThread([rows, ffmpeg])
         except Exception as err:
             Tools.consoleLogs("Error #1 unexpected: " + str(err))
+            # se moveProcessInSeparatedThread e' fallito dopo aver gia'
+            # avviato il Foreground Service qui sopra, self.asyncExec non
+            # arrivera' mai a emettere 'finished' -> progressFinished (che
+            # normalmente lo ferma) non scatterebbe mai, lasciando il
+            # servizio/la notifica "Download in corso..." appesi per
+            # sempre. Va fermato esplicitamente anche su questo percorso
+            AndroidBridge.stopForegroundDownload()
             self.resetUi()
     
     def moveProcessInSeparatedThread(self, asyncParams):
@@ -586,6 +614,9 @@ class Pasty(QMainWindow):
         # (vedi android_bridge.py) - se e' visibile l'utente vede gia' tutto
         # nella griglia/status bar
         AndroidBridge.notifyDownloadFinished(msg)
+        # solo Android: batch finito (successo, errore o Stop, arriva
+        # comunque qui) - ferma il Foreground Service avviato in fetchRows
+        AndroidBridge.stopForegroundDownload()
         # solo le righe di QUESTO batch, non l'intera griglia: altrimenti un ri-download singolo fallito potrebbe aprire comunque la cartella
         thisBatchRows = self.asyncExec.rowsToDownload if self.asyncExec.rowsToDownload else range(self.pastyGrid.grid.rowCount())
         # su Android l'opzione e' disabilitata in Preferenze (vedi

@@ -44,6 +44,10 @@ Thumbs.db
 *.app
 *.war
 
+# venv di sviluppo desktop (era finita per errore fuori dal progetto, in
+# ~/PyCharmMiscProject - spostata qui il 2026-08-28)
+.venv/
+
 # Esperimento Android (vedi ANDROID.md)
 .venv-android/
 *.apk

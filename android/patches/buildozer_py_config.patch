@@ -3,7 +3,7 @@
 @@ -24,7 +24,20 @@
          include_exts = f"{include_exts},qml,js"
          self.set_value("app", "source.include_exts", include_exts, raise_warning=False)
- 
+
 -        self.set_value("app", "requirements", "python3,shiboken6,PySide6")
 +        # PATCH locale: fissa la versione della recipe python3 a 3.11 per
 +        # matchare l'ABI cp311 delle wheel PySide6/Shiboken6 Android scaricate
@@ -19,13 +19,13 @@
 +        self.set_value("app", "requirements",
 +                       "python3==3.11.16,hostpython3==3.11.16,shiboken6,PySide6,"
 +                       "requests,aiohttp,aiofiles,certifi")
- 
+
          # android platform specific
          if pysidedeploy_config.ndk_path:
-@@ -46,11 +59,30 @@
+@@ -46,11 +59,40 @@
          # TODO: remove this once the above commit is merged to master
          self.set_value("app", "p4a.branch", "develop")
- 
+
 +        # PATCH locale: checkout persistente di python-for-android (branch
 +        # develop, patchato a mano - vedi PythonActivity.java li' dentro e
 +        # ANDROID.md) invece del clone-and-purge di default del tool a ogni
@@ -43,12 +43,22 @@
 +        permissions.add("android.permission.READ_EXTERNAL_STORAGE")
          permissions = ", ".join(permissions)
          self.set_value("app", "android.permissions", permissions)
- 
+
 +        # PATCH locale: targetSdk abbassato a 28 per ottenere storage
 +        # "legacy" (scrittura diretta in /storage/emulated/0/Download senza
 +        # MediaStore/JNI, indipendentemente dalla versione Android reale del
 +        # device) - tentativo prima del patch pyjnius, vedi ANDROID.md
 +        self.set_value("app", "android.api", "28")
++
++        # PATCH locale: senza questo, buildozer usa il suo default
++        # "orientation = portrait" (vedi default.spec del pacchetto
++        # buildozer) - l'Activity risulta bloccata in verticale e il
++        # telefono ruotato non genera nessun resize/layout, indipendentemente
++        # dal fatto che la UI Qt (basata su QVBoxLayout/QHBoxLayout, non su
++        # coordinate fisse) si adatterebbe gia' da sola. "unspecified" lascia
++        # decidere al sistema/all'utente (rotazione automatica), come una
++        # normale app
++        self.set_value("app", "android.manifest.orientation", "unspecified")
 +
          # add jars and initClasses for the jars
          jars, init_classes = self.__find_jars(pysidedeploy_config.dependency_files,

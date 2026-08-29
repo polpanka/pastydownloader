@@ -26,7 +26,7 @@ import os, sys, time, threading, multiprocessing
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
     from PySide6.QtCore import QSettings, QTimer, Signal, Qt
-    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
+    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QPalette
 except ImportError:
     # Nessun toolkit grafico disponibile (tipicamente OS troppo vecchio per i
     # binari bundlati) - niente QMessageBox possibile qui, serve un dialogo
@@ -336,11 +336,16 @@ class Pasty(QMainWindow):
         self.stop = False
     
     def _buildHamburgerIcon(self):
-        color = Constants.COLOR_WHITE if Constants.isDarkTheme() else Constants.COLOR_BLACK
+        # invece di indovinare bianco/nero da Constants.isDarkTheme() (si e'
+        # rivelato sbagliato col tema light - icona invisibile): chiede
+        # direttamente al bottone quale colore usa lui stesso per il proprio
+        # testo, garantito coerente con lo sfondo effettivo che Qt gli ha
+        # assegnato, qualunque esso sia
+        color = self.menuButton.palette().color(QPalette.ButtonText)
         pixmap = QPixmap(32, 32)
         pixmap.fill(Qt.transparent)
         painter = QPainter(pixmap)
-        pen = QPen(QColor(color))
+        pen = QPen(color)
         pen.setWidth(3)
         painter.setPen(pen)
         for y in (8, 16, 24):
@@ -566,7 +571,11 @@ class Pasty(QMainWindow):
         Tools.consoleLogs(msg)
         # solo le righe di QUESTO batch, non l'intera griglia: altrimenti un ri-download singolo fallito potrebbe aprire comunque la cartella
         thisBatchRows = self.asyncExec.rowsToDownload if self.asyncExec.rowsToDownload else range(self.pastyGrid.grid.rowCount())
-        if not self.stop and self.settings.value('doOpen') != 'nothing' and self.pastyGrid.hasAnyCompletedRow(thisBatchRows):
+        # su Android l'opzione e' disabilitata in Preferenze (vedi
+        # SettingsDialog.addForm3) perche' Tools.openFolder non fa nulla li',
+        # ma un valore 'open' salvato prima di questa modifica potrebbe
+        # essere ancora in QSettings - ignorato esplicitamente anche qui
+        if not Constants.IS_ANDROID and not self.stop and self.settings.value('doOpen') != 'nothing' and self.pastyGrid.hasAnyCompletedRow(thisBatchRows):
             Tools.openDownloadFolder()
         self.resetUi(msg)
         if Constants.IS_ANDROID:

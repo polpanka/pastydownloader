@@ -112,6 +112,12 @@ class SettingsDialog(QDialog):
         indexFound = self.doOpen.findData(current) if current else -1
         if indexFound != -1:
             self.doOpen.setCurrentIndex(indexFound)
+        if Constants.IS_ANDROID:
+            # Tools.openFolder usa dbus-send/FileManager1 (desktop Linux),
+            # su Android non fa nulla (vedi Menu.buildPopupMenu in
+            # toolbar.py) - non ha senso lasciare la scelta selezionabile
+            self.doOpen.setCurrentIndex(self.doOpen.findData('nothing'))
+            self.doOpen.setEnabled(False)
         layout = QFormLayout()
         layout.addRow(self.doOpen)
         self.formGroupBox3.setLayout(layout)

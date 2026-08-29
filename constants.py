@@ -103,8 +103,16 @@ class Constants:
     # Qt Widgets, ma ingrandire il font di default dell'app si propaga da
     # solo a (quasi) tutti i widget standard (bottoni, label, header/celle
     # della griglia, menu) perche' lo ereditano da QApplication.font()
-    # invece di uno fisso per-widget
-    ANDROID_FONT_SCALE = 1.6
+    # invece di uno fisso per-widget.
+    # Dimensione ASSOLUTA, non un moltiplicatore relativo a app.font():
+    # lo stile nativo Android sembra riportare un QApplication.font() di
+    # base diverso a seconda dello schema colore attivo (Light/Dark) - un
+    # moltiplicatore sopra un baseline che cambia da solo dava caratteri
+    # corretti col tema dark ma enormi col tema light. 16pt e' anche la
+    # dimensione body-text di default di Material Design su Android
+    # (16sp), e coincide con quanto dava gia' il ×1.6 che sul tema dark
+    # risultava corretto
+    ANDROID_FONT_POINT_SIZE = 16
 
     # QApplication.palette() su Android spesso resta quella di default anche
     # a tema scuro attivo (vedi isDarkTheme sopra) - i widget nativi si
@@ -151,10 +159,7 @@ class Constants:
         from PySide6.QtWidgets import QApplication
         app = QApplication.instance()
         font = app.font()
-        if font.pointSize() > 0:
-            font.setPointSizeF(font.pointSize() * Constants.ANDROID_FONT_SCALE)
-        elif font.pixelSize() > 0:
-            font.setPixelSize(int(font.pixelSize() * Constants.ANDROID_FONT_SCALE))
+        font.setPointSizeF(Constants.ANDROID_FONT_POINT_SIZE)
         app.setFont(font)
 
     @staticmethod

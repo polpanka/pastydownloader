@@ -65,7 +65,8 @@ class PastyGrid():
         self.contextMenu = QMenu(self.grid)
         self.actionCopy = self.contextMenu.addAction(MyText().ctxCopyLink)
         self.actionCopy.setIcon(QIcon(":/images/edit-copy"))
-        self.actionCopy.setShortcut('Ctrl+C')
+        if not Constants.IS_ANDROID:
+            self.actionCopy.setShortcut('Ctrl+C')
         self.actionOpen = self.contextMenu.addAction(MyText().ctxOpenFolder)
         self.actionOpen.setIcon(QIcon(":/images/system-file-manager"))
         self.actionRedownload = self.contextMenu.addAction(MyText().ctxDownloadNow)

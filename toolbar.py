@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QMenu
 from libs import Tools
 from testi import MyText
 from settings import SettingsDialog
+from constants import Constants
 
 
 class Menu():
@@ -37,12 +38,16 @@ class Menu():
         # File
         self.openAction = QAction(MyText().ctxOpenFolder, app)
         self.openAction.setIcon(QIcon(":/images/system-file-manager"))
-        self.openAction.setShortcut('Ctrl+O')
-        self.openAction.triggered.connect(lambda x: Tools().openDownloadFolder())
         self.exitAction = QAction(MyText().actionExit, app)
         self.exitAction.setIcon(QIcon(":/images/exit"))
-        self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.triggered.connect(self.closeAll)
+        if not Constants.IS_ANDROID:
+            # scorciatoie da tastiera senza senso su un device touch, e nel
+            # popup Android (Menu.buildPopupMenu) finirebbero solo per
+            # affollare inutilmente la voce di menu
+            self.openAction.setShortcut('Ctrl+O')
+            self.exitAction.setShortcut('Ctrl+Q')
+        self.openAction.triggered.connect(lambda x: Tools().openDownloadFolder())
         menuFile = menu.addMenu(MyText().menuFile)
         menuFile.addAction(self.openAction)
         menuFile.addAction(self.exitAction)
@@ -91,7 +96,8 @@ class Menu():
     def buildPopupMenu(self):
         popup = QMenu(self.app)
         menuFile = popup.addMenu(MyText().menuFile)
-        menuFile.addAction(self.openAction)
+        if not Constants.IS_ANDROID:
+            menuFile.addAction(self.openAction)
         menuFile.addAction(self.exitAction)
         menuEdit = popup.addMenu(MyText().menuEdit)
         menuEdit.addAction(self.starAction)

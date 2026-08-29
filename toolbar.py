@@ -3,6 +3,7 @@
 
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import QMenu
 from libs import Tools
 from testi import MyText
 from settings import SettingsDialog
@@ -82,6 +83,29 @@ class Menu():
 
         # other
         self.setMenuType(self.TYPE_STANDARD)
+
+    # QMenuBar non e' raggiungibile su Android (vedi Pasty.openMenuPopup in
+    # main.py) - popup ricostruito a ogni apertura cosi' riflette subito
+    # l'eventuale sblocco di DEVEL, riusa le stesse QAction gia' create in
+    # initUi (Qt le tiene sincronizzate anche se aggiunte a piu' menu)
+    def buildPopupMenu(self):
+        popup = QMenu(self.app)
+        menuFile = popup.addMenu(MyText().menuFile)
+        menuFile.addAction(self.openAction)
+        menuFile.addAction(self.exitAction)
+        menuEdit = popup.addMenu(MyText().menuEdit)
+        menuEdit.addAction(self.starAction)
+        menuEdit.addAction(self.stopAction)
+        menuEdit.addAction(self.clearAction)
+        menuEdit.addAction(self.settingsAction)
+        menuHelp = popup.addMenu(MyText().menuHelp)
+        menuHelp.addAction(self.updatesAction)
+        menuHelp.addAction(self.aboutAction)
+        if self.populateAction is not None:
+            menuDevel = popup.addMenu('DEVEL')
+            menuDevel.addAction(self.populateAction)
+            menuDevel.addAction(self.resetLanguageAction)
+        return popup
 
     def _trackDevelModeUnlock(self):
         if self.app.DEVEL_MODE:

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys, os
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QGroupBox, QPushButton, QLineEdit, QFormLayout, QComboBox, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QGroupBox, QPushButton, QLineEdit, QFormLayout, QComboBox, QFileDialog, QMessageBox, QScrollArea, QWidget, QApplication
 from PySide6.QtCore import QSettings
 from libs import Tools
 from testi import MyText
@@ -27,7 +27,7 @@ class SettingsDialog(QDialog):
         super(SettingsDialog, self).__init__()
         self.parentApp = parentApp
         self.setWindowTitle(MyText().prefsTitle)
-        self.resize(500, 0)
+        self.setAutoFillBackground(True)
         self.addForm0()
         self.addForm1()
         self.addForm2()
@@ -35,13 +35,31 @@ class SettingsDialog(QDialog):
         self.addForm4()
         self.addExitButtons()
 
-        # creating a vertical layout
+        formsLayout = QVBoxLayout()
+        formsLayout.addWidget(self.formGroupBox0)
+        formsLayout.addWidget(self.formGroupBox1)
+        formsLayout.addWidget(self.formGroupBox2)
+        formsLayout.addWidget(self.formGroupBox3)
+        formsLayout.addWidget(self.formGroupBox4)
+
         mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.formGroupBox0)
-        mainLayout.addWidget(self.formGroupBox1)
-        mainLayout.addWidget(self.formGroupBox2)
-        mainLayout.addWidget(self.formGroupBox3)
-        mainLayout.addWidget(self.formGroupBox4)
+        if Constants.IS_ANDROID:
+            # dimensione fissa 500px pensata per desktop - su schermo
+            # piccolo, coi caratteri ingranditi (Constants.applyAndroidFontScale),
+            # il contenuto puo' superare l'altezza dello schermo e rendere
+            # OK/Annulla irraggiungibili: contenuto scrollabile, pulsanti
+            # sempre visibili fuori dallo scroll
+            formsWidget = QWidget()
+            formsWidget.setLayout(formsLayout)
+            scrollArea = QScrollArea()
+            scrollArea.setWidget(formsWidget)
+            scrollArea.setWidgetResizable(True)
+            mainLayout.addWidget(scrollArea)
+            screen = QApplication.primaryScreen().availableGeometry()
+            self.resize(int(screen.width() * 0.9), int(screen.height() * 0.85))
+        else:
+            self.resize(500, 0)
+            mainLayout.addLayout(formsLayout)
         mainLayout.addWidget(self.buttonBox)
         self.setLayout(mainLayout)
 

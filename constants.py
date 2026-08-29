@@ -71,9 +71,91 @@ class Constants:
 
     @staticmethod
     def isDarkTheme():
+        from PySide6.QtGui import QGuiApplication, QPalette
+        from PySide6.QtCore import Qt
+        # preferito: legge lo schema colore riportato direttamente dalla
+        # piattaforma (Qt/PySide6 6.8+, vedi guard in applyTheme sopra) -
+        # su Android QApplication.palette() (fallback sotto) resta spesso
+        # quella di default anche a tema scuro attivo (i widget nativi -
+        # bottoni, menu - vengono comunque disegnati scuri dallo stile,
+        # ma leggendo lo schema invece della palette, non da questo valore
+        # stantio), causando la griglia bianca con tutto il resto scuro
+        styleHints = QGuiApplication.styleHints()
+        if hasattr(styleHints, 'colorScheme'):
+            scheme = styleHints.colorScheme()
+            if scheme != Qt.ColorScheme.Unknown:
+                return scheme == Qt.ColorScheme.Dark
         from PySide6.QtWidgets import QApplication
-        from PySide6.QtGui import QPalette
         return QApplication.palette().color(QPalette.Window).lightness() < 128
+
+    # richiamare quando lo schema colore cambia (vedi PastyGrid.initUi) per
+    # tenere la griglia sincronizzata - no-op su PySide6 < 6.8 (stessa
+    # limitazione di applyTheme sopra)
+    @staticmethod
+    def onThemeChange(callback):
+        from PySide6.QtGui import QGuiApplication
+        styleHints = QGuiApplication.styleHints()
+        if hasattr(styleHints, 'colorSchemeChanged'):
+            styleHints.colorSchemeChanged.connect(lambda _: callback())
+
+    # su Android il font di default e' troppo piccolo per un uso touch
+    # confortevole (testato su device reale) - non c'e' un vero "zoom" in
+    # Qt Widgets, ma ingrandire il font di default dell'app si propaga da
+    # solo a (quasi) tutti i widget standard (bottoni, label, header/celle
+    # della griglia, menu) perche' lo ereditano da QApplication.font()
+    # invece di uno fisso per-widget
+    ANDROID_FONT_SCALE = 1.6
+
+    # QApplication.palette() su Android spesso resta quella di default anche
+    # a tema scuro attivo (vedi isDarkTheme sopra) - i widget nativi si
+    # disegnano scuri comunque tramite lo stile, ma qualunque colore che
+    # peschiamo dalla palette (es. il testo dei nostri popup QMenu) risulta
+    # sbagliato/illeggibile. Fix: sovrascrivere esplicitamente la palette
+    # dell'app con colori scuri coerenti, riusando le costanti gia' in uso
+    # per la griglia. Cache della palette originale cosi' si puo' tornare
+    # indietro se l'utente cambia tema a light mentre l'app e' aperta
+    _defaultPalette = None
+
+    @staticmethod
+    def applyAndroidDarkPalette():
+        if not Constants.IS_ANDROID:
+            return
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtGui import QPalette, QColor
+        app = QApplication.instance()
+        if Constants._defaultPalette is None:
+            Constants._defaultPalette = QPalette(app.palette())
+        if not Constants.isDarkTheme():
+            app.setPalette(Constants._defaultPalette)
+            return
+        palette = QPalette(Constants._defaultPalette)
+        windowBg = QColor(Constants.COLOR_BG_GRID_DARK_DT)
+        fieldBg = QColor(Constants.COLOR_BG_GRID_LIGHT_DT)
+        text = QColor(Constants.COLOR_WHITE)
+        highlight = QColor(Constants.COLOR_BLUE)
+        for role in (QPalette.Window, QPalette.AlternateBase):
+            palette.setColor(role, windowBg)
+        for role in (QPalette.Base, QPalette.Button, QPalette.ToolTipBase):
+            palette.setColor(role, fieldBg)
+        for role in (QPalette.WindowText, QPalette.Text, QPalette.ButtonText, QPalette.ToolTipText, QPalette.HighlightedText):
+            palette.setColor(role, text)
+        palette.setColor(QPalette.BrightText, QColor(Constants.COLOR_RED))
+        palette.setColor(QPalette.Link, highlight)
+        palette.setColor(QPalette.Highlight, highlight)
+        app.setPalette(palette)
+
+    @staticmethod
+    def applyAndroidFontScale():
+        if not Constants.IS_ANDROID:
+            return
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        font = app.font()
+        if font.pointSize() > 0:
+            font.setPointSizeF(font.pointSize() * Constants.ANDROID_FONT_SCALE)
+        elif font.pixelSize() > 0:
+            font.setPixelSize(int(font.pixelSize() * Constants.ANDROID_FONT_SCALE))
+        app.setFont(font)
 
     @staticmethod
     def getGridStyle():

@@ -50,7 +50,7 @@ class PastyGrid():
     def initUi(self):
         self.grid = QTableWidget()
         self.grid.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.grid.verticalHeader().setVisible(True)
+        self.grid.verticalHeader().setVisible(False)
         self.grid.setEditTriggers(QTableView.NoEditTriggers)
         self.grid.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.grid.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -58,6 +58,7 @@ class PastyGrid():
         self.grid.setWordWrap(False) # x win
         self.grid.setAlternatingRowColors(True)
         self.grid.setStyleSheet(Constants.getGridStyle())
+        Constants.onThemeChange(lambda: self.grid.setStyleSheet(Constants.getGridStyle()))
         self.reset()
     
     def initContextMenu(self, callback):

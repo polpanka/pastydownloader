@@ -1488,6 +1488,8 @@ class Tools():
     # a runtime da exe oppure da source durante lo sviluppo
     @staticmethod
     def runType():
+        if Constants.IS_ANDROID:
+            return 'EXE'
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             return 'EXE'
         else:

@@ -21,7 +21,7 @@ Funzionalita':
 - Controllo connessione a internet e verifica aggiornamenti all'avvio
 """
 
-import os, sys, time, threading
+import os, sys, time, threading, multiprocessing
 
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
@@ -211,6 +211,12 @@ class Pasty(QMainWindow):
     # ffmpeg e yt-dlp si scaricano in cascata, mai in parallelo: prima ffmpeg,
     # poi (solo se riuscito) yt-dlp - vedi onFfmpegReady/onYtDlpReady
     def initDependencies(self):
+        # Guscio Android sperimentale (vedi Constants.SHELL_ONLY_MODE): niente
+        # download/subprocess di ffmpeg o yt-dlp, sblocca comunque la UI cosi'
+        # si vede almeno la finestra - i download veri non funzioneranno
+        if Constants.SHELL_ONLY_MODE:
+            self.dependenciesReady = True
+            return
         self.ffmpegInstaller = FfmpegInstaller()
         self.ffmpegInstaller.statusMessage.connect(self.setStatusBar)
         self.ffmpegInstaller.ready.connect(self.onFfmpegReady)
@@ -521,6 +527,12 @@ class Pasty(QMainWindow):
 
 
 if __name__ == '__main__':
+    # deve essere la primissima cosa eseguita sotto __main__: ogni download
+    # yt-dlp gira in un processo figlio 'spawn' (vedi Tools._runYtDlpInProcess),
+    # che sotto un eseguibile PyInstaller frozen rilancerebbe da capo l'intera
+    # app (QApplication compresa, in un ciclo) invece di eseguire solo il
+    # worker richiesto, se freeze_support() non intercetta prima la richiesta
+    multiprocessing.freeze_support()
     app = QApplication(sys.argv)
     app.setApplicationName(MyText().appName)
     app.setOrganizationName(MyText().orgName)

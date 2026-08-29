@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import requests
 from libs import Tools
 
 
@@ -144,6 +143,7 @@ class PastedUrl():
         self.saveAs = tools.getBestFilenameToSaveAs(self.url, ext)
 
     def _getContentTypeFromUrl(self, url):
+        import requests  # import locale, vedi ANDROID.md
         r = None
         try:
             referers = self.appParent.getReferers()

@@ -75,6 +75,16 @@ except ImportError:
 from libs import Tools
 from testi import MyText
 from constants import Constants
+
+if Constants.IS_ANDROID:
+    # il Python cross-compilato per Android non ha un bundle di certificati
+    # CA configurato: ogni richiesta HTTPS (aiohttp/requests) fallisce con
+    # SSLCertVerificationError finche' SSL_CERT_FILE non punta a uno valido -
+    # certifi lo fornisce pronto (vedi ANDROID.md). Deve girare prima di
+    # qualunque uso di ssl/aiohttp/requests, quindi qui, al primo import
+    import certifi
+    os.environ.setdefault('SSL_CERT_FILE', certifi.where())
+
 from grid import PastyGrid
 from worker import AsyncWorker
 from ytdlp_updater import YtDlpUpdater
@@ -465,7 +475,10 @@ class Pasty(QMainWindow):
             self.setStatusBar(MyText().internetError, 0) # persistente, non a scomparsa: resta offline finche' non torna la connessione
             return False
         ffmpeg = Tools.checkFFmpeg()
-        if not ffmpeg:
+        # in SHELL_ONLY_MODE ffmpeg non c'e' mai (vedi ANDROID.md) - ma il
+        # motore generico (aiohttp/requests, vedi worker.runDownload) non lo
+        # usa comunque, quindi non blocchiamo il download solo per questo
+        if not ffmpeg and not Constants.SHELL_ONLY_MODE:
             self.resetUi()
             self.showInstallFailedPopup()
             return False

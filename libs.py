@@ -216,6 +216,33 @@ class Tools():
     # FfmpegInstaller.ensureInstalled in un thread separato) non se lo aspettano
     @classmethod
     def checkFFmpeg(cls):
+        if Constants.IS_ANDROID:
+            # niente download a runtime qui (vedi ANDROID_HISTORY.md punto
+            # "ffmpeg-kit"): ffmpeg e' una recipe p4a, bundlata nell'APK e
+            # rinominata libffmpegbin.so (stesso trucco di libpythonbin.so)
+            # nella vera cartella nativa dell'app, esposta dalla patch
+            # locale su PythonActivity.java come env var ANDROID_NATIVE_LIBS
+            try:
+                nativeLibsDir = os.environ.get('ANDROID_NATIVE_LIBS')
+                if not nativeLibsDir:
+                    return None
+                installed = os.path.join(nativeLibsDir, 'libffmpegbin.so')
+                if not os.path.exists(installed):
+                    return None
+                # libffmpegbin.so e' linkato dinamicamente contro le altre
+                # .so della stessa recipe (libavcodec/libavformat/...),
+                # sorelle nella stessa cartella - ma eseguito come processo
+                # a se' (subprocess/execve, non dlopen via JNI) il linker
+                # dinamico non le trova da solo ("CANNOT LINK EXECUTABLE:
+                # cannot locate symbol av_default_item_name", visto su
+                # device reale). LD_LIBRARY_PATH sul processo corrente si
+                # propaga automaticamente a ogni sottoprocesso figlio,
+                # incluse le chiamate ffmpeg interne di yt-dlp
+                os.environ['LD_LIBRARY_PATH'] = nativeLibsDir
+                return installed
+            except Exception as err:
+                Tools.consoleLogs("Impossibile risolvere ffmpeg da ANDROID_NATIVE_LIBS: " + str(err))
+                return None
         try:
             installed = os.path.join(cls.ffmpegStorageDir(), cls.ffmpegBinaryName())
             return installed if os.path.exists(installed) else None

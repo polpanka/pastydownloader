@@ -1,0 +1,20 @@
+--- a/PySide6/scripts/deploy_lib/android/android_config.py	2026-08-14 07:58:26.000000000 +0200
++++ b/PySide6/scripts/deploy_lib/android/android_config.py	2026-08-25 16:56:30.600255384 +0200
+@@ -455,4 +455,17 @@
+                           generated_files_path=self.generated_files_path)
+             recipe_dir = ((self.generated_files_path
+                            / "recipes").resolve())
++            # PATCH locale (PastyDownloader, vedi ANDROID_HISTORY.md punto
++            # "ffmpeg-kit"): questa funzione forza sempre recipe_dir dentro
++            # generated_files_path ("deployment/"), che pyside6-android-deploy
++            # ripulisce con shutil.rmtree() a ogni run --force (vedi
++            # deploy_lib/deploy_util.py:cleanup) - una recipe custom messa li'
++            # a mano sparirebbe prima ancora che la build parta. La copiamo
++            # qui da una posizione tracciata e stabile (android/recipes/),
++            # fuori da qualunque cartella che il tool cancella
++            import shutil
++            local_ffmpeg_recipe = self.source_file.parent / "android" / "recipes" / "ffmpeg"
++            if local_ffmpeg_recipe.is_dir():
++                shutil.copytree(local_ffmpeg_recipe, recipe_dir / "ffmpeg", dirs_exist_ok=True)
++                logging.info(f"[DEPLOY] Copiata recipe locale ffmpeg in {recipe_dir / 'ffmpeg'}")
+         return recipe_dir

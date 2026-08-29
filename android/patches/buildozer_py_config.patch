@@ -1,6 +1,6 @@
 --- a/PySide6/scripts/deploy_lib/android/buildozer.py
 +++ b/PySide6/scripts/deploy_lib/android/buildozer.py
-@@ -24,7 +24,20 @@
+@@ -24,7 +24,27 @@
          include_exts = f"{include_exts},qml,js"
          self.set_value("app", "source.include_exts", include_exts, raise_warning=False)
 
@@ -16,13 +16,20 @@
 +        # (aiohttp) o sono pure Python (requests/aiofiles), vedi ANDROID.md
 +        # certifi: bundle CA per SSL_CERT_FILE (vedi main.py e ANDROID.md) -
 +        # senza, ogni richiesta HTTPS fallisce con SSLCertVerificationError
++        # ffmpeg: recipe ufficiale p4a, compila il binario CLI e lo rinomina
++        # in libffmpegbin.so (stesso trucco gia' usato da p4a per
++        # libpythonbin.so, per aggirare il divieto W^X di eseguire binari
++        # scritti a runtime) - vedi ANDROID_HISTORY.md punto "ffmpeg-kit".
++        # La recipe dichiara depends = [('sdl2','sdl3')] (retaggio Kivy): da
++        # verificare se la build lo tollera col bootstrap qt o se serve un
++        # override locale in deployment/recipes (p4a.local_recipes)
 +        self.set_value("app", "requirements",
 +                       "python3==3.11.16,hostpython3==3.11.16,shiboken6,PySide6,"
-+                       "requests,aiohttp,aiofiles,certifi")
++                       "requests,aiohttp,aiofiles,certifi,ffmpeg")
 
          # android platform specific
          if pysidedeploy_config.ndk_path:
-@@ -46,11 +59,40 @@
+@@ -46,11 +66,40 @@
          # TODO: remove this once the above commit is merged to master
          self.set_value("app", "p4a.branch", "develop")
 

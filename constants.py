@@ -1,9 +1,24 @@
+import os
+
+
 class Constants:
     # versione dell'app: da tenere allineata a mano con pastylink all'url .../api/checkUpdates/
     # sul server (vedi MyText.checkUpdates), che e' il file confrontato per
     # sapere se c'e' un aggiornamento disponibile (vedi Pasty.checkUpdates)
     APP_VERSION = '1.4'
     APP_VERSION_DATE = '2026.08.20'
+
+    # True dentro un pacchetto Android (ANDROID_ARGUMENT e' la env var che
+    # python-for-android/buildozer impostano sempre per ogni app, non solo
+    # per Kivy). Vedi ANDROID.md.
+    IS_ANDROID = 'ANDROID_ARGUMENT' in os.environ
+
+    # Guscio sperimentale Android (vedi pysidedeploy.spec, ANDROID.md): salta
+    # l'installazione/aggiornamento di ffmpeg e yt-dlp all'avvio - l'app parte
+    # e mostra la UI ma non puo' scaricare nulla. Si attiva da solo su
+    # Android, oppure a mano con PASTY_SHELL_ONLY=1 per provarlo anche su
+    # desktop Linux. Da NON attivare mai nelle build desktop reali.
+    SHELL_ONLY_MODE = os.environ.get('PASTY_SHELL_ONLY') == '1' or IS_ANDROID
 
     # colors
     COLOR_BLUE              = '#004e63'

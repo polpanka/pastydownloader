@@ -779,12 +779,12 @@ class Tools():
         result = subprocess.CompletedProcess(args, process.returncode, stdout, None)
         result.interrupted = interruptedHolder['interrupted']
         return result
-    
+
     def runFFmpegOld(self, url, save_as):
         command = 'ffmpeg -i "%s" -c copy -bsf:a aac_adtstoasc %s' % (url, save_as)
         result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return [True, 'Completed'] if result.returncode == 0 else [False, 'Error: %s' % result.stderr.decode("utf-8")]
-    
+
     @staticmethod
     def runFFmpeg(url, save_as):
         command = 'ffmpeg -y -progress pipe:1 -i "%s" -c copy -bsf:a aac_adtstoasc %s' % (url, save_as)
@@ -840,7 +840,7 @@ class Tools():
             return all([result.scheme, result.netloc])
         except Exception:
             return False
-    
+
     @staticmethod
     def getHostFromUrl(url):
         parsed_uri = urlparse(url)

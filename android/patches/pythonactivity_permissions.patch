@@ -1,8 +1,6 @@
-diff --git a/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java b/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
-index cb40427..88fda03 100644
 --- a/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
 +++ b/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
-@@ -56,9 +56,47 @@ public class PythonActivity extends QtActivity {
+@@ -56,9 +56,47 @@
          }
      }
  
@@ -50,14 +48,13 @@ index cb40427..88fda03 100644
          Log.v(TAG, "Ready to unpack");
          File app_root_file = new File(getAppRoot());
          PythonUtil.unpackAsset(mActivity, "private", app_root_file, true);
-@@ -82,6 +120,15 @@ public class PythonActivity extends QtActivity {
+@@ -82,6 +120,14 @@
          setEnvironmentVariable("ANDROID_APP_PATH", app_root_dir);
          setEnvironmentVariable("ANDROID_PRIVATE", mFilesDirectory);
          setEnvironmentVariable("ANDROID_UNPACK", app_root_dir);
-+        // PATCH locale (PastyDownloader, vedi ANDROID_HISTORY.md punto
-+        // "ffmpeg-kit"): nessuna env var esisteva per la vera cartella
-+        // nativa dell'APK (quella gestita da PackageManager, non scrivibile
-+        // dall'app - a differenza di ANDROID_PRIVATE/getFilesDir()). E' li'
++        // PATCH locale (PastyDownloader): nessuna env var esisteva per la vera
++        // cartella nativa dell'APK (quella gestita da PackageManager, non
++        // scrivibile dall'app - a differenza di ANDROID_PRIVATE/getFilesDir()). E' li'
 +        // che finiscono i binari delle recipe p4a rinominati *.so (stesso
 +        // trucco gia' usato per libpythonbin.so, vedi riga
 +        // "libpybundle" qualche riga sopra) - serve per trovare
@@ -66,7 +63,7 @@ index cb40427..88fda03 100644
          setEnvironmentVariable("PYTHONHOME", app_root_dir);
          setEnvironmentVariable("PYTHONPATH", app_root_dir + ":" + app_root_dir + "/lib");
          setEnvironmentVariable("PYTHONOPTIMIZE", "2");
-@@ -110,6 +157,18 @@ public class PythonActivity extends QtActivity {
+@@ -110,6 +156,18 @@
          }
      }
  

@@ -1,0 +1,159 @@
+diff --git a/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java b/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
+index 88fda03..238dbc3 100644
+--- a/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
++++ b/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
+@@ -1,16 +1,26 @@
+ package org.kivy.android;
+ 
++import android.app.Notification;
++import android.app.NotificationChannel;
++import android.app.NotificationManager;
++import android.app.PendingIntent;
+ import android.content.Context;
+ import android.content.Intent;
+ import android.content.pm.PackageManager;
+ import android.content.res.Configuration;
+ import android.os.Bundle;
++import android.os.Handler;
++import android.os.Looper;
+ import android.os.PowerManager;
+ import android.os.SystemClock;
+ import android.util.Log;
+ import android.view.KeyEvent;
+ import android.widget.Toast;
++import java.io.BufferedReader;
+ import java.io.File;
++import java.io.FileReader;
++import java.io.FileWriter;
++import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.Collections;
+ import java.util.Iterator;
+@@ -26,6 +36,91 @@ public class PythonActivity extends QtActivity {
+     private Bundle mMetaData = null;
+     private PowerManager.WakeLock mWakeLock = null;
+ 
++    // PATCH locale (PastyDownloader, vedi android_bridge.py e
++    // ANDROID_HISTORY.md): niente pyjnius disponibile su questo bootstrap
++    // (vedi requestNeededPermissions sopra), quindi in entrambe le direzioni
++    // si passa da due file "a cassetta della posta" nella cartella privata
++    // dell'app (getFilesDir(), stessa di ANDROID_PRIVATE lato Python) invece
++    // che da una vera chiamata Java<->Python:
++    // - SHARE_INBOX: Java scrive, Python legge/consuma (link condiviso da
++    //   un'altra app via il menu "Condividi" di sistema)
++    // - NOTIFY_OUTBOX: Python scrive, Java legge/consuma (notifica di
++    //   sistema a fine batch se l'app e' in background)
++    private static final String SHARE_INBOX_FILENAME = "share_inbox.txt";
++    private static final String NOTIFY_OUTBOX_FILENAME = "notify_outbox.txt";
++    private static final String NOTIFY_CHANNEL_ID = "pastydownloader_downloads";
++    private static final long NOTIFY_POLL_INTERVAL_MS = 1500;
++
++    private final Handler notifyHandler = new Handler(Looper.getMainLooper());
++    private final Runnable notifyPoller = new Runnable() {
++        @Override
++        public void run() {
++            pollNotifyOutbox();
++            notifyHandler.postDelayed(this, NOTIFY_POLL_INTERVAL_MS);
++        }
++    };
++
++    private void handleIncomingIntent(Intent intent) {
++        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return;
++        String type = intent.getType();
++        if (type == null || !type.startsWith("text/")) return;
++        String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
++        if (sharedText == null || sharedText.trim().isEmpty()) return;
++        File inbox = new File(getFilesDir(), SHARE_INBOX_FILENAME);
++        try (FileWriter writer = new FileWriter(inbox, true)) {
++            writer.write(sharedText.trim() + "\n");
++        } catch (IOException e) {
++            Log.e(TAG, "Unable to write share inbox", e);
++        }
++    }
++
++    private void ensureNotificationChannel() {
++        if (android.os.Build.VERSION.SDK_INT < 26) return;
++        NotificationManager manager =
++                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
++        if (manager == null) return;
++        NotificationChannel channel = new NotificationChannel(
++                NOTIFY_CHANNEL_ID, "Downloads", NotificationManager.IMPORTANCE_DEFAULT);
++        manager.createNotificationChannel(channel);
++    }
++
++    private void pollNotifyOutbox() {
++        File outbox = new File(getFilesDir(), NOTIFY_OUTBOX_FILENAME);
++        if (!outbox.exists()) return;
++        StringBuilder text = new StringBuilder();
++        try (BufferedReader reader = new BufferedReader(new FileReader(outbox))) {
++            String line;
++            while ((line = reader.readLine()) != null) {
++                if (text.length() > 0) text.append("\n");
++                text.append(line);
++            }
++        } catch (IOException e) {
++            Log.e(TAG, "Unable to read notify outbox", e);
++            return;
++        }
++        outbox.delete();
++        if (text.length() > 0) showDownloadNotification(text.toString());
++    }
++
++    private void showDownloadNotification(String text) {
++        NotificationManager manager =
++                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
++        if (manager == null) return;
++        Intent openIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
++        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
++        if (android.os.Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
++        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openIntent, flags);
++        Notification.Builder builder = (android.os.Build.VERSION.SDK_INT >= 26)
++                ? new Notification.Builder(this, NOTIFY_CHANNEL_ID)
++                : new Notification.Builder(this);
++        builder.setContentTitle(getApplicationInfo().loadLabel(getPackageManager()).toString())
++               .setContentText(text)
++               .setSmallIcon(android.R.drawable.stat_sys_download_done)
++               .setAutoCancel(true)
++               .setContentIntent(contentIntent);
++        manager.notify(1, builder.build());
++    }
++
+     public String getAppRoot() {
+         String app_root = getFilesDir().getAbsolutePath() + "/app";
+         return app_root;
+@@ -97,6 +192,13 @@ public class PythonActivity extends QtActivity {
+     public void onCreate(Bundle savedInstanceState) {
+         this.mActivity = this;
+         requestNeededPermissions();
++        // PATCH locale (PastyDownloader): condivisione in ingresso (link
++        // arrivato tramite il menu "Condividi" di un'altra app, es. YouTube)
++        // e notifica di sistema in uscita a fine download - vedi le due
++        // "cassette della posta" dichiarate sopra
++        handleIncomingIntent(getIntent());
++        ensureNotificationChannel();
++        notifyHandler.post(notifyPoller);
+         Log.v(TAG, "Ready to unpack");
+         File app_root_file = new File(getAppRoot());
+         PythonUtil.unpackAsset(mActivity, "private", app_root_file, true);
+@@ -172,6 +274,7 @@ public class PythonActivity extends QtActivity {
+     @Override
+     public void onDestroy() {
+         Log.i("Destroy", "end of app");
++        notifyHandler.removeCallbacks(notifyPoller);
+         super.onDestroy();
+ 
+         // make sure all child threads (python_thread) are stopped
+@@ -218,6 +321,13 @@ public class PythonActivity extends QtActivity {
+ 
+     @Override
+     protected void onNewIntent(Intent intent) {
++        // PATCH locale (PastyDownloader): con android.manifest.launch_mode
++        // = singleTask (vedi buildozer_py_config.patch) un secondo
++        // "Condividi" ad app gia' aperta arriva qui invece che in una nuova
++        // onCreate - setIntent tiene getIntent() coerente per chi lo legge
++        // altrove, poi la stessa gestione dell'avvio a freddo
++        setIntent(intent);
++        handleIncomingIntent(intent);
+         if (this.newIntentListeners == null) return;
+         this.onResume();
+         synchronized (this.newIntentListeners) {

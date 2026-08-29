@@ -3,9 +3,8 @@
 Porting sperimentale della UI PySide6 di PastyDownloader su Android. ffmpeg
 (recipe locale python-for-android, vedi `android/recipes/ffmpeg/`) e yt-dlp
 (libreria Python pura scaricata a runtime) funzionano davvero — download
-generico, yt-dlp con merge audio+video, conversione mp3 — vedi
-`ANDROID_HISTORY.md` per il racconto di come ci si è arrivati. Build ancora
-in modalità "debug", non firmata per una vera release (vedi
+generico, yt-dlp con merge audio+video, conversione mp3. Build ancora in
+modalità "debug", non firmata per una vera release (vedi
 `.github/workflows/build-android.yml`).
 
 Richiede un host Linux o macOS (`pyside6-android-deploy` non gira su Windows).
@@ -471,7 +470,7 @@ Il download del punto 7 finiva nella cartella privata dell'app
 (`ANDROID_PRIVATE/Download`), non visibile all'utente in Files/Galleria.
 Obiettivo: farlo finire nella vera cartella pubblica `Download` condivisa.
 
-**Ipotesi iniziale sbagliata** (vedi ANDROID_HISTORY.md): si era concluso che
+**Ipotesi iniziale sbagliata**: si era concluso che
 servisse comunque un patch pyjnius/JNI per usare MediaStore,
 indipendentemente dal targetSdk. Non e' cosi': con `targetSdk <= 28` Android
 tratta l'app come "storage legacy" **indipendentemente dalla versione

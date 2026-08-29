@@ -153,7 +153,13 @@ class AsyncWorker(QObject):
                 ytDlpPackageDir = Tools.checkYtDlp()
                 if not ytDlpPackageDir:
                     return self.smartReturn([False, 'yt-dlp not available'])
-                results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer())
+                # sottotitoli imbarcati nella lingua dell'app se disponibili,
+                # inglese come ripiego (vedi _ytDlpDownloadWorker in libs.py) -
+                # MyText.getLanguage() e' gia' un codice a 2 lettere valido
+                # anche per yt-dlp (stessa lista, es. 'it'/'fr'/'de'...)
+                appLang = MyText.getLanguage()
+                subtitleLangs = [appLang] if appLang == 'en' else [appLang, 'en']
+                results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer(), subtitleLangs=subtitleLangs)
             # caso di video normale
             else:
                 Tools.consoleLogs("Used: ffmpeg with default url")

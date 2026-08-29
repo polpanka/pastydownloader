@@ -3,18 +3,20 @@ name: Build Android APK (esperimento)
 # Manuale (Actions -> Build Android APK -> Run workflow) SOLO, di proposito:
 # a differenza degli altri build-*.yml qui NON c'e' "push: tags: v*", quindi
 # non allega automaticamente l'APK alle Release quando pushi un tag. E' una
-# scelta deliberata: questo e' ancora un guscio sperimentale (SHELL_ONLY_MODE,
-# vedi ANDROID.md/ANDROID_HISTORY.md) - niente ffmpeg/yt-dlp, build "debug"
-# (chiave [buildozer] mode in pysidedeploy.spec), non firmata per una vera
-# release. Quando/se si deciderà di distribuirlo davvero, aggiungere qui lo
-# stesso trigger "push: tags: v*" degli altri workflow (serve anche una
-# release-key vera al posto della firma debug automatica).
+# scelta deliberata: questo resta un guscio sperimentale - ffmpeg (recipe
+# locale, vedi android/recipes/ffmpeg/) e yt-dlp funzionano davvero (vedi
+# ANDROID_HISTORY.md punti 11/12), ma la build resta "debug" (chiave
+# [buildozer] mode in pysidedeploy.spec), non firmata per una vera release.
+# Quando/se si deciderà di distribuirlo davvero, aggiungere qui lo stesso
+# trigger "push: tags: v*" degli altri workflow (serve anche una release-key
+# vera al posto della firma debug automatica).
 #
 # Riproduce in CI, passo per passo, l'esperimento fatto a mano in locale
-# (vedi ANDROID.md): due patch locali non versionabili altrimenti (il tool
-# pyside6-android-deploy non espone via CLI ne' targetSdk/permessi/
-# requirements ne' un modo di riusare un checkout p4a persistente) vengono
-# applicate qui da file .patch versionati in android/patches/.
+# (vedi ANDROID.md/ANDROID_HISTORY.md): tre patch locali non versionabili
+# altrimenti (il tool pyside6-android-deploy non espone via CLI ne'
+# targetSdk/permessi/requirements/recipe custom ne' un modo di riusare un
+# checkout p4a persistente) vengono applicate qui da file .patch versionati
+# in android/patches/.
 "on":
   workflow_dispatch:
 
@@ -75,13 +77,14 @@ jobs:
           pip install pyside6==6.11.2
           pip install -r .venv-android/lib/python3.11/site-packages/PySide6/scripts/requirements-android.txt
 
-      # Patch 1/2: il tool pyside6-android-deploy non espone via CLI ne'
+      # Patch 1/3: il tool pyside6-android-deploy non espone via CLI ne'
       # targetSdk (android.api) ne' permessi extra ne' pin di versione dei
-      # requirements ne' p4a.source_dir - l'unico modo e' patchare il suo
-      # file interno (vedi android/patches/buildozer_py_config.patch,
-      # generato con "git diff" contro il file pristine della stessa identica
-      # versione PySide6==6.11.2 pinnata sopra, quindi deve applicarsi pulito)
-      - name: "Patch 1/2: targetSdk, permessi storage, requirements, p4a.source_dir"
+      # requirements (incluso ffmpeg, vedi ANDROID_HISTORY.md punto 11) ne'
+      # p4a.source_dir - l'unico modo e' patchare il suo file interno (vedi
+      # android/patches/buildozer_py_config.patch, generato con "git diff"
+      # contro il file pristine della stessa identica versione
+      # PySide6==6.11.2 pinnata sopra, quindi deve applicarsi pulito)
+      - name: "Patch 1/3: targetSdk, permessi storage, requirements, p4a.source_dir"
         run: |
           TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config.patch
@@ -130,13 +133,27 @@ jobs:
       # via p4a.source_dir (patchato sopra) lo trova gia' pronto invece di
       # farselo clonare da capo dal tool, perdendo la patch del permesso
       # runtime storage (vedi ANDROID.md punto 8 e ANDROID_HISTORY.md)
-      - name: "Patch 2/2: richiesta permesso runtime storage (PythonActivity.java)"
+      - name: "Patch 2/3: richiesta permesso runtime storage + ANDROID_NATIVE_LIBS (PythonActivity.java)"
         run: |
           git clone --branch develop --depth 1 \
             https://github.com/kivy/python-for-android.git \
             "$HOME/.pyside6_android_deploy/python-for-android"
           cd "$HOME/.pyside6_android_deploy/python-for-android"
           git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_permissions.patch"
+
+      # Patch 3/3: find_recipe_dir() del tool forza sempre le recipe dentro
+      # "deployment/", cartella che pyside6-android-deploy ripulisce con
+      # shutil.rmtree() a ogni run --force (vedi deploy_lib/deploy_util.py:
+      # cleanup) - la recipe ffmpeg custom (android/recipes/ffmpeg/, vedi
+      # ANDROID_HISTORY.md punto 11) sparirebbe prima ancora che la build
+      # parta se non venisse ricopiata li' dentro ad ogni run. Senza questa
+      # patch la build userebbe la recipe ffmpeg originale di p4a, che fallisce
+      # (dependency graph/build order/ar mancante/simboli a runtime - vedi
+      # ANDROID_HISTORY.md punto 11 per i quattro problemi trovati e risolti)
+      - name: "Patch 3/3: copia la recipe ffmpeg locale in deployment/recipes/ ad ogni run"
+        run: |
+          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/android_config.py"
+          patch -p1 "$TARGET" < android/patches/android_config_ffmpeg_recipe.patch
 
       - name: Build APK
         run: |

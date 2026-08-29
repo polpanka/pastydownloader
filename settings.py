@@ -170,7 +170,10 @@ class SettingsDialog(QDialog):
     
     # click sul bottone "Select": apre il file picker di sistema per la cartella
     def selectNewFolder(self):
-        path = QFileDialog.getExistingDirectory(None, 'Select Folder')
+        kwargs = {}
+        if Constants.IS_ANDROID:
+            kwargs['options'] = QFileDialog.Option.DontUseNativeDialog
+        path = QFileDialog.getExistingDirectory(None, 'Select Folder', **kwargs)
         if path:
             self.dlFolder.setText(path)
  

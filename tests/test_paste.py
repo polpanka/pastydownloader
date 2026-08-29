@@ -41,6 +41,8 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
+import time
 import unittest
 from unittest import mock
 from unittest.mock import AsyncMock
@@ -127,6 +129,10 @@ class FakeAppParent:
         self.DEVEL_MODE = True
         self.stop = False  # letto da AsyncWorker.isStopped(), usato dal watcher di Tools.runCommand
         self.lastStatus = None
+        # letto da AsyncWorker.allProcessesFinished (vedi worker.py) per il
+        # messaggio "Processo terminato in %s secondi" - in Pasty vero
+        # (main.py) viene impostato da fetchRows() prima di avviare il thread
+        self.time_start_download = time.time()
 
     def setStatusBar(self, txt, sec=0):
         self.lastStatus = txt
@@ -847,6 +853,46 @@ class RunAllUrlsSurvivesConstructionErrorsTest(unittest.TestCase):
             worker.runAllUrls()  # non deve sollevare
         mockFinished.assert_called_once()  # la UI non resta bloccata
         self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_ERROR)
+
+
+class ConvertAlreadyDownloadedRowTest(unittest.TestCase):
+    """BUG di regressione (trovato testando su device, riprodotto anche su
+    desktop): convertire una riga gia' scaricata in precedenza (quindi
+    isAlreadyDownloaded True in AsyncWorker.runSingleUrl, download saltato,
+    runDownload() mai chiamato) faceva AttributeError su
+    self.downloadStarted - inizializzato solo dentro runDownload(), ma
+    letto incondizionatamente da onSizeProgress, passato anche a
+    runConversion(). Il file audio veniva comunque scritto per intero da
+    ffmpeg (processo separato, non si ferma per un'eccezione Python), ma la
+    riga finiva segnata come errore. Riprodotto qui mockando
+    Tools.ConvertAudioByFFmpeg in modo che richiami davvero il callback di
+    progresso passato, esattamente come farebbe ffmpeg per davvero durante
+    una conversione vera."""
+
+    def setUp(self):
+        self.grid = makeGrid()
+        self.app = FakeAppParent(self.grid)
+
+    def test_convert_only_on_already_downloaded_row_does_not_crash(self):
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp:
+            tmp.write(b'fake video data')
+            videoPath = tmp.name
+        self.addCleanup(lambda: os.path.exists(videoPath) and os.remove(videoPath))
+        self.grid.addRow(MP4_URL)
+        self.grid.setCellConvert(0, self.app.ACTION_TO_BOTH)
+        # simula una riga gia' scaricata in un batch precedente
+        self.grid.setCellSaveAs(0, videoPath)
+
+        def fakeConvert(ffmpeg, newFile, oldVideo, audioFormat, onProgress, isStoppedFn):
+            if onProgress:
+                onProgress(1234)  # aggiornamento di progresso vero, come farebbe ffmpeg
+            return [True, '1 KB']
+
+        worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
+        with mock.patch.object(PastedUrl, '_getContentTypeFromUrl', return_value='video/mp4'), \
+             mock.patch.object(Tools, 'ConvertAudioByFFmpeg', new=AsyncMock(side_effect=fakeConvert)):
+            worker.runAllUrls()  # non deve sollevare/segnare errore
+        self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_COMPLETED)
 
 
 class NonAacAudioDownloadTest(unittest.TestCase):

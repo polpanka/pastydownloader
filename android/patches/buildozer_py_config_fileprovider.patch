@@ -1,0 +1,43 @@
+--- a/PySide6/scripts/deploy_lib/android/buildozer.py
++++ b/PySide6/scripts/deploy_lib/android/buildozer.py
+@@ -142,9 +142,39 @@
+         # pythonactivity_foreground_service.patch e ANDROID_HISTORY.md.
+         # Individuato leggendo bootstraps/common/build/build.py di p4a
+         # (mappa native_services nel template del manifest)
++        # PATCH locale: --resource=SRC:DEST copia SRC dentro res/DEST del
++        # progetto Android generato (meccanismo generico gia' presente in
++        # build.py di p4a, --resource, non serve un altro patch li') - qui
++        # copia il file_paths.xml del FileProvider (vedi
++        # android_manifest_fileprovider.patch e
++        # PythonActivity.pollOpenFileRequest) in res/xml/file_paths.xml,
++        # dove il <meta-data android:resource="@xml/file_paths"> del
++        # manifest si aspetta di trovarlo.
++        # --enable-androidx: PythonActivity ora usa androidx.core.content.
++        # FileProvider (vedi sopra) - flag ufficiale p4a per questo, imposta
++        # da solo android.useAndroidX/enableJetifier in gradle.properties.
++        # Nella sua stessa documentazione: "requires api = 28 or greater" -
++        # il nostro android.api e' fissato esattamente a 28 (vedi sotto).
++        # --enable-androidx da solo NON basta (impostazioni Gradle, non
++        # aggiunge l'artefatto): confermato con una build reale fallita con
++        # "package androidx.core.content does not exist" - serve anche
++        # --depend, che mappa su args.depends nel template gradle
++        # (build.tmpl.gradle: "implementation '{{ depend }}'" per ogni voce,
++        # hook gia' pronto in p4a, nessun patch sul template gradle serve).
++        # Versione 1.6.0 (non l'ultima) di proposito: le versioni piu'
++        # recenti di androidx.core dichiarano un requisito minimo di
++        # compileSdk piu' alto del nostro (28, vedi android.api sotto),
++        # AGP lo farebbe fallire in un altro modo ("requires Android SDK
++        # XX or higher") - 1.6.0 e' abbastanza vecchia da non avere ancora
++        # quel vincolo, ma include gia' FileProvider (parte della libreria
++        # sin dalla prima versione 1.0.0, ex android.support.v4)
++        file_paths_resource = pysidedeploy_config.source_file.parent / "android" / "resources" / "xml" / "file_paths.xml"
+         extra_args = (f"--qt-libs={modules} --load-local-libs={local_libs}"
+                       f" --init-classes={init_classes}"
+-                      f" --native-service=org.kivy.android.DownloadForegroundService")
++                      f" --native-service=org.kivy.android.DownloadForegroundService"
++                      f" --resource={file_paths_resource}:xml/file_paths.xml"
++                      f" --enable-androidx"
++                      f" --depend=androidx.core:core:1.6.0")
+         self.set_value("app", "p4a.extra_args", extra_args)
+ 
+         # TODO: does not work atm. Seems like a bug with buildozer

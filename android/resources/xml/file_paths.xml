@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PATCH locale (PastyDownloader): dichiara a FileProvider (vedi
+     android/patches/android_manifest_fileprovider.patch e
+     PythonActivity.pollOpenFileRequest) quali cartelle possono essere
+     esposte come content:// URI a un'altra app (es. un player video), per
+     aprire un file gia' scaricato dal doppio click su una riga completata.
+
+     external-path con path="." copre l'intera external storage
+     (/storage/emulated/0/, vedi Environment.getExternalStorageDirectory()):
+     non solo la cartella Download di default (Tools.downloadPath), ma
+     anche qualunque cartella l'utente abbia scelto a mano nelle Preferenze
+     (SettingsDialog.selectNewFolder permette di scegliere ovunque dentro lo
+     storage esterno) - un percorso piu' stretto (solo "Download/")
+     lascerebbe fuori quel caso. Non concede nessun accesso in piu' a livello
+     di permessi: l'app ha gia' lettura/scrittura piena sullo storage
+     legacy (vedi ANDROID_HISTORY.md punto 7), questo file dice solo cosa
+     PUO' essere condiviso via URI con un'altra app, non cosa l'app stessa
+     puo' leggere/scrivere -->
+<paths xmlns:android="http://schemas.android.com/apk/res-auto">
+    <external-path name="external_files" path="." />
+</paths>

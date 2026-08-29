@@ -1,6 +1,6 @@
 --- a/PySide6/scripts/deploy_lib/android/buildozer.py
 +++ b/PySide6/scripts/deploy_lib/android/buildozer.py
-@@ -24,7 +24,27 @@
+@@ -24,7 +24,34 @@
          include_exts = f"{include_exts},qml,js"
          self.set_value("app", "source.include_exts", include_exts, raise_warning=False)
  
@@ -23,13 +23,20 @@
 +        # La recipe dichiara depends = [('sdl2','sdl3')] (retaggio Kivy): da
 +        # verificare se la build lo tollera col bootstrap qt o se serve un
 +        # override locale in deployment/recipes (p4a.local_recipes)
++        # mutagen: pura Python (nessuna recipe p4a dedicata necessaria,
++        # stesso trattamento di requests/aiofiles) - EmbedThumbnailPP di
++        # yt-dlp la usa per scrivere la copertina in mp4/m4a/mov senza
++        # ffprobe; senza, ripiega su AtomicParsley (mai presente) poi su un
++        # metodo ffmpeg+ffprobe che fallisce sempre qui (l'unico binario
++        # compilato dalla recipe ffmpeg locale e' ffmpeg, mai ffprobe) -
++        # vedi ANDROID_HISTORY.md
 +        self.set_value("app", "requirements",
 +                       "python3==3.11.16,hostpython3==3.11.16,shiboken6,PySide6,"
-+                       "requests,aiohttp,aiofiles,certifi,ffmpeg")
++                       "requests,aiohttp,aiofiles,certifi,mutagen,ffmpeg")
  
          # android platform specific
          if pysidedeploy_config.ndk_path:
-@@ -46,11 +66,40 @@
+@@ -46,11 +73,40 @@
          # TODO: remove this once the above commit is merged to master
          self.set_value("app", "p4a.branch", "develop")
  

@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-import os, sys, asyncio, traceback
+import os, sys, time, asyncio, traceback
 from PySide6.QtCore import QObject, Signal, QSettings
 from libs import Tools
 from testi import MyText
 from pasted_url import PastedUrl
+from android_bridge import AndroidBridge
 
 
 class AsyncWorker(QObject):
@@ -25,6 +26,7 @@ class AsyncWorker(QObject):
     rowId = None
     pastedUrl = None
     saveAs = None  # usato solo dalla conversione mp3 post-download (vedi runConversion)
+    downloadStarted = False
 
     def __init__(self, appParent, rows, ffmpeg, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,6 +68,26 @@ class AsyncWorker(QObject):
         self.setBothStates(self.gridParent.STATUS_CODE_CONVERTING)
 
     def allProcessesFinished(self):
+        # PATCH locale Android: chiamate qui (nel thread di background di
+        # runAllUrls), non lasciate a Pasty.progressFinished (main.py) come
+        # in origine. Trovato testando su device reale: quella e' una slot
+        # Qt raggiunta da 'finished' con una connessione IN CODA (l'emit
+        # sopra parte da un thread diverso da quello del ricevente Pasty,
+        # Qt sceglie da solo Queued per AutoConnection) - la sua consegna
+        # dipende dal ciclo eventi Qt del thread GUI, che su Android sembra
+        # fermarsi (o rallentare moltissimo) quando l'Activity va in pausa
+        # (background), anche se QUESTO thread grezzo continua a girare
+        # regolarmente (il file scaricato risultava gia' completo sul
+        # disco, verificato su device). Risultato osservato: notifica
+        # "download in corso" mai fermata e notifica di fine mai mostrata
+        # finche' l'utente non riapre l'app (il ciclo eventi Qt riprende).
+        # Fix: scrivere/cancellare i due file "cassetta della posta" (vedi
+        # android_bridge.py) direttamente da qui, PRIMA di emettere
+        # 'finished' - sono semplici scritture di file, non serve il thread
+        # GUI ne' alcuna API Qt widget-specific per farlo
+        msg = MyText().msgDownloadFinished % round(time.time() - self.appParent.time_start_download)
+        AndroidBridge.notifyDownloadFinished(msg)
+        AndroidBridge.stopForegroundDownload()
         self.finished.emit()
 
     def isToDownloadOnlyInMp4(self):
@@ -122,11 +144,12 @@ class AsyncWorker(QObject):
         if self.isToConvertInMp3() and (result[0] == self.gridParent.STATUS_CODE_COMPLETED or isAlreadyDownloaded):
             Tools.consoleLogs("Action: Converting")
             result = await self.runConversion(videoPath)
+            if result[0] == self.gridParent.STATUS_CODE_COMPLETED:
+                self.gridSaveAsUpdate.emit(self.rowId, self.saveAs)
         # deleting
         if result[0] == self.gridParent.STATUS_CODE_COMPLETED and self.isToKeepOnlyInMp3():
             Tools.consoleLogs("Action: Deleting")
             Tools.removeFile(videoPath)
-            self.gridSaveAsUpdate.emit(self.rowId, '')
         # result
         return result
 
@@ -134,6 +157,9 @@ class AsyncWorker(QObject):
         if not self.downloadStarted:
             self.downloadStarted = True
             self.setInDownload()
+        self.sizeUpdate.emit(self.rowId, Tools.formatSize(bytesWritten))
+
+    def onConversionSizeProgress(self, bytesWritten):
         self.sizeUpdate.emit(self.rowId, Tools.formatSize(bytesWritten))
 
     async def runDownload(self):
@@ -187,7 +213,7 @@ class AsyncWorker(QObject):
         audioFormat = self.settings.value('audioFormat', 'mp3')
         extension = Tools.AUDIO_FORMAT_EXTENSIONS.get(audioFormat, 'mp3')
         self.saveAs = Tools.replaceExtension(myVideo, extension)
-        results = await Tools.ConvertAudioByFFmpeg(self.ffmpeg, self.saveAs, myVideo, audioFormat, self.onSizeProgress, self.isStopped)
+        results = await Tools.ConvertAudioByFFmpeg(self.ffmpeg, self.saveAs, myVideo, audioFormat, self.onConversionSizeProgress, self.isStopped)
         return self.smartReturn(results)
 
 

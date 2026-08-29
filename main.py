@@ -414,7 +414,9 @@ class Pasty(QMainWindow):
         dialog.setWindowTitle(MyText().actionAbout)
 
         iconLabel = QLabel()
-        iconLabel.setPixmap(QIcon(MyText().pasty_favicon).pixmap(64, 64))
+        # formato ICO dipende da un plugin immagine di Qt che potrebbe non essere imbarcato nella build Android,
+        # lasciando questa QLabel vuota/invisibile senza errori. PNG e' universalmente supportato
+        iconLabel.setPixmap(QIcon(MyText().pasty_icon).pixmap(64, 64))
         iconLabel.mousePressEvent = lambda event: self.menu._trackDevelModeUnlock()
 
         textLabel = QLabel('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
@@ -548,6 +550,12 @@ class Pasty(QMainWindow):
             self.fetchRows([rowId])
 
     def onRowDoubleClicked(self, rowId, column):
+        # se la riga e' gia' stata scaricata con successo, doppio click apre il file
+        if self.pastyGrid.getCellStatusCode(rowId) == self.pastyGrid.STATUS_CODE_COMPLETED:
+            myfile = self.pastyGrid.getCellSaveAs(rowId)
+            if myfile and os.path.isfile(myfile):
+                Tools.openFile(myfile)
+                return
         self.fetchRow(rowId)
 
     def fetchRows(self, rows=None, showNoLinksMessage=True):
@@ -610,13 +618,15 @@ class Pasty(QMainWindow):
     def progressFinished(self):
         msg = MyText().msgDownloadFinished % round(time.time() - self.time_start_download)
         Tools.consoleLogs(msg)
-        # solo Android, solo se l'app e' in background in questo momento
-        # (vedi android_bridge.py) - se e' visibile l'utente vede gia' tutto
-        # nella griglia/status bar
-        AndroidBridge.notifyDownloadFinished(msg)
-        # solo Android: batch finito (successo, errore o Stop, arriva
-        # comunque qui) - ferma il Foreground Service avviato in fetchRows
-        AndroidBridge.stopForegroundDownload()
+        # AndroidBridge.notifyDownloadFinished/stopForegroundDownload NON
+        # vanno piu' chiamate qui (vedi AsyncWorker.allProcessesFinished in
+        # worker.py, dove sono state spostate) - questa e' una slot Qt
+        # raggiunta con una connessione in coda dal thread di background,
+        # la cui consegna dipende dal ciclo eventi Qt del thread GUI, che su
+        # Android smette di girare (o rallenta moltissimo) quando l'app va
+        # in background - chiamarle solo da qui le avrebbe rimandate
+        # fino alla riapertura dell'app, vanificando lo scopo stesso del
+        # Foreground Service (verificato su device reale)
         # solo le righe di QUESTO batch, non l'intera griglia: altrimenti un ri-download singolo fallito potrebbe aprire comunque la cartella
         thisBatchRows = self.asyncExec.rowsToDownload if self.asyncExec.rowsToDownload else range(self.pastyGrid.grid.rowCount())
         # su Android l'opzione e' disabilitata in Preferenze (vedi

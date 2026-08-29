@@ -26,7 +26,7 @@ import os, sys, time, threading, multiprocessing
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
     from PySide6.QtCore import QSettings, QTimer, Signal, Qt
-    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QPalette
+    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 except ImportError:
     # Nessun toolkit grafico disponibile (tipicamente OS troppo vecchio per i
     # binari bundlati) - niente QMessageBox possibile qui, serve un dialogo
@@ -336,20 +336,24 @@ class Pasty(QMainWindow):
         self.stop = False
     
     def _buildHamburgerIcon(self):
-        # invece di indovinare bianco/nero da Constants.isDarkTheme() (si e'
-        # rivelato sbagliato col tema light - icona invisibile): chiede
-        # direttamente al bottone quale colore usa lui stesso per il proprio
-        # testo, garantito coerente con lo sfondo effettivo che Qt gli ha
-        # assegnato, qualunque esso sia
-        color = self.menuButton.palette().color(QPalette.ButtonText)
+        # sia Constants.isDarkTheme() (bianco/nero indovinato) sia
+        # QPalette.ButtonText letto dal bottone si sono rivelati inaffidabili
+        # su Android (icona rimasta bianca anche col tema light, illeggibile
+        # - lo stile nativo non sembra seguire la palette per questo widget).
+        # Fix indipendente da qualunque rilevazione di tema: ogni riga
+        # disegnata due volte, un contorno nero spesso sotto e uno bianco
+        # piu' sottile sopra - resta visibile su qualunque sfondo
         pixmap = QPixmap(32, 32)
         pixmap.fill(Qt.transparent)
         painter = QPainter(pixmap)
-        pen = QPen(color)
-        pen.setWidth(3)
-        painter.setPen(pen)
-        for y in (8, 16, 24):
-            painter.drawLine(4, y, 28, y)
+        outline = QPen(QColor(Constants.COLOR_BLACK))
+        outline.setWidth(5)
+        fill = QPen(QColor(Constants.COLOR_WHITE))
+        fill.setWidth(3)
+        for pen in (outline, fill):
+            painter.setPen(pen)
+            for y in (8, 16, 24):
+                painter.drawLine(4, y, 28, y)
         painter.end()
         return QIcon(pixmap)
 

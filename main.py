@@ -590,9 +590,6 @@ class Pasty(QMainWindow):
         if not Constants.IS_ANDROID and not self.stop and self.settings.value('doOpen') != 'nothing' and self.pastyGrid.hasAnyCompletedRow(thisBatchRows):
             Tools.openDownloadFolder()
         self.resetUi(msg)
-        if Constants.IS_ANDROID:
-            # sulla barra di stato il messaggio finale sparisce dopo pochi secondi
-            QMessageBox.information(self, self.appName, msg)
 
     def closeEvent(self, event):
         if not self.is_running:

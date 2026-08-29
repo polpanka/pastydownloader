@@ -24,9 +24,9 @@ Funzionalita':
 import os, sys, time, threading, multiprocessing
 
 try:
-    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
+    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
     from PySide6.QtCore import QSettings, QTimer, Signal, Qt
-    from PySide6.QtGui import QIcon
+    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 except ImportError:
     # Nessun toolkit grafico disponibile (tipicamente OS troppo vecchio per i
     # binari bundlati) - niente QMessageBox possibile qui, serve un dialogo
@@ -168,8 +168,24 @@ class Pasty(QMainWindow):
         self.statusQueue = StatusQueue(self.statusBar)
 
         # setting layout
+        topRow = QHBoxLayout()
+        topRow.addWidget(self.button)
+        if Constants.IS_ANDROID:
+            # QMenuBar non ha modo di essere raggiunto su Android (era
+            # pensato per il vecchio tasto hardware "Menu", rimosso da anni -
+            # vedi Menu.buildPopupMenu in toolbar.py): pulsante extra che
+            # apre le stesse azioni gia' esistenti come popup
+            self.menuButton = QToolButton()
+            # niente carattere Unicode '☰': il font disponibile su Android
+            # non lo copre sempre (glifo "rotto"/invisibile) - disegnata a
+            # mano cosi' non dipende da nessun font
+            self.menuButton.setIcon(self._buildHamburgerIcon())
+            self.menuButton.setMinimumHeight(60)
+            self.menuButton.setStyleSheet("QToolButton { padding: 0 16px; }")
+            self.menuButton.clicked.connect(self.openMenuPopup)
+            topRow.addWidget(self.menuButton)
         layout = QVBoxLayout()
-        layout.addWidget(self.button)
+        layout.addLayout(topRow)
         layout.addWidget(self.pastyGrid.grid)
         layout.addWidget(self.statusBar)
         centralWidget = QWidget()
@@ -319,6 +335,23 @@ class Pasty(QMainWindow):
             self.statusQueue.showNow(msg, 5)
         self.stop = False
     
+    def _buildHamburgerIcon(self):
+        color = Constants.COLOR_WHITE if Constants.isDarkTheme() else Constants.COLOR_BLACK
+        pixmap = QPixmap(32, 32)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        pen = QPen(QColor(color))
+        pen.setWidth(3)
+        painter.setPen(pen)
+        for y in (8, 16, 24):
+            painter.drawLine(4, y, 28, y)
+        painter.end()
+        return QIcon(pixmap)
+
+    def openMenuPopup(self):
+        popup = self.menu.buildPopupMenu()
+        popup.exec(self.menuButton.mapToGlobal(self.menuButton.rect().bottomRight()))
+
     def centerScreen(self):
         qr = self.frameGeometry()
         cp = QApplication.primaryScreen().availableGeometry().center()
@@ -336,6 +369,11 @@ class Pasty(QMainWindow):
     # popup About dedicato
     def openAboutPopup(self):
         dialog = QDialog(self)
+        # senza, lo sfondo del dialogo resta trasparente su Android e si
+        # mimetizza con quello che c'e' sotto (es. la griglia) - i widget
+        # normali non riempiono da soli lo sfondo con la palette a meno di
+        # chiederglielo esplicitamente
+        dialog.setAutoFillBackground(True)
         dialog.setWindowTitle(MyText().actionAbout)
 
         iconLabel = QLabel()
@@ -531,6 +569,9 @@ class Pasty(QMainWindow):
         if not self.stop and self.settings.value('doOpen') != 'nothing' and self.pastyGrid.hasAnyCompletedRow(thisBatchRows):
             Tools.openDownloadFolder()
         self.resetUi(msg)
+        if Constants.IS_ANDROID:
+            # sulla barra di stato il messaggio finale sparisce dopo pochi secondi
+            QMessageBox.information(self, self.appName, msg)
 
     def closeEvent(self, event):
         if not self.is_running:
@@ -563,5 +604,8 @@ if __name__ == '__main__':
     if not Tools.acquireSingleInstanceLock():
         sys.exit(0)  # un'altra istanza e' gia' in esecuzione
     Constants.applyTheme(QSettings(MyText().orgName, MyText().appName).value('theme') or Constants.THEME_SYSTEM)
+    Constants.applyAndroidFontScale()
+    Constants.applyAndroidDarkPalette()
+    Constants.onThemeChange(Constants.applyAndroidDarkPalette)
     window = Pasty()
     sys.exit(app.exec())

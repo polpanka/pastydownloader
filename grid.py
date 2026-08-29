@@ -190,7 +190,11 @@ class PastyGrid():
         self.setCellState(newRow, self.STATUS_CODE_WAITING)
         self.setCellStatusCode(newRow, self.STATUS_CODE_WAITING)
         self.setCellSaveAs(newRow, '')
-        self.setCellConvert(newRow, self.settings.value('ytConversion'))
+        # 'mp4' = Pasty.ACTION_TO_MP4 (main.py) - senza questo default, su un
+        # primo avvio senza mai aver aperto le Preferenze, ytConversion resta
+        # None: worker.runSingleUrl richiede 'mp4' o 'mp3'/'both' per avviare
+        # il download, quindi None fa fallire ogni riga subito con "Unknown error"
+        self.setCellConvert(newRow, self.settings.value('ytConversion', 'mp4'))
 
     def getAllUrlsInTable(self):
         return [self.getCellUrl(rowId) for rowId in range(self.grid.rowCount())]
@@ -205,4 +209,4 @@ class PastyGrid():
     def updateIsToConvert(self):
         if self.grid.rowCount() > 0:
             for rowId in range(self.grid.rowCount()):
-                self.setCellConvert(rowId, self.settings.value('ytConversion'))
+                self.setCellConvert(rowId, self.settings.value('ytConversion', 'mp4'))

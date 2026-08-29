@@ -1417,7 +1417,7 @@ class Tools():
             return os.path.getsize(path)
         except OSError:
             return None
-    
+
     # calculate file size in KB, MB, GB
     @staticmethod
     def formatSize(size):
@@ -1483,8 +1483,8 @@ class Tools():
             return True
         except Exception:
             return False
-    
-    # Specifica se il programma è avviato 
+
+    # Specifica se il programma è avviato
     # a runtime da exe oppure da source durante lo sviluppo
     @staticmethod
     def runType():

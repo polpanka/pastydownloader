@@ -44,6 +44,15 @@ Thumbs.db
 *.app
 *.war
 
+# Esperimento Android (vedi ANDROID.md)
+.venv-android/
+*.apk
+android_build.sh
+clean_pysidedeploy_paths.py
+.buildozer/
+deployment/
+buildozer.spec
+
 # Large media files
 *.mp4
 *.tiff

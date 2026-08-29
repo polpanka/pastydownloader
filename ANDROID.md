@@ -140,6 +140,12 @@ Produce un `.apk` nella directory del progetto. Installalo con
 `adb install -r nome.apk` su un device con debug USB attivo, o trascinalo
 nell'emulatore Android Studio.
 
+**Attenzione**: `pyside6-android-deploy` riscrive `pysidedeploy.spec` a ogni
+esecuzione, rimettendo dentro i path assoluti risolti della macchina (anche
+nei campi lasciati vuoti apposta, es. `wheel_pyside`/`ndk_path`). **Prima di
+ogni commit**, ricontrollare/ripulire il file (vedi la nota sui path
+personali più sotto) - non basta averlo pulito una volta.
+
 ## 6. Build vera: log dei tentativi
 
 Primo tentativo (`buildozer android debug`) fallito subito, prima di
@@ -396,6 +402,66 @@ adb install -r PastyDownloader-0.1-arm64-v8a-debug.apk
 
 su un device con debug USB attivo, o trascinando l'APK in un emulatore
 Android Studio.
+
+## 7. Prima funzionalita' vera: download generico (no ffmpeg/yt-dlp)
+
+Dopo il successo del guscio, tentativo di far funzionare il motore di
+download generico (`Tools.downloadAsyncGeneric`/`downloadNotAsyncGeneric`,
+usa `aiohttp`/`requests`/`aiofiles` - non serve ffmpeg ne' yt-dlp).
+
+**Blocco 1 - controllo ffmpeg preventivo**: `main.py:fetchRows` controllava
+`Tools.checkFFmpeg()` **prima** di sapere quale motore sarebbe stato usato,
+bloccando anche i download generici. Fix: bypassare il controllo quando
+`Constants.SHELL_ONLY_MODE`.
+
+**Blocco 2 - bug latente dell'app, non specifico di Android**: al primo
+avvio, senza mai aver aperto le Preferenze, `ytConversion` (QSettings) resta
+`None`. `worker.runSingleUrl` avvia il download solo se l'azione della riga
+e' `'mp4'` o `'mp3'/'both'` - con `None` nessuna riga scarica mai nulla,
+fallisce subito con "Unknown error" silenzioso (nessun log, nessun
+traceback). Fix in `grid.py` (due punti,
+`self.settings.value('ytConversion', 'mp4')` invece di
+`self.settings.value('ytConversion')`).
+
+**Blocco 3 - certificati SSL mancanti**: una volta partito davvero il
+download, fallisce con:
+
+```
+SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate
+verify failed: unable to get local issuer certificate
+```
+
+Il Python cross-compilato per Android non ha un bundle di certificati CA di
+sistema. Primo tentativo - `certifi` nei requirements + in `main.py`
+(guardato da `Constants.IS_ANDROID`) `os.environ.setdefault('SSL_CERT_FILE',
+certifi.where())` - **non ha funzionato**: le chiamate `requests` (usate per
+`checkUpdates`/`referer.json`) non hanno mai avuto questo errore, perche'
+`requests` usa gia' da solo il bundle CA di `certifi` internamente. Il vero
+colpevole e' `aiohttp` (usato solo da `downloadAsyncGeneric`): costruisce un
+proprio contesto SSL e non legge `SSL_CERT_FILE`/i default di sistema come
+fa `requests` - serve passarglielo esplicitamente. Fix reale, in
+`libs.py:downloadAsyncGeneric` (guardato da `Constants.IS_ANDROID`):
+
+```python
+import ssl, certifi
+connector = aiohttp.TCPConnector(ssl=ssl.create_default_context(cafile=certifi.where()))
+async with aiohttp.ClientSession(connector=connector) as session:
+    ...
+```
+
+(Nota per debug futuro: `certifi` **era** gia' bundlato correttamente in
+ogni build precedente - verificarlo con `unzip -l` sull'APK non funziona,
+perche' i pacchetti Python puri finiscono impacchettati dentro
+`lib/arm64-v8a/libpybundle.so`, un unico blob nativo, non file separati
+visibili nello zip. Il problema non era mai "certifi manca", era solo che
+aiohttp non lo usava.)
+
+**Risultato: successo.** Testato su device reale con
+`https://pdfobject.com/pdf/sample.pdf` (link diretto, motore generico,
+niente ffmpeg/yt-dlp coinvolti) - download completato pulito, nessun errore
+nel log, file salvato nella cartella privata dell'app
+(`ANDROID_PRIVATE/Download`, vedi punto precedente). Prima vera
+funzionalita' di PastyDownloader che funziona su Android, non solo la UI.
 
 ## Cosa aspettarsi che si rompa ancora
 

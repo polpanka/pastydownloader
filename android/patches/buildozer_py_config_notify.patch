@@ -1,0 +1,15 @@
+--- a/PySide6/scripts/deploy_lib/android/buildozer.py
++++ b/PySide6/scripts/deploy_lib/android/buildozer.py
+@@ -81,6 +81,12 @@
+         # a mano
+         permissions.add("android.permission.WRITE_EXTERNAL_STORAGE")
+         permissions.add("android.permission.READ_EXTERNAL_STORAGE")
++        # PATCH locale: notifica di sistema a fine download (vedi
++        # android_bridge.py e pythonactivity_notify.patch) - "dangerous"
++        # solo da API 33, richiesta a runtime dallo stesso meccanismo generico
++        # di requestNeededPermissions() (PythonActivity.java), nessun altro
++        # codice serve qui
++        permissions.add("android.permission.POST_NOTIFICATIONS")
+         permissions = ", ".join(permissions)
+         self.set_value("app", "android.permissions", permissions)
+ 

@@ -4,8 +4,8 @@ import sh
 from multiprocessing import cpu_count
 
 
-# PATCH locale (PastyDownloader, vedi ANDROID_HISTORY.md punto "ffmpeg-kit"):
-# copia della recipe ufficiale p4a (pythonforandroid/recipes/ffmpeg), unica
+# PATCH locale (PastyDownloader): copia della recipe ufficiale p4a
+# (pythonforandroid/recipes/ffmpeg), unica
 # differenza: rimosso `depends = [('sdl2', 'sdl3')]`. Nel sorgente originale
 # quel campo serve solo a forzare l'ordine di build ("Need this to build
 # correct recipe order", mai referenziato in get_recipe_env/build_arch), ma

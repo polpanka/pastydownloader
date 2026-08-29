@@ -86,6 +86,7 @@ if Constants.IS_ANDROID:
     os.environ.setdefault('SSL_CERT_FILE', certifi.where())
 
 from grid import PastyGrid
+from android_bridge import AndroidBridge
 from worker import AsyncWorker
 from ytdlp_updater import YtDlpUpdater
 from ffmpeg_installer import FfmpegInstaller
@@ -306,8 +307,8 @@ class Pasty(QMainWindow):
         # versione un po' vecchia degrada, non rompe l'app) e toglie di mezzo
         # un thread di verifica in piu' che potrebbe girare in concomitanza
         # con classificazione/download gia' in corso, condividendo
-        # sys.modules con loro (vedi ANDROID_HISTORY.md punto 12 - il fix li'
-        # regge comunque anche con questo attivo, ma senza e' piu' semplice)
+        # sys.modules con loro (vedi Tools._purgeModuleTree in libs.py - il
+        # fix regge comunque anche con questo attivo, ma senza e' piu' semplice)
         if Constants.IS_ANDROID:
             return
         # staggered after the app-version check, so it doesn't compete for
@@ -581,6 +582,10 @@ class Pasty(QMainWindow):
     def progressFinished(self):
         msg = MyText().msgDownloadFinished % round(time.time() - self.time_start_download)
         Tools.consoleLogs(msg)
+        # solo Android, solo se l'app e' in background in questo momento
+        # (vedi android_bridge.py) - se e' visibile l'utente vede gia' tutto
+        # nella griglia/status bar
+        AndroidBridge.notifyDownloadFinished(msg)
         # solo le righe di QUESTO batch, non l'intera griglia: altrimenti un ri-download singolo fallito potrebbe aprire comunque la cartella
         thisBatchRows = self.asyncExec.rowsToDownload if self.asyncExec.rowsToDownload else range(self.pastyGrid.grid.rowCount())
         # su Android l'opzione e' disabilitata in Preferenze (vedi

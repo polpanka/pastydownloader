@@ -1,0 +1,34 @@
+--- a/PySide6/scripts/deploy_lib/android/buildozer.py
++++ b/PySide6/scripts/deploy_lib/android/buildozer.py
+@@ -81,6 +81,12 @@
+         # a mano
+         permissions.add("android.permission.WRITE_EXTERNAL_STORAGE")
+         permissions.add("android.permission.READ_EXTERNAL_STORAGE")
++        # PATCH locale: notifica di sistema a fine download (vedi
++        # android_bridge.py e pythonactivity_share_notify.patch) - "dangerous"
++        # solo da API 33, richiesta a runtime dallo stesso meccanismo generico
++        # di requestNeededPermissions() (PythonActivity.java), nessun altro
++        # codice serve qui
++        permissions.add("android.permission.POST_NOTIFICATIONS")
+         permissions = ", ".join(permissions)
+         self.set_value("app", "android.permissions", permissions)
+ 
+@@ -100,6 +106,18 @@
+         # normale app
+         self.set_value("app", "android.manifest.orientation", "unspecified")
+ 
++        # PATCH locale: menu "Condividi" di sistema (link condiviso da
++        # un'altra app, es. YouTube) - vedi android/intent_filters.xml e
++        # PythonActivity.handleIncomingIntent (pythonactivity_share_notify.patch).
++        # Path relativo alla root del progetto (buildozer.root_dir =
++        # dirname(buildozer.spec), scritto da questo stesso tool dentro
++        # project_dir - vedi deploy_lib/deploy_util.py), non a "deployment/"
++        self.set_value("app", "android.manifest.intent_filters", "android/intent_filters.xml")
++        # PATCH locale: senza singleTask, un secondo "Condividi" ad app gia'
++        # aperta lancerebbe una nuova Activity/processo Python invece di
++        # riusare quello in corso (vedi onNewIntent in PythonActivity.java)
++        self.set_value("app", "android.manifest.launch_mode", "singleTask")
++
+         # add jars and initClasses for the jars
+         jars, init_classes = self.__find_jars(pysidedeploy_config.dependency_files,
+                                               pysidedeploy_config.jars_dir)

@@ -144,12 +144,11 @@ class AsyncWorker(QObject):
         if self.isToConvertInMp3() and (result[0] == self.gridParent.STATUS_CODE_COMPLETED or isAlreadyDownloaded):
             Tools.consoleLogs("Action: Converting")
             result = await self.runConversion(videoPath)
-            if result[0] == self.gridParent.STATUS_CODE_COMPLETED:
-                self.gridSaveAsUpdate.emit(self.rowId, self.saveAs)
         # deleting
         if result[0] == self.gridParent.STATUS_CODE_COMPLETED and self.isToKeepOnlyInMp3():
             Tools.consoleLogs("Action: Deleting")
             Tools.removeFile(videoPath)
+            self.gridSaveAsUpdate.emit(self.rowId, '')
         # result
         return result
 

@@ -894,6 +894,43 @@ class ConvertAlreadyDownloadedRowTest(unittest.TestCase):
             worker.runAllUrls()  # non deve sollevare/segnare errore
         self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_COMPLETED)
 
+    def test_converting_twice_in_a_row_keeps_using_the_video_as_source(self):
+        """BUG di regressione (segnalato dall'utente): un primo tentativo di
+        fix per il bug sopra aggiornava la riga con il percorso AUDIO appena
+        creato (self.saveAs) invece di lasciarla sul video - un secondo
+        "Converti" sulla stessa riga (es. dal menu contestuale, senza mai
+        passare da un nuovo download) finiva percio' per usare l'audio come
+        sorgente di una NUOVA conversione audio->audio, con lo stesso nome
+        in entrata e in uscita: ffmpeg fallisce sempre in quel caso. La riga
+        deve restare agganciata al video anche dopo una conversione riuscita
+        (ACTION_TO_BOTH, video mai cancellato) - una riconversione ripetuta
+        e' solo ridondante, mai un errore."""
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp:
+            tmp.write(b'fake video data')
+            videoPath = tmp.name
+        self.addCleanup(lambda: os.path.exists(videoPath) and os.remove(videoPath))
+        self.grid.addRow(MP4_URL)
+        self.grid.setCellConvert(0, self.app.ACTION_TO_BOTH)
+        self.grid.setCellSaveAs(0, videoPath)
+
+        sourcesSeen = []
+
+        def fakeConvert(ffmpeg, newFile, oldVideo, audioFormat, onProgress, isStoppedFn):
+            sourcesSeen.append(oldVideo)
+            return [True, '1 KB']
+
+        with mock.patch.object(PastedUrl, '_getContentTypeFromUrl', return_value='video/mp4'), \
+             mock.patch.object(Tools, 'ConvertAudioByFFmpeg', new=AsyncMock(side_effect=fakeConvert)):
+            AsyncWorker(self.app, [0], Tools.checkFFmpeg()).runAllUrls()
+            self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_COMPLETED)
+            self.grid.setCellState(0, self.grid.STATUS_CODE_WAITING)
+            self.grid.setCellStatusCode(0, self.grid.STATUS_CODE_WAITING)
+            AsyncWorker(self.app, [0], Tools.checkFFmpeg()).runAllUrls()  # secondo "Converti"
+        self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_COMPLETED)
+        # entrambe le conversioni devono partire dallo stesso file video, mai
+        # dall'audio prodotto dalla conversione precedente
+        self.assertEqual(sourcesSeen, [videoPath, videoPath])
+
 
 class NonAacAudioDownloadTest(unittest.TestCase):
     """Un audio mp3 diretto (non aac) scaricato via ffmpeg: aac_adtstoasc e'

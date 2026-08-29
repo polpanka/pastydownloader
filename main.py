@@ -474,9 +474,14 @@ class Pasty(QMainWindow):
             url = self.pastyGrid.getCellUrl(rowId)
             Tools.copyToClipboard(url)
             self.setStatusBar(MyText().msgContentCopied, 2)
-        # open
+        # open folder
         elif action == self.pastyGrid.actionOpen:
             Tools.openDownloadFolder()
+        # open file
+        elif action == self.pastyGrid.actionOpenFile:
+            myfile = self.pastyGrid.getCellSaveAs(rowId)
+            if myfile and os.path.isfile(myfile):
+                Tools.openFile(myfile)
         # re-download
         elif action == self.pastyGrid.actionRedownload:
             self.pastyGrid.setCellConvert(rowId, self.ACTION_TO_MP4)

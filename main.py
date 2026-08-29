@@ -179,7 +179,17 @@ class Pasty(QMainWindow):
         self.initDependencies()
         self.resetUi()
         self.pastyGrid.resizeEvent(self.width())
-        self.checkDownloadFolder()
+        # Niente check qui all'avvio (ne' su Android ne' su desktop): su
+        # Android il popup di sistema per WRITE_EXTERNAL_STORAGE e'
+        # asincrono (PythonActivity.onCreate lo richiede e non aspetta la
+        # risposta), quindi appena l'app parte il permesso e' spesso ancora
+        # "non deciso" - indistinguibile da "negato" lato Python (os.access)
+        # prima che l'utente risponda, causerebbe un popup d'errore spurio a
+        # ogni avvio pulito. Comportamento uniformato su tutte le
+        # piattaforme: l'unico check resta quello in fetchRows() prima di
+        # ogni download (popup + non parte nulla, nessuna chiusura forzata -
+        # l'utente puo' sistemare il problema, es. concedere il permesso o
+        # cambiare il path nelle settings, e ritentare senza riavviare).
         self.initConnectivityCheck()
         # deferred so the window shows up immediately, without waiting on the network
         QTimer.singleShot(0, lambda: self.checkUpdates(False))

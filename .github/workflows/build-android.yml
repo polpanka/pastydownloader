@@ -1,0 +1,159 @@
+name: Build Android APK (esperimento)
+
+# Manuale (Actions -> Build Android APK -> Run workflow) SOLO, di proposito:
+# a differenza degli altri build-*.yml qui NON c'e' "push: tags: v*", quindi
+# non allega automaticamente l'APK alle Release quando pushi un tag. E' una
+# scelta deliberata: questo e' ancora un guscio sperimentale (SHELL_ONLY_MODE,
+# vedi ANDROID.md/ANDROID_HISTORY.md) - niente ffmpeg/yt-dlp, build "debug"
+# (chiave [buildozer] mode in pysidedeploy.spec), non firmata per una vera
+# release. Quando/se si deciderà di distribuirlo davvero, aggiungere qui lo
+# stesso trigger "push: tags: v*" degli altri workflow (serve anche una
+# release-key vera al posto della firma debug automatica).
+#
+# Riproduce in CI, passo per passo, l'esperimento fatto a mano in locale
+# (vedi ANDROID.md): due patch locali non versionabili altrimenti (il tool
+# pyside6-android-deploy non espone via CLI ne' targetSdk/permessi/
+# requirements ne' un modo di riusare un checkout p4a persistente) vengono
+# applicate qui da file .patch versionati in android/patches/.
+"on":
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      # Gli NDK/SDK Android e la ricompilazione nativa di CPython/openssl/
+      # sqlite3/libffi occupano parecchio spazio - i runner GitHub hanno per
+      # default poco spazio libero reale (tool preinstallati non usati qui,
+      # es. .NET/Haskell, occupano diversi GB). Liberato preventivamente,
+      # pattern comune per build Android su GitHub Actions.
+      - name: Libera spazio disco (tool preinstallati non usati qui)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune -a -f || true
+          df -h /
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # setup-java esporta gia' JAVA_HOME nell'ambiente dei passi successivi -
+      # e' il requisito scoperto in locale (serve la JDK completa per javac,
+      # non solo la JRE, vedi ANDROID.md punto 6)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Elenco di dipendenze di sistema scoperto una alla volta in locale
+      # (vedi ANDROID.md punto 6: zlib, poi build-essential, poi
+      # autoconf/automake/libtool, poi libssl-dev) - qui installate tutte
+      # insieme dall'inizio, note gia' complete
+      - name: Installa le dipendenze di sistema richieste dalla toolchain Android
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            zlib1g-dev \
+            build-essential \
+            autoconf \
+            automake \
+            libtool \
+            libssl-dev \
+            patch
+
+      # Venv dedicato Python 3.11 (buildozer/p4a lo richiedono sull'host, non
+      # e' il Python cross-compilato dentro l'APK) - stesso path relativo
+      # usato da pysidedeploy.spec (python_path = .venv-android/bin/python3.11),
+      # gia' committato cosi' com'e' per restare valido sia in locale che qui
+      - name: Crea il venv Python 3.11 e installa pyside6-android-deploy
+        run: |
+          python3.11 -m venv .venv-android
+          source .venv-android/bin/activate
+          pip install pyside6==6.11.2
+          pip install -r .venv-android/lib/python3.11/site-packages/PySide6/scripts/requirements-android.txt
+
+      # Patch 1/2: il tool pyside6-android-deploy non espone via CLI ne'
+      # targetSdk (android.api) ne' permessi extra ne' pin di versione dei
+      # requirements ne' p4a.source_dir - l'unico modo e' patchare il suo
+      # file interno (vedi android/patches/buildozer_py_config.patch,
+      # generato con "git diff" contro il file pristine della stessa identica
+      # versione PySide6==6.11.2 pinnata sopra, quindi deve applicarsi pulito)
+      - name: "Patch 1/2: targetSdk, permessi storage, requirements, p4a.source_dir"
+        run: |
+          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          patch -p1 "$TARGET" < android/patches/buildozer_py_config.patch
+
+      # NDK/SDK Android (vedi ANDROID.md punto 2) - JAVA_HOME e' gia' in
+      # ambiente grazie a setup-java sopra
+      - name: Scarica NDK/SDK Android
+        run: |
+          git clone --depth 1 https://code.qt.io/pyside/pyside-setup /tmp/pyside-setup
+          source .venv-android/bin/activate
+          pip install -r /tmp/pyside-setup/tools/cross_compile_android/requirements.txt
+          python /tmp/pyside-setup/tools/cross_compile_android/main.py \
+            --download-only --skip-update --auto-accept-license
+
+      # Bug dello script di download sopra (vedi ANDROID.md punto 6, "Terzo
+      # tentativo"): mette cmdline-tools direttamente sotto android-sdk/
+      # invece del layout cmdline-tools/latest/ atteso da sdkmanager/
+      # buildozer - fix identico a quello fatto a mano in locale. Il symlink
+      # va sui singoli file, non sulla cartella bin intera (sdkmanager
+      # risolve i symlink solo sul file invocato direttamente)
+      - name: Sistema il layout cmdline-tools/latest dell'SDK
+        run: |
+          SDK="$HOME/.pyside6_android_deploy/android-sdk"
+          mv "$SDK/cmdline-tools" "$SDK/cmdline-tools-tmp"
+          mkdir -p "$SDK/cmdline-tools"
+          mv "$SDK/cmdline-tools-tmp" "$SDK/cmdline-tools/latest"
+          mkdir -p "$SDK/tools/bin"
+          for f in "$SDK/cmdline-tools/latest/bin/"*; do
+            ln -s "../../cmdline-tools/latest/bin/$(basename "$f")" "$SDK/tools/bin/$(basename "$f")"
+          done
+
+      # Wheel PySide6/Shiboken6 per Android (vedi ANDROID.md punto 3):
+      # qtpip richiede un account commerciale, le wheel open source si
+      # scaricano dirette da download.qt.io senza account
+      - name: Scarica le wheel PySide6/Shiboken6 per Android
+        run: |
+          mkdir -p "$HOME/.pyside6_android_deploy/wheels"
+          cd "$HOME/.pyside6_android_deploy/wheels"
+          curl -fLO https://download.qt.io/official_releases/QtForPython/pyside6/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
+          curl -fLO https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
+
+      # Patch 2/2: python-for-android va clonato in un checkout separato
+      # (persistente in locale, qui semplicemente fresco a ogni run, va bene
+      # comunque - la persistenza serviva solo a risparmiare tempo di
+      # sviluppo in locale, non e' necessaria in CI) cosi' pysidedeploy.spec
+      # via p4a.source_dir (patchato sopra) lo trova gia' pronto invece di
+      # farselo clonare da capo dal tool, perdendo la patch del permesso
+      # runtime storage (vedi ANDROID.md punto 8 e ANDROID_HISTORY.md)
+      - name: "Patch 2/2: richiesta permesso runtime storage (PythonActivity.java)"
+        run: |
+          git clone --branch develop --depth 1 \
+            https://github.com/kivy/python-for-android.git \
+            "$HOME/.pyside6_android_deploy/python-for-android"
+          cd "$HOME/.pyside6_android_deploy/python-for-android"
+          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_permissions.patch"
+
+      - name: Build APK
+        run: |
+          source .venv-android/bin/activate
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          pyside6-android-deploy --config-file pysidedeploy.spec \
+            --wheel-pyside "$HOME/.pyside6_android_deploy/wheels/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
+            --wheel-shiboken "$HOME/.pyside6_android_deploy/wheels/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
+            --ndk-path "$HOME/.pyside6_android_deploy/android-ndk/android-ndk-r27c" \
+            --sdk-path "$HOME/.pyside6_android_deploy/android-sdk" \
+            --force
+
+      - name: Rinomina l'APK prodotto
+        run: mv PastyDownloader-*-arm64-v8a-debug.apk PastyDownloader-android-arm64-v8a-debug.apk
+
+      - name: Carica l'APK come artefatto della run
+        uses: actions/upload-artifact@v7
+        with:
+          name: PastyDownloader-android-arm64-v8a-debug.apk
+          path: PastyDownloader-android-arm64-v8a-debug.apk

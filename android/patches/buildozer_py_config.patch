@@ -1,0 +1,55 @@
+--- a/PySide6/scripts/deploy_lib/android/buildozer.py
++++ b/PySide6/scripts/deploy_lib/android/buildozer.py
+@@ -24,7 +24,20 @@
+         include_exts = f"{include_exts},qml,js"
+         self.set_value("app", "source.include_exts", include_exts, raise_warning=False)
+ 
+-        self.set_value("app", "requirements", "python3,shiboken6,PySide6")
++        # PATCH locale: fissa la versione della recipe python3 a 3.11 per
++        # matchare l'ABI cp311 delle wheel PySide6/Shiboken6 Android scaricate
++        # (default upstream e' l'ultima CPython, 3.14 - causa
++        # "libpython3.11.so not found" a runtime se lasciato senza pin, vedi
++        # ANDROID.md)
++        # PATCH locale: motore di download generico (aiohttp/requests/
++        # aiofiles, vedi Tools.downloadAsyncGeneric/downloadNotAsyncGeneric
++        # in libs.py) - a differenza di psutil, questi hanno una recipe p4a
++        # (aiohttp) o sono pure Python (requests/aiofiles), vedi ANDROID.md
++        # certifi: bundle CA per SSL_CERT_FILE (vedi main.py e ANDROID.md) -
++        # senza, ogni richiesta HTTPS fallisce con SSLCertVerificationError
++        self.set_value("app", "requirements",
++                       "python3==3.11.16,hostpython3==3.11.16,shiboken6,PySide6,"
++                       "requests,aiohttp,aiofiles,certifi")
+ 
+         # android platform specific
+         if pysidedeploy_config.ndk_path:
+@@ -46,11 +59,30 @@
+         # TODO: remove this once the above commit is merged to master
+         self.set_value("app", "p4a.branch", "develop")
+ 
++        # PATCH locale: checkout persistente di python-for-android (branch
++        # develop, patchato a mano - vedi PythonActivity.java li' dentro e
++        # ANDROID.md) invece del clone-and-purge di default del tool a ogni
++        # build, altrimenti la patch andrebbe perduta a ogni run
++        self.set_value("app", "p4a.source_dir",
++                       str(Path.home() / ".pyside6_android_deploy" / "python-for-android"))
++
+         # add permissions
+         permissions = self.__find_permissions(pysidedeploy_config.dependency_files)
++        # PATCH locale: WRITE/READ_EXTERNAL_STORAGE per scrivere nella
++        # cartella Download pubblica (vedi ANDROID.md e android.api sotto) -
++        # non derivano dalle dependency XML del wheel PySide6, vanno aggiunte
++        # a mano
++        permissions.add("android.permission.WRITE_EXTERNAL_STORAGE")
++        permissions.add("android.permission.READ_EXTERNAL_STORAGE")
+         permissions = ", ".join(permissions)
+         self.set_value("app", "android.permissions", permissions)
+ 
++        # PATCH locale: targetSdk abbassato a 28 per ottenere storage
++        # "legacy" (scrittura diretta in /storage/emulated/0/Download senza
++        # MediaStore/JNI, indipendentemente dalla versione Android reale del
++        # device) - tentativo prima del patch pyjnius, vedi ANDROID.md
++        self.set_value("app", "android.api", "28")
++
+         # add jars and initClasses for the jars
+         jars, init_classes = self.__find_jars(pysidedeploy_config.dependency_files,
+                                               pysidedeploy_config.jars_dir)

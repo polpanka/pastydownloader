@@ -247,10 +247,13 @@ class Pasty(QMainWindow):
     # ffmpeg e yt-dlp si scaricano in cascata, mai in parallelo: prima ffmpeg,
     # poi (solo se riuscito) yt-dlp - vedi onFfmpegReady/onYtDlpReady
     def initDependencies(self):
-        # Guscio Android sperimentale (vedi Constants.SHELL_ONLY_MODE): niente
-        # download/subprocess di ffmpeg o yt-dlp, sblocca comunque la UI cosi'
-        # si vede almeno la finestra - i download veri non funzioneranno
-        if Constants.SHELL_ONLY_MODE:
+        # Guscio Android sperimentale (vedi Constants.SHELL_ONLY_MODE): ffmpeg
+        # resta sempre disattivato (nessun binario nativo bundlato, vedi
+        # ANDROID.md), ma yt-dlp e' libreria Python pura scaricata a runtime
+        # come su desktop - proviamo a farla partire comunque, per capire
+        # empiricamente se l'intera catena (download wheel, verifica in
+        # sottoprocesso, poi download vero) regge sul bootstrap Android.
+        if Constants.SHELL_ONLY_MODE and not Constants.IS_ANDROID:
             self.dependenciesReady = True
             return
         self.ffmpegInstaller = FfmpegInstaller()
@@ -260,6 +263,13 @@ class Pasty(QMainWindow):
         self.ytDlpUpdater.statusMessage.connect(self.setStatusBar)
         self.ytDlpUpdater.statusMessageNow.connect(self.statusQueue.showNow)
         self.ytDlpUpdater.ready.connect(self.onYtDlpReady)
+        if Constants.IS_ANDROID:
+            self.dependenciesReady = bool(Tools.checkYtDlp())
+            if self.dependenciesReady:
+                self.startYtDlpPeriodicUpdates()
+            else:
+                threading.Thread(target=self.ytDlpUpdater.ensureInstalled, daemon=True).start()
+            return
         self.dependenciesReady = bool(Tools.checkFFmpeg()) and bool(Tools.checkYtDlp())
         if self.dependenciesReady:
             self.startYtDlpPeriodicUpdates()

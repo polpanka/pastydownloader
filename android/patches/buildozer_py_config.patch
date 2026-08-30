@@ -28,8 +28,8 @@
 +        # yt-dlp la usa per scrivere la copertina in mp4/m4a/mov senza
 +        # ffprobe; senza, ripiega su AtomicParsley (mai presente) poi su un
 +        # metodo ffmpeg+ffprobe che fallisce sempre qui (l'unico binario
-+        # compilato dalla recipe ffmpeg locale e' ffmpeg, mai ffprobe) -
-+        # vedi ANDROID_HISTORY.md
++        # compilato dalla recipe ffmpeg locale e' ffmpeg, mai ffprobe):
++        # senza mutagen, niente copertina incorporata su Android
 +        self.set_value("app", "requirements",
 +                       "python3==3.11.16,hostpython3==3.11.16,shiboken6,PySide6,"
 +                       "requests,aiohttp,aiofiles,certifi,mutagen,ffmpeg")

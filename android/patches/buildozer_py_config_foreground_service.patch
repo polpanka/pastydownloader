@@ -5,8 +5,8 @@
          # codice serve qui
          permissions.add("android.permission.POST_NOTIFICATIONS")
 +        # PATCH locale: Foreground Service per i download in background
-+        # (vedi android_bridge.py, pythonactivity_foreground_service.patch e
-+        # ANDROID_HISTORY.md) - permesso "normale" (concesso all'installazione,
++        # (vedi android_bridge.py e pythonactivity_foreground_service.patch) -
++        # permesso "normale" (concesso all'installazione,
 +        # nessun popup runtime, a differenza di POST_NOTIFICATIONS sopra),
 +        # richiesto da Android da API 28 in su per avviare un qualunque
 +        # foreground service. Niente FOREGROUND_SERVICE_DATA_SYNC (obbligo
@@ -28,7 +28,7 @@
 +        # "servizio Python" nativo di p4a che gira in un processo/interprete
 +        # a parte - qui basta un componente Java, il download resta nel
 +        # thread Python di sempre) - vedi
-+        # pythonactivity_foreground_service.patch e ANDROID_HISTORY.md.
++        # pythonactivity_foreground_service.patch.
 +        # Individuato leggendo bootstraps/common/build/build.py di p4a
 +        # (mappa native_services nel template del manifest)
          extra_args = (f"--qt-libs={modules} --load-local-libs={local_libs}"

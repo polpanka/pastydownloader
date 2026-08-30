@@ -13,7 +13,7 @@
      storage esterno) - un percorso piu' stretto (solo "Download/")
      lascerebbe fuori quel caso. Non concede nessun accesso in piu' a livello
      di permessi: l'app ha gia' lettura/scrittura piena sullo storage
-     legacy (vedi ANDROID_HISTORY.md punto 7), questo file dice solo cosa
+     legacy (targetSdk 28, vedi ANDROID.md), questo file dice solo cosa
      PUO' essere condiviso via URI con un'altra app, non cosa l'app stessa
      puo' leggere/scrivere -->
 <paths xmlns:android="http://schemas.android.com/apk/res-auto">

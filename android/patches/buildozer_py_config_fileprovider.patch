@@ -1,7 +1,7 @@
 --- a/PySide6/scripts/deploy_lib/android/buildozer.py
 +++ b/PySide6/scripts/deploy_lib/android/buildozer.py
 @@ -142,9 +142,39 @@
-         # pythonactivity_foreground_service.patch e ANDROID_HISTORY.md.
+         # pythonactivity_foreground_service.patch.
          # Individuato leggendo bootstraps/common/build/build.py di p4a
          # (mappa native_services nel template del manifest)
 +        # PATCH locale: --resource=SRC:DEST copia SRC dentro res/DEST del

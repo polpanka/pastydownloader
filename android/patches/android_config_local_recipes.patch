@@ -12,7 +12,7 @@
 +            # build parta. Le copiamo qui da una posizione tracciata e
 +            # stabile (android/recipes/), fuori da qualunque cartella che il
 +            # tool cancella - ogni sottocartella e' una recipe locale a se'
-+            # (oggi ffmpeg e libshine, vedi ANDROID_HISTORY.md punto 18/19)
++            # (oggi ffmpeg e libshine)
 +            import shutil
 +            local_recipes_dir = self.source_file.parent / "android" / "recipes"
 +            if local_recipes_dir.is_dir():

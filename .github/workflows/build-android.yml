@@ -80,6 +80,13 @@ jobs:
           pip install pyside6==6.11.2
           pip install -r .venv-android/lib/python3.11/site-packages/PySide6/scripts/requirements-android.txt
 
+      # resources.py e' gitignored (rigenerato ad ogni build da resources.qrc,
+      # vedi .gitignore) - senza questo step nell'APK non finiscono le icone
+      # dei menu ne' il logo. Come build-windows.yml/build-macos.yml, ma con
+      # il pyside6-rcc del venv Android.
+      - name: Rigenera resources.py da resources.qrc
+        run: .venv-android/bin/pyside6-rcc resources.qrc -o resources.py
+
       # Patch 1: il tool pyside6-android-deploy non espone via CLI ne'
       # targetSdk (android.api) ne' permessi extra ne' pin di versione dei
       # requirements (incluso ffmpeg e mutagen) ne' p4a.source_dir - l'unico

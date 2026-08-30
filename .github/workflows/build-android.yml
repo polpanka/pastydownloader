@@ -1,4 +1,4 @@
-name: Build Android APK (esperimento)
+name: Build Android APK
 
 # Manuale (Actions -> Build Android APK -> Run workflow) SOLO, di proposito:
 # a differenza degli altri build-*.yml qui NON c'e' "push: tags: v*", quindi
@@ -158,19 +158,23 @@ jobs:
           curl -fLO https://download.qt.io/official_releases/QtForPython/pyside6/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
           curl -fLO https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
 
-      # Patch 5: python-for-android va clonato in un checkout separato
-      # (persistente in locale, qui semplicemente fresco a ogni run, va bene
-      # comunque - la persistenza serviva solo a risparmiare tempo di
-      # sviluppo in locale, non e' necessaria in CI) cosi' pysidedeploy.spec
-      # via p4a.source_dir (patchato sopra) lo trova gia' pronto invece di
-      # farselo clonare da capo dal tool, perdendo la patch del permesso
-      # runtime storage (vedi ANDROID.md punto 8)
+      # Patch 5: python-for-android clonato in un checkout separato che
+      # pysidedeploy.spec trova via p4a.source_dir (patch 1). **Pinnato a un
+      # commit preciso**: p4a 'develop' e' instabile e si muove ogni giorno -
+      # una versione diversa da quella contro cui sono stati generati i patch
+      # 6-9 fa fallire 'git apply', o (peggio) applica con contesto sbagliato
+      # e produce una build rotta. Questo commit e' quello con cui la build
+      # locale funziona; aggiornarlo solo dopo aver riverificato i patch.
       - name: "Patch 5: richiesta permesso runtime storage + ANDROID_NATIVE_LIBS (PythonActivity.java)"
+        env:
+          P4A_COMMIT: 7af1d1325ef460def993cc7871c43d04bc877a94
         run: |
-          git clone --branch develop --depth 1 \
-            https://github.com/kivy/python-for-android.git \
-            "$HOME/.pyside6_android_deploy/python-for-android"
-          cd "$HOME/.pyside6_android_deploy/python-for-android"
+          P4A_DIR="$HOME/.pyside6_android_deploy/python-for-android"
+          mkdir -p "$P4A_DIR" && cd "$P4A_DIR"
+          git init -q
+          git remote add origin https://github.com/kivy/python-for-android.git
+          git fetch -q --depth 1 origin "$P4A_COMMIT"
+          git checkout -q FETCH_HEAD
           git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_permissions.patch"
 
       # Patch 6: stesso file appena patchato sopra - notifica di sistema
@@ -226,18 +230,52 @@ jobs:
         run: |
           source .venv-android/bin/activate
           export JAVA_HOME="$JAVA_HOME_21_X64"
+          # --keep-deployment-files: senza, pyside6-android-deploy sposta
+          # .buildozer dentro deployment/ e poi cancella deployment/, buttando
+          # via i log della build. In CI il runner e' effimero, li teniamo.
+          set -o pipefail
           pyside6-android-deploy --config-file pysidedeploy.spec \
             --wheel-pyside "$HOME/.pyside6_android_deploy/wheels/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
             --wheel-shiboken "$HOME/.pyside6_android_deploy/wheels/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
             --ndk-path "$HOME/.pyside6_android_deploy/android-ndk/android-ndk-r27c" \
             --sdk-path "$HOME/.pyside6_android_deploy/android-sdk" \
-            --force
+            --keep-deployment-files --force 2>&1 | tee deploy.log
+          # pyside6-android-deploy esce 0 anche quando la build fallisce
+          # davvero (cattura l'eccezione e la stampa soltanto) - qui la
+          # trasformiamo in un fallimento vero dello step
+          if grep -q "Exception occurred:" deploy.log; then
+            echo "::error::pyside6-android-deploy ha fallito internamente (cerca 'Exception occurred:' sopra)"
+            exit 1
+          fi
 
-      - name: Rinomina l'APK prodotto
-        run: mv PastyDownloader-*-arm64-v8a-debug.apk PastyDownloader-android-arm64-v8a-debug.apk
+      - name: Trova e rinomina l'APK prodotto
+        run: |
+          APK=$(find "$GITHUB_WORKSPACE" "$HOME/.buildozer" deployment -type f \
+                  -name 'PastyDownloader*arm64-v8a*debug*.apk' 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "::error::APK non trovato dopo la build"
+            echo "--- tutti i .apk presenti ---"
+            find "$GITHUB_WORKSPACE" "$HOME" -name '*.apk' -type f 2>/dev/null || true
+            exit 1
+          fi
+          echo "APK trovato: $APK"
+          mv "$APK" "$GITHUB_WORKSPACE/PastyDownloader-android-arm64-v8a-debug.apk"
 
       - name: Carica l'APK come artefatto della run
         uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-android-arm64-v8a-debug.apk
           path: PastyDownloader-android-arm64-v8a-debug.apk
+
+      - name: Carica i log della build (per diagnosi, anche su fallimento)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs
+          path: |
+            deploy.log
+            .buildozer/**/*.log
+            .buildozer/**/*.txt
+            deployment/.buildozer/**/*.log
+            deployment/.buildozer/**/*.txt
+          if-no-files-found: ignore

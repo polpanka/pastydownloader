@@ -50,10 +50,12 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # Elenco di dipendenze di sistema scoperto una alla volta in locale
-      # (vedi ANDROID.md punto 6: zlib, poi build-essential, poi
-      # autoconf/automake/libtool, poi libssl-dev) - qui installate tutte
-      # insieme dall'inizio, note gia' complete
+      # Dipendenze di sistema della toolchain Android. In locale erano gia'
+      # presenti "per altri motivi" (vedi ANDROID.md punto 6); su un runner
+      # pulito vanno tutte esplicitate. libltdl-dev fornisce ltdl.m4 =
+      # LT_SYS_SYMBOL_USCORE, richiesto dall'autoreconf di libffi (lo dice la
+      # docstring della recipe p4a libffi): senza, la build muore su
+      # "possibly undefined macro: LT_SYS_SYMBOL_USCORE".
       - name: Installa le dipendenze di sistema richieste dalla toolchain Android
         run: |
           sudo apt-get update
@@ -63,6 +65,7 @@ jobs:
             autoconf \
             automake \
             libtool \
+            libltdl-dev \
             libssl-dev \
             patch
 

@@ -38,14 +38,14 @@ jobs:
           sudo docker image prune -a -f || true
           df -h /
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
       # setup-java esporta gia' JAVA_HOME nell'ambiente dei passi successivi -
       # e' il requisito scoperto in locale (serve la JDK completa per javac,
       # non solo la JRE, vedi ANDROID.md punto 6)
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -86,6 +86,16 @@ jobs:
       # il pyside6-rcc del venv Android.
       - name: Rigenera resources.py da resources.qrc
         run: .venv-android/bin/pyside6-rcc resources.qrc -o resources.py
+
+      # Sanity check da 10 secondi prima di una build da ~1h: resources.py
+      # generato e non vuoto, tutti i sorgenti compilano. I workflow desktop
+      # fanno partire l'eseguibile a fine build; qui non si puo' (nessun
+      # emulatore), ma almeno gli errori Python vengono presi subito.
+      - name: Sanity check dei sorgenti
+        run: |
+          test -s resources.py || { echo "::error::resources.py non generato o vuoto"; exit 1; }
+          python3 -m py_compile *.py
+          echo "sorgenti ok"
 
       # Patch 1: il tool pyside6-android-deploy non espone via CLI ne'
       # targetSdk (android.api) ne' permessi extra ne' pin di versione dei

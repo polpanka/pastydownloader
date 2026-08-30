@@ -10,16 +10,9 @@ from constants import Constants
 
 
 class _LongPressTableWidget(QTableWidget):
-    """Solo Android (vedi PastyGrid.initUi): Qt sintetizza da solo il tocco
-    in click sinistro (per questo la selezione riga funziona gia'), ma NON
-    il press-and-hold in click destro per le app QWidget come questa (lo fa
-    solo per QML) - customContextMenuRequested quindi non scatterebbe mai da
-    solo su un device touch, a differenza del vero click destro del mouse
-    sul desktop. Timer avviato al press: se non annullato da un rilascio o
-    da uno spostamento (probabile scroll, non un press-and-hold fermo) prima
-    che scada, emette lo stesso identico segnale che il desktop emette da
-    solo col click destro - da li' in poi percorso invariato (vedi
-    PastyGrid.initContextMenu/Pasty.onContextMenu)"""
+    """Solo Android: Qt non sintetizza il press-and-hold in click destro per i
+    QWidget, quindi customContextMenuRequested non scatterebbe mai. Un timer al
+    press, se non annullato da rilascio/spostamento, emette quel segnale."""
     LONG_PRESS_MS = 500
     MOVE_TOLERANCE_PX = 15
 
@@ -29,15 +22,8 @@ class _LongPressTableWidget(QTableWidget):
         self._pressTimer.setSingleShot(True)
         self._pressTimer.timeout.connect(self._onLongPress)
         self._pressPos = None
-        # se durante i 500ms di attesa la struttura della griglia cambia (una
-        # riga aggiunta/rimossa/spostata - es. un download che finisce e
-        # sparisce dalla lista proprio mentre l'utente sta tenendo premuto),
-        # la riga che si trova sotto _pressPos alla scadenza del timer
-        # potrebbe non essere piu' quella davvero premuta, anche se lo
-        # spostamento del dito e' rimasto sotto MOVE_TOLERANCE_PX (quel
-        # controllo copre solo lo scroll, non un riordino delle righe stesse)
-        # - annulla il long-press in quel caso, niente menu contestuale su
-        # una riga sbagliata
+        # se le righe cambiano durante l'attesa, _pressPos punterebbe a una riga
+        # diversa: annulla il long-press
         self.model().rowsInserted.connect(self._pressTimer.stop)
         self.model().rowsRemoved.connect(self._pressTimer.stop)
         self.model().rowsMoved.connect(self._pressTimer.stop)
@@ -122,19 +108,11 @@ class PastyGrid():
         self.actionCopy.setIcon(QIcon(":/images/edit-copy"))
         if not Constants.IS_ANDROID:
             self.actionCopy.setShortcut('Ctrl+C')
-        # niente su Android: Tools.openFolder non fa nulla li' (nessun file
-        # manager di sistema raggiungibile allo stesso modo del desktop, vedi
-        # libs.py) - stessa ragione per cui la scelta doOpen e' disabilitata
-        # in Preferenze (vedi SettingsDialog.addForm3)
-        if not Constants.IS_ANDROID:
+        if not Constants.IS_ANDROID:  # openFolder non fa nulla su Android
             self.actionOpen = self.contextMenu.addAction(MyText().ctxOpenFolder)
             self.actionOpen.setIcon(QIcon(":/images/system-file-manager"))
-        # apre il file della riga (non solo la cartella) con l'app
-        # predefinita del sistema - stessa azione gia' raggiungibile col
-        # doppio click su una riga completata (Tools.openFile, vedi
-        # Pasty.onRowDoubleClicked in main.py), qui accessibile anche da
-        # menu per chi non lo scopre/usa mai il doppio click (soprattutto su
-        # Android, dove "apri cartella" sopra non c'e' proprio)
+        # apre il file della riga (come il doppio click), utile su Android dove
+        # "apri cartella" non c'e'
         self.actionOpenFile = self.contextMenu.addAction(MyText().ctxOpenFile)
         self.actionOpenFile.setIcon(QIcon(":/images/media-playback-start"))
         self.actionRedownload = self.contextMenu.addAction(MyText().ctxDownloadNow)
@@ -260,11 +238,7 @@ class PastyGrid():
         self.setCellState(newRow, self.STATUS_CODE_WAITING)
         self.setCellStatusCode(newRow, self.STATUS_CODE_WAITING)
         self.setCellSaveAs(newRow, '')
-        # 'mp4' = Pasty.ACTION_TO_MP4 (main.py) - senza questo default, su un
-        # primo avvio senza mai aver aperto le Preferenze, ytConversion resta
-        # None: worker.runSingleUrl richiede 'mp4' o 'mp3'/'both' per avviare
-        # il download, quindi None fa fallire ogni riga subito con "Unknown error"
-        self.setCellConvert(newRow, self.settings.value('ytConversion', 'mp4'))
+        self.setCellConvert(newRow, self.settings.value('ytConversion', 'mp4'))  # default se Preferenze mai aperte
 
     def getAllUrlsInTable(self):
         return [self.getCellUrl(rowId) for rowId in range(self.grid.rowCount())]

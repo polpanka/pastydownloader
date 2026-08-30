@@ -24,7 +24,6 @@ class SettingsDialog(QDialog):
     buttonBox = None
     settings = QSettings(MyText().orgName, MyText().appName)
 
-    # constructor
     def __init__(self, parentApp):
         super(SettingsDialog, self).__init__()
         self.parentApp = parentApp
@@ -51,11 +50,7 @@ class SettingsDialog(QDialog):
 
         mainLayout = QVBoxLayout()
         if Constants.IS_ANDROID:
-            # dimensione fissa 500px pensata per desktop - su schermo
-            # piccolo, coi caratteri ingranditi (Constants.applyAndroidFontScale),
-            # il contenuto puo' superare l'altezza dello schermo e rendere
-            # OK/Annulla irraggiungibili: contenuto scrollabile, pulsanti
-            # sempre visibili fuori dallo scroll
+            # contenuto scrollabile: coi font ingranditi puo' superare lo schermo
             formsWidget = QWidget()
             formsWidget.setLayout(formsLayout)
             scrollArea = QScrollArea()
@@ -94,9 +89,7 @@ class SettingsDialog(QDialog):
         layout.addRow(self.btn, self.dlFolder)
         self.formGroupBox1.setLayout(layout)
 
-    # riquadro "Video": select con le 3 modalita' di conversione audio (mai / converti+elimina / converti+mantieni)
-    # + select col formato audio da usare quando si converte (vedi
-    # Tools.AUDIO_FORMAT_EXTENSIONS/AUDIO_FORMAT_CODECS in libs.py)
+    # riquadro "Video": modalita' di conversione audio + formato audio
     def addForm2(self):
         ytOpts = [(MyText().convNever,self.parentApp.ACTION_TO_MP4), (MyText().convDeleteVideo,self.parentApp.ACTION_TO_MP3), (MyText().convKeepVideo,self.parentApp.ACTION_TO_BOTH)]
         self.formGroupBox2 = QGroupBox(MyText().videoGroupLabel)
@@ -107,9 +100,6 @@ class SettingsDialog(QDialog):
         indexFound = self.ytConversion.findData(ext) if ext else -1
         if indexFound != -1:
             self.ytConversion.setCurrentIndex(indexFound)
-        # MP3 disponibile anche su Android da quando la recipe ffmpeg locale
-        # (android/recipes/ffmpeg/) include libshine come encoder MP3 (vedi
-        # android/recipes/libshine/ e ANDROID_HISTORY.md punto 19)
         audioFormats = [('MP3', 'mp3'), ('AAC (M4A)', 'aac'), ('FLAC', 'flac'), ('WAV', 'wav'), ('Opus', 'opus')]
         self.audioFormat = QComboBox()
         for k, v in audioFormats:
@@ -123,7 +113,7 @@ class SettingsDialog(QDialog):
         layout.addRow(MyText().audioFormatLabel, self.audioFormat)
         self.formGroupBox2.setLayout(layout)
 
-    # riquadro "After download": select se aprire la cartella di download a fine lavoro o non fare nulla
+    # riquadro "After download": aprire la cartella a fine lavoro o no
     def addForm3(self):
         self.formGroupBox3 = QGroupBox(MyText().afterDownloadLabel)
         self.doOpen = QComboBox()
@@ -134,16 +124,13 @@ class SettingsDialog(QDialog):
         if indexFound != -1:
             self.doOpen.setCurrentIndex(indexFound)
         if Constants.IS_ANDROID:
-            # Tools.openFolder usa dbus-send/FileManager1 (desktop Linux),
-            # su Android non fa nulla (vedi Menu.buildPopupMenu in
-            # toolbar.py) - non ha senso lasciare la scelta selezionabile
-            self.doOpen.setCurrentIndex(self.doOpen.findData('nothing'))
+            self.doOpen.setCurrentIndex(self.doOpen.findData('nothing'))  # openFolder non fa nulla su Android
             self.doOpen.setEnabled(False)
         layout = QFormLayout()
         layout.addRow(self.doOpen)
         self.formGroupBox3.setLayout(layout)
 
-    # riquadro "Theme": System (default, segue il sistema operativo) / Light / Dark
+    # riquadro "Theme": System / Light / Dark
     def addForm4(self):
         self.formGroupBox4 = QGroupBox(MyText().themeLabel)
         self.theme = QComboBox()
@@ -158,12 +145,8 @@ class SettingsDialog(QDialog):
         layout.addRow(self.theme)
         self.formGroupBox4.setLayout(layout)
 
-    # riquadro "Browser login": checkbox per usare le credenziali salvate nel
-    # browser per forzare il download dei contenuti che richiedono login.
-    # Salvata come 'yes'/'no' in QSettings; se mai toccata il default dipende
-    # dal SO (attivo su Windows/Linux, disattivo su macOS per non far
-    # scattare un prompt di sistema inatteso) - vedi
-    # Tools.browserLoginConsentEnabled
+    # riquadro "Browser login": checkbox cookie del browser per i contenuti con
+    # login (salvato 'yes'/'no'; default per-SO, vedi Tools.browserLoginConsentEnabled)
     def addForm5(self):
         self.formGroupBox5 = QGroupBox(MyText().browserLoginTitle)
         self.browserLogin = QCheckBox(MyText().browserLoginSettingLabel)
@@ -172,53 +155,38 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.browserLogin)
         self.formGroupBox5.setLayout(layout)
 
-    # pulsanti OK/Annulla in fondo
     def addExitButtons(self):
         self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttonBox.accepted.connect(self.saveInfo)
         self.buttonBox.rejected.connect(self.reject)
 
-    # click su OK: salva tutti i valori scelti nei riquadri sopra
     def saveInfo(self):
-        # language
         settingLang = self.language.currentData()
         languageChanged = settingLang != MyText.getLanguage()
         MyText.setLanguage(settingLang)
-        # dl path
         settingDL = self.dlFolder.text().rstrip('/\\')
         if settingDL and os.path.exists(settingDL):
             self.settings.setValue('downloadPath', settingDL)
-        # yt conv
         settingYT = self.ytConversion.currentData()
         self.settings.setValue('ytConversion', settingYT)
-        # audio format
         settingAudioFormat = self.audioFormat.currentData()
         self.settings.setValue('audioFormat', settingAudioFormat)
-        # open folder
         settingOpen = self.doOpen.currentData()
         self.settings.setValue('doOpen', settingOpen)
-        # theme
         settingTheme = self.theme.currentData()
         themeChanged = settingTheme != (self.settings.value('theme') or Constants.THEME_SYSTEM)
         self.settings.setValue('theme', settingTheme)
-        # browser login (assente su Android)
-        if not Constants.IS_ANDROID:
+        if not Constants.IS_ANDROID:  # browser login: assente su Android
             self.settings.setValue('browserLoginConsent', 'yes' if self.browserLogin.isChecked() else 'no')
         Tools.consoleLogs("Settings saved: language=%s downloadPath=%s ytConversion=%s audioFormat=%s doOpen=%s theme=%s" % (settingLang, settingDL, settingYT, settingAudioFormat, settingOpen, settingTheme))
         if languageChanged or themeChanged:
             QMessageBox.information(self, MyText().titleRestart, MyText().restartRequired)
         return self.accept()
     
-    # click sul bottone "Select": apre il file picker di sistema per la cartella
     def selectNewFolder(self):
         kwargs = {}
         if Constants.IS_ANDROID:
-            # getExistingDirectory() usa di suo ShowDirsOnly come default,
-            # ma solo quando 'options' non viene passato affatto: passandolo
-            # esplicitamente qui (serve per forzare il dialog non nativo su
-            # Android) quel default va perso, non si somma - va rimesso a
-            # mano, altrimenti su Android il picker mostrerebbe anche i
-            # singoli file oltre alle cartelle
+            # dialog non nativo forzato; ShowDirsOnly va rimesso a mano quando si passa 'options'
             kwargs['options'] = QFileDialog.Option.DontUseNativeDialog | QFileDialog.Option.ShowDirsOnly
         path = QFileDialog.getExistingDirectory(None, 'Select Folder', **kwargs)
         if path:

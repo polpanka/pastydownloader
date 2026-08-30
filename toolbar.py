@@ -1,5 +1,4 @@
 #!/usr/bin/python
-#https://gist.github.com/peteristhegreat/c0ca6e1a57e5d4b9cd0bb1d7b3be1d6a
 
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import QSettings
@@ -42,9 +41,6 @@ class Menu():
         self.exitAction.setIcon(QIcon(":/images/exit"))
         self.exitAction.triggered.connect(self.closeAll)
         if not Constants.IS_ANDROID:
-            # scorciatoie da tastiera senza senso su un device touch, e nel
-            # popup Android (Menu.buildPopupMenu) finirebbero solo per
-            # affollare inutilmente la voce di menu
             self.openAction.setShortcut('Ctrl+O')
             self.exitAction.setShortcut('Ctrl+Q')
         self.openAction.triggered.connect(lambda x: Tools().openDownloadFolder())
@@ -89,24 +85,11 @@ class Menu():
         # other
         self.setMenuType(self.TYPE_STANDARD)
 
-    # QMenuBar non e' raggiungibile su Android (vedi Pasty.openMenuPopup in
-    # main.py) - popup ricostruito a ogni apertura cosi' riflette subito
-    # l'eventuale sblocco di DEVEL, riusa le stesse QAction gia' create in
-    # initUi (Qt le tiene sincronizzate anche se aggiunte a piu' menu)
+    # popup per Android (QMenuBar non raggiungibile), ricostruito a ogni apertura
+    # per riflettere lo sblocco DEVEL. Riusa le QAction di initUi.
     def buildPopupMenu(self):
         popup = QMenu(self.app)
-        # senza, lo sfondo del popup (e dei suoi sotto-menu, che ereditano
-        # lo stesso foglio di stile per gerarchia QObject) resta trasparente
-        # su Android e si mimetizza con quello che c'e' sotto - stesso
-        # identico problema gia' risolto per il QDialog "Info" con
-        # setAutoFillBackground (vedi Pasty.openAboutPopup in main.py), ma
-        # QMenu non e' un widget "a finestra" nello stesso modo: la sua
-        # palette da sola non basta, serve un vero foglio di stile col
-        # colore esplicito. Stessi colori gia' usati per la griglia
-        # (Constants.getGridStyle), theme-aware allo stesso modo
-        isDark = Constants.isDarkTheme()
-        bg = Constants.COLOR_BG_GRID_DARK_DT if isDark else Constants.COLOR_BG_GRID_LIGHT
-        text = Constants.COLOR_WHITE if isDark else Constants.COLOR_BLACK
+        bg, text = Constants.popupColors()  # sfondo esplicito: su Android la palette non basta
         popup.setStyleSheet("QMenu { background-color: %s; color: %s; }" % (bg, text))
         menuFile = popup.addMenu(MyText().menuFile)
         menuFile.addAction(self.exitAction)
@@ -126,7 +109,7 @@ class Menu():
 
     def _trackDevelModeUnlock(self):
         if self.app.DEVEL_MODE:
-            return  # gia' sbloccato (o gia' una build di sviluppo): niente da contare
+            return
         self._unlockClickCount += 1
         if self._unlockClickCount >= self.UNLOCK_CLICKS_REQUIRED:
             self.app.enableDevelMode()
@@ -134,7 +117,7 @@ class Menu():
 
     def enableDevelMenu(self):
         if self.populateAction is not None:
-            return  # gia' presente
+            return
         self.populateAction = QAction('Populate', self.app)
         self.populateAction.triggered.connect(self.fakePopulate)
         self.resetLanguageAction = QAction('Reset language', self.app)
@@ -167,7 +150,7 @@ class Menu():
     def fakePopulate(self):
         add = self.app.pastyGrid.addRow
         # @todo mp4 pretende / non vuole il referer
-        add('http://jucciz.com/mp3/1987s/1.mp3')                                                                                                                  # mp3
+        add('http://jucciz.com/mp3/1987s/1.mp3')                                                                                                              # mp3
         add('https://prod.vodvideo.cbsnews.com/cbsnews/vr/hls/4685365_hls/master.m3u8')                                                                           # m3u8 audio / video diviso
         add('https://streamcdnr4-cdnraivoddom6.msvdn.net/dom6/podcastcdn/teche_root/PLAYRAI_TECHE_CINEMA_HD/11745903_,1200,1800,2400,.mp4.csmil/playlist.m3u8')   # m3u8 lungo
         add('https://ms-027.host-cdn.net/hls/llzefbb2x4hnmttc2rvmpoooq7hxqi6jetco6eod7,qslsyhpz4bmzgkywnea,3alqyhpz4bmpb4u2biq,.urlset/master.m3u8')              # m3u8 buono piccolo
@@ -187,8 +170,7 @@ class Menu():
         add('https://ok.ru/video/3205586750138')                                                                                                                  # solo con PastyDownloader (con yt-dlp) check dell'ip che scarica
 
     def resetLanguage(self):
-        # QSettings vuoto: al prossimo avvio MyText.getLanguage() la ridetecta
-        # dal sistema operativo invece di leggere una lingua scelta in precedenza
+        # al prossimo avvio getLanguage() la ridetecta dal SO
         QSettings(MyText.orgName, MyText.appName).remove('language')
         Tools.consoleLogs("Language reset - restart the app to redetect it from the OS")
 

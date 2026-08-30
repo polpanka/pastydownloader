@@ -25,7 +25,7 @@ class AsyncWorker(QObject):
     # current download
     rowId = None
     pastedUrl = None
-    saveAs = None  # usato solo dalla conversione mp3 post-download (vedi runConversion)
+    saveAs = None  # solo per la conversione mp3 post-download
     downloadStarted = False
 
     def __init__(self, appParent, rows, ffmpeg, *args, **kwargs):
@@ -34,12 +34,7 @@ class AsyncWorker(QObject):
         self.gridParent = appParent.pastyGrid
         self.rowsToDownload = rows
         self.ffmpeg = ffmpeg
-        # auto-connesso qui (non da chi crea AsyncWorker): Qt risolve da solo
-        # Direct vs Queued in base al thread di chi emette rispetto a questo
-        # oggetto (creato sempre nel thread GUI) - quando runAllUrls() gira
-        # sul threading.Thread di background la chiamata arriva comunque nel
-        # thread giusto, mentre nei test che chiamano runAllUrls() in modo
-        # sincrono (stesso thread) resta una chiamata diretta immediata
+        # connesso qui: Qt sceglie Direct/Queued in base al thread emittente
         self.gridStateUpdate.connect(self._applyGridState)
         self.gridSaveAsUpdate.connect(self._applyGridSaveAs)
 
@@ -53,7 +48,6 @@ class AsyncWorker(QObject):
         self.gridParent.setCellSaveAs(rowId, saveAs)
 
     def setBothStates(self, stateText, tooltip=''):
-        # emesso, mai chiamato direttamente sulla griglia
         self.gridStateUpdate.emit(self.rowId, stateText, tooltip)
 
     def isStopped(self):
@@ -68,23 +62,10 @@ class AsyncWorker(QObject):
         self.setBothStates(self.gridParent.STATUS_CODE_CONVERTING)
 
     def allProcessesFinished(self):
-        # PATCH locale Android: chiamate qui (nel thread di background di
-        # runAllUrls), non lasciate a Pasty.progressFinished (main.py) come
-        # in origine. Trovato testando su device reale: quella e' una slot
-        # Qt raggiunta da 'finished' con una connessione IN CODA (l'emit
-        # sopra parte da un thread diverso da quello del ricevente Pasty,
-        # Qt sceglie da solo Queued per AutoConnection) - la sua consegna
-        # dipende dal ciclo eventi Qt del thread GUI, che su Android sembra
-        # fermarsi (o rallentare moltissimo) quando l'Activity va in pausa
-        # (background), anche se QUESTO thread grezzo continua a girare
-        # regolarmente (il file scaricato risultava gia' completo sul
-        # disco, verificato su device). Risultato osservato: notifica
-        # "download in corso" mai fermata e notifica di fine mai mostrata
-        # finche' l'utente non riapre l'app (il ciclo eventi Qt riprende).
-        # Fix: scrivere/cancellare i due file "cassetta della posta" (vedi
-        # android_bridge.py) direttamente da qui, PRIMA di emettere
-        # 'finished' - sono semplici scritture di file, non serve il thread
-        # GUI ne' alcuna API Qt widget-specific per farlo
+        # notifiche Android chiamate qui (thread di background), non in
+        # Pasty.progressFinished: su Android il ciclo eventi Qt del thread GUI
+        # si ferma in background, quindi 'finished' (connessione in coda) non
+        # verrebbe consegnato finche' l'utente non riapre l'app
         msg = MyText().msgDownloadFinished % round(time.time() - self.appParent.time_start_download)
         AndroidBridge.notifyDownloadFinished(msg)
         AndroidBridge.stopForegroundDownload()
@@ -107,9 +88,8 @@ class AsyncWorker(QObject):
                 break
             if self.gridParent.getCellState(self.rowId) != self.gridParent.STATUS_CODE_WAITING:
                 continue
-            # creazione e analisi di PastedUrl
-            # questo metodo gira in un threading.Thread grezzo (vedi Pasty.moveProcessInSeparatedThread),
-            # un'eccezione non gestita lo farebbe morire in silenzio senza mai chiamare allProcessesFinished() sotto, lasciando l'interfaccia bloccata
+            # thread di background: un'eccezione non gestita salterebbe
+            # allProcessesFinished() lasciando la UI bloccata
             try:
                 rawUrl = self.gridParent.getCellUrl(self.rowId)
                 self.pastedUrl = PastedUrl(self.appParent, self.rowId, rawUrl, self.ffmpeg)
@@ -172,21 +152,14 @@ class AsyncWorker(QObject):
                 Tools.consoleLogs("Used: Async generic dl")
                 results = await Tools.downloadAsyncGeneric(url, saveAs, self, self.onSizeProgress)
                 return self.smartReturn(results)
-            # caso special url / yt-dlp: yt-dlp scarica (e se serve fonde audio+video) da solo
             if engine == PastedUrl.URL_TYPE_YT_DLP:
                 Tools.consoleLogs("Used: yt-dlp direct download")
                 ytDlpPackageDir = Tools.checkYtDlp()
                 if not ytDlpPackageDir:
                     return self.smartReturn([False, 'yt-dlp not available'])
-                # sottotitoli imbarcati nella lingua dell'app se disponibili,
-                # inglese come ripiego (vedi _ytDlpDownloadWorker in libs.py) -
-                # MyText.getLanguage() e' gia' un codice a 2 lettere valido
-                # anche per yt-dlp (stessa lista, es. 'it'/'fr'/'de'...)
+                # sottotitoli nella lingua dell'app + inglese di ripiego
                 appLang = MyText.getLanguage()
                 subtitleLangs = [appLang] if appLang == 'en' else [appLang, 'en']
-                # cookie da browser per i contenuti che richiedono login:
-                # checkbox in Preferenze, default per-SO se mai toccato
-                # (vedi Tools.browserLoginConsentEnabled)
                 useBrowserCookies = Tools.browserLoginConsentEnabled()
                 results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer(), subtitleLangs=subtitleLangs, useBrowserCookies=useBrowserCookies)
             # caso di video normale
@@ -208,9 +181,6 @@ class AsyncWorker(QObject):
 
     async def runConversion(self, myVideo):
         self.setInConvertion()
-        # il codec ffmpeg giusto per piattaforma/formato (mp3 e opus
-        # cambiano fra desktop e Android) e' gia' risolto da
-        # Tools.AUDIO_FORMAT_CODECS in libs.py
         audioFormat = self.settings.value('audioFormat', 'mp3')
         extension = Tools.AUDIO_FORMAT_EXTENSIONS.get(audioFormat, 'mp3')
         self.saveAs = Tools.replaceExtension(myVideo, extension)

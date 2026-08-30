@@ -2,15 +2,11 @@ import os
 
 
 class Constants:
-    # versione dell'app: da tenere allineata a mano con pastylink all'url .../api/checkUpdates/
-    # sul server (vedi MyText.checkUpdates), che e' il file confrontato per
-    # sapere se c'e' un aggiornamento disponibile (vedi Pasty.checkUpdates)
+    # da allineare a mano col file .../api/checkUpdates/ sul server
     APP_VERSION = '1.4'
     APP_VERSION_DATE = '2026.08.20'
 
-    # True dentro un pacchetto Android (ANDROID_ARGUMENT e' la env var che
-    # python-for-android/buildozer impostano sempre per ogni app, non solo
-    # per Kivy). Vedi ANDROID.md.
+    # ANDROID_ARGUMENT e' impostata da python-for-android per ogni app
     IS_ANDROID = 'ANDROID_ARGUMENT' in os.environ
 
     # colors
@@ -32,28 +28,20 @@ class Constants:
     STATUS_CODE_STOPPED     = 'Stopped'
     STATUS_CODE_CONVERTING  = 'Converting'
 
-    # tema scelto in Preferenze (chiave 'theme' in QSettings) - THEME_SYSTEM
-    # e' il default, segue il tema del sistema operativo com'era il comportamento
-    # implicito dell'app prima di questa scelta
+    # tema scelto in Preferenze (chiave 'theme'); SYSTEM = default, segue il SO
     THEME_SYSTEM = 'system'
     THEME_LIGHT  = 'light'
     THEME_DARK   = 'dark'
 
-    # Forza (o ripristina, con THEME_SYSTEM) lo schema colori dell'intera app -
-    # va chiamato dopo aver creato la QApplication, prima di costruire le
-    # finestre, cosi' isDarkTheme()/getGridStyle() sotto vedono gia' la scelta
-    # dell'utente invece di quella del sistema operativo
+    # Forza lo schema colori dell'app. Chiamare dopo la QApplication, prima
+    # delle finestre.
     @staticmethod
     def applyTheme(theme):
         from PySide6.QtGui import QGuiApplication
         from PySide6.QtCore import Qt
         styleHints = QGuiApplication.styleHints()
-        # setColorScheme esiste solo da Qt/PySide6 6.8 in poi: la build
-        # ufficiale (mac/windows/linux) e' pinnata a PySide6 6.7.3 (vedi i
-        # workflow .github/workflows/build-*.yml e build-appimage.sh), quindi
-        # su quella l'attributo non c'e' - senza questo guard l'app crasha
-        # all'avvio. Se manca, si resta sul tema di sistema (comportamento
-        # implicito precedente all'introduzione della scelta in Preferenze)
+        # setColorScheme solo da PySide6 6.8+ (la build ufficiale e' 6.7.3):
+        # senza guard l'app crasha; se manca si resta sul tema di sistema
         if not hasattr(styleHints, 'setColorScheme'):
             return
         scheme = {
@@ -66,13 +54,8 @@ class Constants:
     def isDarkTheme():
         from PySide6.QtGui import QGuiApplication, QPalette
         from PySide6.QtCore import Qt
-        # preferito: legge lo schema colore riportato direttamente dalla
-        # piattaforma (Qt/PySide6 6.8+, vedi guard in applyTheme sopra) -
-        # su Android QApplication.palette() (fallback sotto) resta spesso
-        # quella di default anche a tema scuro attivo (i widget nativi -
-        # bottoni, menu - vengono comunque disegnati scuri dallo stile,
-        # ma leggendo lo schema invece della palette, non da questo valore
-        # stantio), causando la griglia bianca con tutto il resto scuro
+        # preferito: lo schema colore della piattaforma (6.8+). Su Android
+        # QApplication.palette() resta spesso quella di default anche a tema scuro.
         styleHints = QGuiApplication.styleHints()
         if hasattr(styleHints, 'colorScheme'):
             scheme = styleHints.colorScheme()
@@ -81,9 +64,17 @@ class Constants:
         from PySide6.QtWidgets import QApplication
         return QApplication.palette().color(QPalette.Window).lightness() < 128
 
-    # richiamare quando lo schema colore cambia (vedi PastyGrid.initUi) per
-    # tenere la griglia sincronizzata - no-op su PySide6 < 6.8 (stessa
-    # limitazione di applyTheme sopra)
+    # (bg, text) opachi e theme-aware per i popup che su Android non ereditano
+    # uno sfondo (QMenu, QDialog): la palette da sola non basta, serve un
+    # background-color esplicito nel foglio di stile
+    @staticmethod
+    def popupColors():
+        isDark = Constants.isDarkTheme()
+        bg = Constants.COLOR_BG_GRID_DARK_DT if isDark else Constants.COLOR_BG_GRID_LIGHT
+        text = Constants.COLOR_WHITE if isDark else Constants.COLOR_BLACK
+        return bg, text
+
+    # da chiamare quando lo schema colore cambia; no-op su PySide6 < 6.8
     @staticmethod
     def onThemeChange(callback):
         from PySide6.QtGui import QGuiApplication
@@ -91,30 +82,12 @@ class Constants:
         if hasattr(styleHints, 'colorSchemeChanged'):
             styleHints.colorSchemeChanged.connect(lambda _: callback())
 
-    # su Android il font di default e' troppo piccolo per un uso touch
-    # confortevole (testato su device reale) - non c'e' un vero "zoom" in
-    # Qt Widgets, ma ingrandire il font di default dell'app si propaga da
-    # solo a (quasi) tutti i widget standard (bottoni, label, header/celle
-    # della griglia, menu) perche' lo ereditano da QApplication.font()
-    # invece di uno fisso per-widget.
-    # Dimensione ASSOLUTA, non un moltiplicatore relativo a app.font():
-    # lo stile nativo Android sembra riportare un QApplication.font() di
-    # base diverso a seconda dello schema colore attivo (Light/Dark) - un
-    # moltiplicatore sopra un baseline che cambia da solo dava caratteri
-    # corretti col tema dark ma enormi col tema light. 16pt e' anche la
-    # dimensione body-text di default di Material Design su Android
-    # (16sp), e coincide con quanto dava gia' il ×1.6 che sul tema dark
-    # risultava corretto
+    # font di default troppo piccolo per touch su Android; dimensione assoluta,
+    # non un moltiplicatore (il baseline cambia da solo con lo schema colore)
     ANDROID_FONT_POINT_SIZE = 16
 
-    # QApplication.palette() su Android spesso resta quella di default anche
-    # a tema scuro attivo (vedi isDarkTheme sopra) - i widget nativi si
-    # disegnano scuri comunque tramite lo stile, ma qualunque colore che
-    # peschiamo dalla palette (es. il testo dei nostri popup QMenu) risulta
-    # sbagliato/illeggibile. Fix: sovrascrivere esplicitamente la palette
-    # dell'app con colori scuri coerenti, riusando le costanti gia' in uso
-    # per la griglia. Cache della palette originale cosi' si puo' tornare
-    # indietro se l'utente cambia tema a light mentre l'app e' aperta
+    # su Android la palette resta spesso chiara anche a tema scuro: la
+    # sovrascriviamo con colori scuri coerenti. Cache dell'originale per tornare indietro.
     _defaultPalette = None
 
     @staticmethod

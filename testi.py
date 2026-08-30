@@ -951,11 +951,8 @@ class MyText():
         lang = settings.value('language')
         if lang in _TRANSLATIONS:
             return lang
-        # nessuna lingua mai scelta (primo avvio): usa quella del sistema
-        # operativo se supportata, altrimenti l'inglese - e la salva subito,
-        # cosi' non viene ridetectata a ogni avvio (settings.value('language')
-        # non sara' piu' vuoto) e un'eventuale scelta manuale in Preferenze la
-        # sovrascrive normalmente tramite setLanguage()
+        # primo avvio: lingua del SO se supportata, altrimenti inglese; salvata
+        # subito per non ridetectarla ogni volta
         detected = QLocale.system().name().split('_')[0]
         chosen = detected if detected in _TRANSLATIONS else cls.DEFAULT_LANGUAGE
         settings.setValue('language', chosen)

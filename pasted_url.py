@@ -13,12 +13,8 @@ class PastedUrl():
     URL_TYPE_GENERIC = 'generic'  # html, audio, pdf ...
     EXT_MP4 = '.mp4'
 
-    # content-type da passare direttamente a ffmpeg (video e audio: entrambi
-    # gestiti dallo stesso motore, l'audio finisce comunque in un .mp4 - la
-    # conversione in mp3 e' un passo separato gia' esistente). NON basta
-    # 'application/' da solo: coprirebbe anche pdf/json/zip/xml/js (tutti
-    # 'application/*' ma non media), mandandoli a ffmpeg per errore invece
-    # che al downloader generico che li salverebbe correttamente
+    # content-type da passare direttamente a ffmpeg (elenco esplicito: non basta
+    # 'application/' da solo, coprirebbe anche pdf/json/zip)
     FFMPEG_DIRECT_CONTENT_TYPES = (
         'video/',
         'audio/',
@@ -32,10 +28,8 @@ class PastedUrl():
         'application/vnd.ms-asf',    # wmv/asf
     )
 
-    # content-type chiaramente non video/audio: saltano sia il probe ffmpeg
-    # (isRealVideoOnline) sia il fallback yt-dlp e vanno dritti al downloader
-    # generico, che li salva correttamente. image/* e' incluso perche' ffmpeg
-    # aprirebbe comunque una foto come "video" di 1 frame (demuxer image2)
+    # content-type non media: dritti al downloader generico, niente probe.
+    # image/* incluso perche' ffmpeg aprirebbe una foto come video di 1 frame.
     GENERIC_ONLY_CONTENT_TYPES = (
         'image/',
         'application/pdf',
@@ -64,15 +58,8 @@ class PastedUrl():
         'application/epub+zip',
     )
 
-    # tempo massimo per il probe ffmpeg (_isRealVideoOnline): senza un limite
-    # un host lento/muto puo' bloccare l'analisi a tempo indeterminato
-    PROBE_TIMEOUT_SECONDS = 15
-
-    # tempo massimo per il tentativo yt-dlp "penultima spiaggia" su una pagina
-    # generica (non una piattaforma nota): piu' breve dei 120s usati per un
-    # download vero, perche' qui si tenta su tante pagine che quasi sempre
-    # non hanno nulla da estrarre, e non deve rallentare troppo l'incolla
-    GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS = 20
+    PROBE_TIMEOUT_SECONDS = 15  # probe ffmpeg (_isRealVideoOnline)
+    GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS = 20  # probe yt-dlp su pagina generica
 
     def __init__(self, appParent, rowId, rawUrl, ffmpeg=None):
         self.appParent = appParent
@@ -126,16 +113,12 @@ class PastedUrl():
             self.engine = self.URL_TYPE_YT_DLP
             ext = self.EXT_MP4
         elif ct and ct.startswith(self.GENERIC_ONLY_CONTENT_TYPES):
-            pass  # resta generico: niente probe ne' fallback yt-dlp, sappiamo gia' che non e' un media
+            pass  # resta generico
         elif (ct and ct.startswith(self.FFMPEG_DIRECT_CONTENT_TYPES)) or self._isRealVideoOnline():
             self.engine = self.URL_TYPE_VIDEO
             ext = self.EXT_MP4
         elif (not ct or ct.startswith('text/html')) and Tools.isYtDlpDownloadable(self.url, timeout=self.GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS):
-            # penultima spiaggia prima del generico: magari e' una pagina che
-            # nasconde un video imbarcato, su un sito diverso dalle piattaforme
-            # note. yt-dlp fa gia' da solo tutto il lavoro di scoperta (e di
-            # eventuale fusione audio/video) al momento del download vero, qui
-            # verifichiamo solo che trovi qualcosa
+            # pagina generica che magari nasconde un video: yt-dlp lo trova?
             self.engine = self.URL_TYPE_YT_DLP
             ext = self.EXT_MP4
         if ct and not ext:
@@ -143,13 +126,13 @@ class PastedUrl():
         self.saveAs = tools.getBestFilenameToSaveAs(self.url, ext)
 
     def _getContentTypeFromUrl(self, url):
-        import requests  # import locale, vedi ANDROID.md
+        import requests  # import locale
         r = None
         try:
             referers = self.appParent.getReferers()
             host = Tools.getHostFromUrl(url)
             headers = None if host not in referers else {'referer': referers[host]}
-            r = requests.get(url, headers=headers, stream=True, timeout=10)  # non deve scaricare tutto il video
+            r = requests.get(url, headers=headers, stream=True, timeout=10)  # stream: non scarica tutto
             r.connection.close()
             return r.headers['Content-Type'].split(';')[0].strip().lower() if r.headers and 'Content-Type' in r.headers else None
         except Exception:
@@ -170,5 +153,4 @@ class PastedUrl():
         result = Tools.runCommand(command, timeout=self.PROBE_TIMEOUT_SECONDS)
         if not result or result.interrupted:
             return False
-        # returncode 0 solo se il frame e' stato scritto davvero
-        return result.returncode == 0
+        return result.returncode == 0  # 0 = frame scritto davvero

@@ -24,14 +24,11 @@ Funzionalita':
 import os, sys, time, threading, multiprocessing
 
 try:
-    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
+    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel
     from PySide6.QtCore import QSettings, QTimer, Signal, Qt
     from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 except ImportError:
-    # Nessun toolkit grafico disponibile (tipicamente OS troppo vecchio per i
-    # binari bundlati) - niente QMessageBox possibile qui, serve un dialogo
-    # nativo del SO; se anche quello non e' disponibile va bene il solo
-    # stderr, l'app comunque non puo' partire
+    # nessun toolkit grafico (OS troppo vecchio): serve un dialogo nativo del SO
     _startup_error_msg = (
         "PastyDownloader failed to start because a required system component "
         "could not be loaded.\n\nThis usually happens when your operating "
@@ -40,20 +37,12 @@ except ImportError:
     )
     if sys.platform == "darwin":
         import subprocess
-        # PySide6 e' pinnato alla 6.7.3 in build-macos.yml (wheel universal2,
-        # stesso floor macOS 11 "Big Sur" per arm64 e x86_64 - non serve piu'
-        # distinguere per architettura come prima di quel pin) - se il pin
-        # cambia, aggiornare anche questo messaggio. Va scritta qui a mano
-        # (non letta da un file condiviso) perche' a questo punto PySide6
-        # potrebbe non essere importabile, quindi neanche moduli del progetto
-        # che lo importano a loro volta
+        # floor macOS 11 (PySide6 6.7.3); aggiornare se il pin cambia
         _startup_error_msg = _startup_error_msg.replace(
             "system is too old.",
             "system is too old (this version of PastyDownloader requires macOS 11 Big Sur or later).",
         )
-        # niente "\n" nel testo: un ritorno a capo letterale dentro la
-        # stringa passata a -e rischia di rompere il parsing dell'AppleScript
-        _mac_msg = _startup_error_msg.replace("\n\n", " ")
+        _mac_msg = _startup_error_msg.replace("\n\n", " ")  # niente \n letterale in -e AppleScript
         subprocess.run(
             ["osascript", "-e",
              f'display dialog "{_mac_msg}" with title "PastyDownloader" '
@@ -77,11 +66,8 @@ from testi import MyText
 from constants import Constants
 
 if Constants.IS_ANDROID:
-    # il Python cross-compilato per Android non ha un bundle di certificati
-    # CA configurato: ogni richiesta HTTPS (aiohttp/requests) fallisce con
-    # SSLCertVerificationError finche' SSL_CERT_FILE non punta a uno valido -
-    # certifi lo fornisce pronto (vedi ANDROID.md). Deve girare prima di
-    # qualunque uso di ssl/aiohttp/requests, quindi qui, al primo import
+    # il Python Android non ha un bundle CA: senza SSL_CERT_FILE ogni HTTPS
+    # fallisce. Prima di qualunque uso di ssl/aiohttp/requests.
     import certifi
     os.environ.setdefault('SSL_CERT_FILE', certifi.where())
 
@@ -94,15 +80,13 @@ from status_queue import StatusQueue
 from toolbar import Menu
 import resources # x le images
 
-# x evitare che Win mostri la app pyhton nella systray
-# https://www.pythonguis.com/tutorials/packaging-pyqt5-pyside2-applications-windows-pyinstaller/
+# evita che Windows mostri l'app come "python" nella systray
 try:
     from ctypes import windll  # Only exists on Windows.
     myappid = 'link.pasty'
     windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 except ImportError:
     pass
-
 
 
 class Pasty(QMainWindow):
@@ -172,14 +156,10 @@ class Pasty(QMainWindow):
         topRow = QHBoxLayout()
         topRow.addWidget(self.button)
         if Constants.IS_ANDROID:
-            # QMenuBar non ha modo di essere raggiunto su Android (era
-            # pensato per il vecchio tasto hardware "Menu", rimosso da anni -
-            # vedi Menu.buildPopupMenu in toolbar.py): pulsante extra che
-            # apre le stesse azioni gia' esistenti come popup
+            # QMenuBar non e' raggiungibile su Android: pulsante che apre le
+            # azioni come popup
             self.menuButton = QToolButton()
-            # niente carattere Unicode '☰': il font disponibile su Android
-            # non lo copre sempre (glifo "rotto"/invisibile) - disegnata a
-            # mano cosi' non dipende da nessun font
+            # icona disegnata a mano: il font Android non copre sempre '☰'
             self.menuButton.setIcon(self._buildHamburgerIcon())
             self.menuButton.setMinimumHeight(60)
             self.menuButton.setStyleSheet("QToolButton { padding: 0 16px; }")
@@ -196,23 +176,12 @@ class Pasty(QMainWindow):
         self.initDependencies()
         self.resetUi()
         self.pastyGrid.resizeEvent(self.width())
-        # Niente check qui all'avvio (ne' su Android ne' su desktop): su
-        # Android il popup di sistema per WRITE_EXTERNAL_STORAGE e'
-        # asincrono (PythonActivity.onCreate lo richiede e non aspetta la
-        # risposta), quindi appena l'app parte il permesso e' spesso ancora
-        # "non deciso" - indistinguibile da "negato" lato Python (os.access)
-        # prima che l'utente risponda, causerebbe un popup d'errore spurio a
-        # ogni avvio pulito. Comportamento uniformato su tutte le
-        # piattaforme: l'unico check resta quello in fetchRows() prima di
-        # ogni download (popup + non parte nulla, nessuna chiusura forzata -
-        # l'utente puo' sistemare il problema, es. concedere il permesso o
-        # cambiare il path nelle settings, e ritentare senza riavviare).
+        # nessun check della cartella di download qui: su Android il permesso e'
+        # spesso ancora "non deciso". L'unico check e' in fetchRows().
         self.initConnectivityCheck()
-        # deferred so the window shows up immediately, without waiting on the network
-        QTimer.singleShot(0, lambda: self.checkUpdates(False))
+        QTimer.singleShot(0, lambda: self.checkUpdates(False))  # differito: finestra subito
 
     def initConnectivityCheck(self):
-        # controllo eseguito una sola volta all'avvio
         self.connectivityChecked.connect(self.onConnectivityChecked)
         self.checkInternetConnection()
 
@@ -245,8 +214,7 @@ class Pasty(QMainWindow):
         if not wasUnlocked and self.isUiUnlocked():
             self.statusQueue.showNow(MyText().setupCompleteMsg, 5)
 
-    # ffmpeg e yt-dlp si scaricano in cascata, mai in parallelo: prima ffmpeg,
-    # poi (solo se riuscito) yt-dlp - vedi onFfmpegReady/onYtDlpReady
+    # ffmpeg e yt-dlp si scaricano in cascata: prima ffmpeg, poi yt-dlp
     def initDependencies(self):
         self.ffmpegInstaller = FfmpegInstaller()
         self.ffmpegInstaller.statusMessage.connect(self.setStatusBar)
@@ -257,19 +225,8 @@ class Pasty(QMainWindow):
         self.ytDlpUpdater.ready.connect(self.onYtDlpReady)
         if Constants.IS_ANDROID:
             if not Tools.checkFFmpeg():
-                # su Android ffmpeg e' bundlato nell'APK stesso (vedi
-                # Tools.checkFFmpeg), mai scaricato a runtime come su
-                # desktop: se manca qui e' un difetto della build (recipe non
-                # inclusa), non qualcosa che FfmpegInstaller possa risolvere -
-                # fallisce subito con lo stesso popup che fetchRows()
-                # mostrerebbe comunque al primo download, invece di lasciare
-                # l'app sembrare "pronta" fino a quel momento.
-                # QTimer.singleShot(0, ...) invece di chiamarlo qui
-                # direttamente: siamo ancora dentro il costruttore, prima che
-                # l'event loop giri e la finestra sia mostrata - stesso
-                # tempismo con cui il popup arriva gia' oggi dagli altri due
-                # rami (onFfmpegReady/onYtDlpReady, chiamati in modo asincrono
-                # da un thread in background)
+                # su Android ffmpeg e' bundlato: se manca e' un difetto della
+                # build, non risolvibile a runtime. singleShot: siamo ancora nel costruttore.
                 QTimer.singleShot(0, self.showInstallFailedPopup)
                 return
             self.dependenciesReady = bool(Tools.checkYtDlp())
@@ -317,19 +274,11 @@ class Pasty(QMainWindow):
         self.close()  # is_running e' sempre False qui: chiude senza chiedere conferma (vedi closeEvent)
 
     def startYtDlpPeriodicUpdates(self):
-        # Su Android non c'e' un aggiornamento periodico in background: non e'
-        # essenziale (yt-dlp resta comunque installato/verificato una volta
-        # sola al primo avvio, vedi YtDlpUpdater.ensureInstalled - una
-        # versione un po' vecchia degrada, non rompe l'app) e toglie di mezzo
-        # un thread di verifica in piu' che potrebbe girare in concomitanza
-        # con classificazione/download gia' in corso, condividendo
-        # sys.modules con loro (vedi Tools._purgeModuleTree in libs.py - il
-        # fix regge comunque anche con questo attivo, ma senza e' piu' semplice)
+        # niente aggiornamento periodico su Android: non essenziale e toglie un
+        # thread di verifica che condividerebbe sys.modules con i download
         if Constants.IS_ANDROID:
             return
-        # staggered after the app-version check, so it doesn't compete for
-        # the same startup network burst
-        QTimer.singleShot(5000, self.checkYtDlpUpdate)
+        QTimer.singleShot(5000, self.checkYtDlpUpdate)  # sfalsato dal check versione
         self.ytDlpUpdaterTimer = QTimer(self)
         self.ytDlpUpdaterTimer.timeout.connect(self.checkYtDlpUpdate)
         self.ytDlpUpdaterTimer.start(YtDlpUpdater.CHECK_INTERVAL_HOURS * 3600 * 1000)
@@ -346,31 +295,18 @@ class Pasty(QMainWindow):
         self.pastyGrid.setContextMenuType(PastyGrid.TYPE_MINIMAL)
 
     def resetUi(self, msg=None):
-        # msg=None: non tocca la barra di stato (lascia il messaggio gia'
-        # eventualmente impostato da chi ha chiamato resetUi, es. pasteUrls())
+        # msg=None: non tocca la barra di stato
         self.is_running = False
         self._refreshLockState()
         self.button.setText(MyText().btnDefault)
         self.button.setIcon(QIcon(MyText().pasty_icon))
         if msg is not None:
-            # showNow(), non setStatusBar()/add(): un batch appena finito
-            # lascia quasi sempre un messaggio persistente "Riga N in
-            # corso..." (vedi progressInCorso). Con clear()+add() questo
-            # messaggio finale rischierebbe di accodarsi dietro un evento
-            # eventualmente promosso dal clear() (es. un "Contenuto copiato"
-            # rimasto in attesa durante il batch) invece di essere mostrato
-            # subito (vedi StatusQueue.showNow)
-            self.statusQueue.showNow(msg, 5)
+            self.statusQueue.showNow(msg, 5)  # showNow: passa davanti al "Riga N in corso"
         self.stop = False
-    
+
     def _buildHamburgerIcon(self):
-        # sia Constants.isDarkTheme() (bianco/nero indovinato) sia
-        # QPalette.ButtonText letto dal bottone si sono rivelati inaffidabili
-        # su Android (icona rimasta bianca anche col tema light, illeggibile
-        # - lo stile nativo non sembra seguire la palette per questo widget).
-        # Fix indipendente da qualunque rilevazione di tema: ogni riga
-        # disegnata due volte, un contorno nero spesso sotto e uno bianco
-        # piu' sottile sopra - resta visibile su qualunque sfondo
+        # tema inaffidabile su Android: ogni riga disegnata due volte (contorno
+        # nero spesso + bianco sottile), visibile su qualunque sfondo
         pixmap = QPixmap(32, 32)
         pixmap.fill(Qt.transparent)
         painter = QPainter(pixmap)
@@ -403,39 +339,24 @@ class Pasty(QMainWindow):
     def openPopup(self, title, msg):
         QMessageBox.about(self, title, msg)
 
-    # popup About dedicato
     def openAboutPopup(self):
-        dialog = QDialog(self)
-        # senza, lo sfondo del dialogo resta trasparente su Android e si
-        # mimetizza con quello che c'e' sotto (es. la griglia) - i widget
-        # normali non riempiono da soli lo sfondo con la palette a meno di
-        # chiederglielo esplicitamente
-        dialog.setAutoFillBackground(True)
-        dialog.setWindowTitle(MyText().actionAbout)
-
-        iconLabel = QLabel()
-        # formato ICO dipende da un plugin immagine di Qt che potrebbe non essere imbarcato nella build Android,
-        # lasciando questa QLabel vuota/invisibile senza errori. PNG e' universalmente supportato
-        iconLabel.setPixmap(QIcon(MyText().pasty_icon).pixmap(64, 64))
-        iconLabel.mousePressEvent = lambda event: self.menu._trackDevelModeUnlock()
-
-        textLabel = QLabel('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
-        textLabel.setTextFormat(Qt.RichText)
-        textLabel.setOpenExternalLinks(True)
-
-        contentRow = QHBoxLayout()
-        contentRow.addWidget(iconLabel, 0, Qt.AlignTop)
-        contentRow.addWidget(textLabel, 1)
-
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok)
-        buttons.accepted.connect(dialog.accept)
-
-        layout = QVBoxLayout()
-        layout.addLayout(contentRow)
-        layout.addWidget(buttons)
-
-        dialog.setLayout(layout)
-        dialog.exec()
+        # QMessageBox, non un QDialog custom: su Android un QDialog "nudo" (solo
+        # QLabel) non dipinge il proprio sfondo, QMessageBox si'. Icona PNG (il
+        # plugin ICO non sempre e' imbarcato su Android).
+        box = QMessageBox(self)
+        box.setWindowTitle(MyText().actionAbout)
+        box.setTextFormat(Qt.RichText)
+        box.setText('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
+        box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        box.setIconPixmap(QIcon(MyText().pasty_icon).pixmap(64, 64))
+        box.setStandardButtons(QMessageBox.Ok)
+        # tap ripetuti sull'icona: sblocco DEVEL_MODE (vedi Menu._trackDevelModeUnlock)
+        iconLabel = box.findChild(QLabel, "qt_msgboxex_icon_label")
+        if iconLabel is None:
+            iconLabel = next((lab for lab in box.findChildren(QLabel) if not lab.pixmap().isNull()), None)
+        if iconLabel is not None:
+            iconLabel.mousePressEvent = lambda event: self.menu._trackDevelModeUnlock()
+        box.exec()
 
     def checkDownloadFolder(self):
         path = Tools.downloadPath()
@@ -516,9 +437,7 @@ class Pasty(QMainWindow):
     def startAll(self):
         Tools.consoleLogs("User action: paste and download")
         self.pasteUrls()
-        # pasteUrls() ha gia' spiegato l'esito nella barra di stato (link
-        # trovati, nessun link valido, pastylink invalido): fetchRows() non
-        # deve sovrascriverlo con "nessun link in attesa" se non trova nulla
+        # pasteUrls ha gia' scritto l'esito nella barra di stato
         self.fetchRows(showNoLinksMessage=False)
     
     def getReferers(self):
@@ -535,7 +454,7 @@ class Pasty(QMainWindow):
         self.stop = True
 
     def pasteUrls(self):
-        # EXTM3U: il testo intero e' un solo "link" da aggiungere cosi' com'e'
+        # EXTM3U: il testo intero e' un solo "link"
         pasted = Tools.stripBom(Tools.pasteFromClipboard())
         tokens = [pasted] if Tools.isM3u8ManifestText(pasted) else pasted.split()
         count, hasInvalidPastylink = self.pastyGrid.importUrls(tokens)
@@ -555,7 +474,7 @@ class Pasty(QMainWindow):
             self.fetchRows([rowId])
 
     def onRowDoubleClicked(self, rowId, column):
-        # se la riga e' gia' stata scaricata con successo, doppio click apre il file
+        # riga gia' scaricata -> apre il file; altrimenti la riscarica
         if self.pastyGrid.getCellStatusCode(rowId) == self.pastyGrid.STATUS_CODE_COMPLETED:
             myfile = self.pastyGrid.getCellSaveAs(rowId)
             if myfile and os.path.isfile(myfile):
@@ -570,7 +489,7 @@ class Pasty(QMainWindow):
             return False
         if not self.isOnline:
             self.resetUi()
-            self.setStatusBar(MyText().internetError, 0) # persistente, non a scomparsa: resta offline finche' non torna la connessione
+            self.setStatusBar(MyText().internetError, 0)  # persistente
             return False
         ffmpeg = Tools.checkFFmpeg()
         if not ffmpeg:
@@ -581,25 +500,14 @@ class Pasty(QMainWindow):
             self.resetUi()
             return False
         try:
-            # move process in separated thread
             Tools.consoleLogs("Starting download thread for rows: " + str(rows))
             self.setStatusBar(MyText().msgDownloadStarted)
-            # solo Android: tiene il processo esente dal freeze in
-            # background per tutta la durata del batch (vedi
-            # android_bridge.py e ANDROID_HISTORY.md) - scritto subito,
-            # prima ancora di sapere se l'app restera' in primo piano o no
-            AndroidBridge.startForegroundDownload(MyText().msgDownloadStarted)
+            AndroidBridge.startForegroundDownload(MyText().msgDownloadStarted)  # solo Android: anti-freeze in background
             self.time_start_download = time.time()
             self.moveProcessInSeparatedThread([rows, ffmpeg])
         except Exception as err:
             Tools.consoleLogs("Error #1 unexpected: " + str(err))
-            # se moveProcessInSeparatedThread e' fallito dopo aver gia'
-            # avviato il Foreground Service qui sopra, self.asyncExec non
-            # arrivera' mai a emettere 'finished' -> progressFinished (che
-            # normalmente lo ferma) non scatterebbe mai, lasciando il
-            # servizio/la notifica "Download in corso..." appesi per
-            # sempre. Va fermato esplicitamente anche su questo percorso
-            AndroidBridge.stopForegroundDownload()
+            AndroidBridge.stopForegroundDownload()  # 'finished' non arrivera' mai
             self.resetUi()
     
     def moveProcessInSeparatedThread(self, asyncParams):
@@ -623,21 +531,10 @@ class Pasty(QMainWindow):
     def progressFinished(self):
         msg = MyText().msgDownloadFinished % round(time.time() - self.time_start_download)
         Tools.consoleLogs(msg)
-        # AndroidBridge.notifyDownloadFinished/stopForegroundDownload NON
-        # vanno piu' chiamate qui (vedi AsyncWorker.allProcessesFinished in
-        # worker.py, dove sono state spostate) - questa e' una slot Qt
-        # raggiunta con una connessione in coda dal thread di background,
-        # la cui consegna dipende dal ciclo eventi Qt del thread GUI, che su
-        # Android smette di girare (o rallenta moltissimo) quando l'app va
-        # in background - chiamarle solo da qui le avrebbe rimandate
-        # fino alla riapertura dell'app, vanificando lo scopo stesso del
-        # Foreground Service (verificato su device reale)
-        # solo le righe di QUESTO batch, non l'intera griglia: altrimenti un ri-download singolo fallito potrebbe aprire comunque la cartella
+        # le notifiche Android sono in AsyncWorker.allProcessesFinished (questa
+        # slot in coda non gira in background su Android)
+        # solo le righe di questo batch, non l'intera griglia
         thisBatchRows = self.asyncExec.rowsToDownload if self.asyncExec.rowsToDownload else range(self.pastyGrid.grid.rowCount())
-        # su Android l'opzione e' disabilitata in Preferenze (vedi
-        # SettingsDialog.addForm3) perche' Tools.openFolder non fa nulla li',
-        # ma un valore 'open' salvato prima di questa modifica potrebbe
-        # essere ancora in QSettings - ignorato esplicitamente anche qui
         if not Constants.IS_ANDROID and not self.stop and self.settings.value('doOpen') != 'nothing' and self.pastyGrid.hasAnyCompletedRow(thisBatchRows):
             Tools.openDownloadFolder()
         self.resetUi(msg)
@@ -660,11 +557,8 @@ class Pasty(QMainWindow):
 
 
 if __name__ == '__main__':
-    # deve essere la primissima cosa eseguita sotto __main__: ogni download
-    # yt-dlp gira in un processo figlio 'spawn' (vedi Tools._runYtDlpInProcess),
-    # che sotto un eseguibile PyInstaller frozen rilancerebbe da capo l'intera
-    # app (QApplication compresa, in un ciclo) invece di eseguire solo il
-    # worker richiesto, se freeze_support() non intercetta prima la richiesta
+    # prima di tutto: senza, un processo figlio 'spawn' sotto PyInstaller frozen
+    # rilancerebbe l'intera app invece del solo worker
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
     app.setApplicationName(MyText().appName)

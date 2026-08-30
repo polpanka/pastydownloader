@@ -78,6 +78,8 @@ _TRANSLATIONS = {
         'themeSystem': 'System (default)',
         'themeLight': 'Light',
         'themeDark': 'Dark',
+        'browserLoginTitle': 'Browser login',
+        'browserLoginSettingLabel': "Use your browser's login to force the download of content that requires signing in",
     },
 
     # italiano
@@ -152,6 +154,8 @@ _TRANSLATIONS = {
         'themeSystem': 'Sistema (predefinito)',
         'themeLight': 'Chiaro',
         'themeDark': 'Scuro',
+        'browserLoginTitle': 'Accesso dal browser',
+        'browserLoginSettingLabel': 'Usa le credenziali del tuo browser per forzare il download di contenuti che richiedono il login',
     },
 
     # francese
@@ -226,6 +230,8 @@ _TRANSLATIONS = {
         'themeSystem': 'Système (par défaut)',
         'themeLight': 'Clair',
         'themeDark': 'Sombre',
+        'browserLoginTitle': 'Connexion du navigateur',
+        'browserLoginSettingLabel': 'Utiliser les identifiants de votre navigateur pour forcer le téléchargement de contenus qui nécessitent une connexion',
     },
 
     # spagnolo
@@ -300,6 +306,8 @@ _TRANSLATIONS = {
         'themeSystem': 'Sistema (predeterminado)',
         'themeLight': 'Claro',
         'themeDark': 'Oscuro',
+        'browserLoginTitle': 'Inicio de sesión del navegador',
+        'browserLoginSettingLabel': 'Usar las credenciales de tu navegador para forzar la descarga de contenidos que requieren iniciar sesión',
     },
 
     # tedesco
@@ -374,6 +382,8 @@ _TRANSLATIONS = {
         'themeSystem': 'System (Standard)',
         'themeLight': 'Hell',
         'themeDark': 'Dunkel',
+        'browserLoginTitle': 'Browser-Anmeldung',
+        'browserLoginSettingLabel': 'Anmeldedaten deines Browsers verwenden, um den Download von Inhalten zu erzwingen, die eine Anmeldung erfordern',
     },
 
     # cinese semplificato
@@ -448,6 +458,8 @@ _TRANSLATIONS = {
         'themeSystem': '系统（默认）',
         'themeLight': '浅色',
         'themeDark': '深色',
+        'browserLoginTitle': '浏览器登录',
+        'browserLoginSettingLabel': '使用浏览器的登录信息强制下载需要登录的内容',
     },
 
     # giapponese
@@ -522,6 +534,8 @@ _TRANSLATIONS = {
         'themeSystem': 'システム（デフォルト）',
         'themeLight': 'ライト',
         'themeDark': 'ダーク',
+        'browserLoginTitle': 'ブラウザのログイン',
+        'browserLoginSettingLabel': 'ログインが必要なコンテンツのダウンロードを強制するために、ブラウザのログイン情報を使用する',
     },
 
     # portoghese
@@ -596,6 +610,8 @@ _TRANSLATIONS = {
         'themeSystem': 'Sistema (padrão)',
         'themeLight': 'Claro',
         'themeDark': 'Escuro',
+        'browserLoginTitle': 'Login do navegador',
+        'browserLoginSettingLabel': 'Usar as credenciais do seu navegador para forçar o download de conteúdos que exigem login',
     },
 
     # russo
@@ -670,6 +686,8 @@ _TRANSLATIONS = {
         'themeSystem': 'Системная (по умолчанию)',
         'themeLight': 'Светлая',
         'themeDark': 'Тёмная',
+        'browserLoginTitle': 'Вход через браузер',
+        'browserLoginSettingLabel': 'Использовать данные для входа из вашего браузера, чтобы принудительно загружать контент, требующий входа в аккаунт',
     },
 
     # coreano
@@ -744,6 +762,8 @@ _TRANSLATIONS = {
         'themeSystem': '시스템(기본값)',
         'themeLight': '라이트',
         'themeDark': '다크',
+        'browserLoginTitle': '브라우저 로그인',
+        'browserLoginSettingLabel': '로그인이 필요한 콘텐츠의 다운로드를 강제하기 위해 브라우저의 로그인 정보 사용',
     },
 
     # olandese
@@ -818,6 +838,8 @@ _TRANSLATIONS = {
         'themeSystem': 'Systeem (standaard)',
         'themeLight': 'Licht',
         'themeDark': 'Donker',
+        'browserLoginTitle': 'Browseraanmelding',
+        'browserLoginSettingLabel': 'De aanmeldgegevens van je browser gebruiken om het downloaden van inhoud die aanmelding vereist af te dwingen',
     },
 
     # arabo
@@ -892,6 +914,8 @@ _TRANSLATIONS = {
         'themeSystem': 'النظام (افتراضي)',
         'themeLight': 'فاتح',
         'themeDark': 'داكن',
+        'browserLoginTitle': 'تسجيل دخول المتصفح',
+        'browserLoginSettingLabel': 'استخدام بيانات تسجيل الدخول في متصفحك لفرض تنزيل المحتوى الذي يتطلب تسجيل الدخول',
     },
 }
 

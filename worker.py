@@ -184,9 +184,11 @@ class AsyncWorker(QObject):
                 # anche per yt-dlp (stessa lista, es. 'it'/'fr'/'de'...)
                 appLang = MyText.getLanguage()
                 subtitleLangs = [appLang] if appLang == 'en' else [appLang, 'en']
-                # i cookie da browser (se servono) sono gestiti in automatico
-                # dentro Tools._pickCookiesBrowser, nessuna scelta qui
-                results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer(), subtitleLangs=subtitleLangs)
+                # cookie da browser per i contenuti che richiedono login:
+                # checkbox in Preferenze, default per-SO se mai toccato
+                # (vedi Tools.browserLoginConsentEnabled)
+                useBrowserCookies = Tools.browserLoginConsentEnabled()
+                results = await Tools.downloadVideoByYtDlp(ytDlpPackageDir, self.ffmpeg, url, saveAs, self.onSizeProgress, self.isStopped, referer=self.pastedUrl.getPastylinkReferer(), subtitleLangs=subtitleLangs, useBrowserCookies=useBrowserCookies)
             # caso di video normale
             else:
                 Tools.consoleLogs("Used: ffmpeg with default url")

@@ -84,10 +84,11 @@ PDF_URL = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.p
 # usata solo per verificare che il downloader generico rifiuti l'html, vedi GenericDownloadRejectsHtmlTest
 HTML_PAGE_URL = 'https://example.com/'
 IMAGE_URL = 'https://placehold.co/64x64.jpg'
-# pagina di news con un video incorporato, non riconoscibile in anticipo
-# (non e' un url httpasty://): da toolbar.py -> fakePopulate, dove e'
-# gia' commentata "# yt-dlp"
-GENERIC_YTDLP_PAGE_URL = 'https://www.cbsnews.com/video/becker-hardly-a-week-goes-by-without-trump-administration-threatening-election-official-arrests/'
+# pagina con un video incorporato, non riconoscibile in anticipo (nessuna
+# allowlist di domini in PastedUrl._analyze: qualunque text/html passa dal
+# probe yt-dlp) - le tracce audio e video sono servite separate. Da
+# toolbar.py -> fakePopulate, dove e' gia' presente
+GENERIC_YTDLP_PAGE_URL = 'https://www.dailymotion.com/video/x8ksj36'
 # manifest HLS master con traccia audio E sottotitoli separati (3 varianti
 # video, ciascuna con il proprio AUDIO group e SUBTITLES group referenziati da
 # #EXT-X-STREAM-INF): serve che ffmpeg (non yt-dlp) sappia associare le tracce
@@ -693,10 +694,12 @@ class PasteGenericYtDlpFallbackTest(unittest.TestCase):
 
     def test_page_with_video_only_hls_tracks_is_routed_to_ytdlp(self):
         """Caso reale, gia' in fakePopulate: le tracce audio e video di questa
-        pagina sono HLS separate (nessun url unico contiene entrambe). Con il
-        vecchio approccio (estrai-un-url-e-scaricalo-con-ffmpeg) sarebbe stata
-        scartata per non rischiare un video muto; ora che e' yt-dlp stesso a
-        scaricare e fondere le tracce, il probe la riconosce come scaricabile."""
+        pagina sono servite separate (nessun url unico contiene entrambe). Con
+        il vecchio approccio (estrai-un-url-e-scaricalo-con-ffmpeg) sarebbe
+        stata scartata per non rischiare un video muto; ora che e' yt-dlp
+        stesso a scaricare e fondere le tracce, il probe la riconosce come
+        scaricabile. Probe reale (non mockato): se fallisce per rete/sito, e'
+        un segnale che l'url di esempio va aggiornato, non un test da ignorare."""
         if not Tools.checkYtDlp():
             self.skipTest('yt-dlp non installato in questo ambiente')
         pastedUrl = PastedUrl(self.app, 0, GENERIC_YTDLP_PAGE_URL, Tools.checkFFmpeg())

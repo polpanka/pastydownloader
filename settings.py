@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import os
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QGroupBox, QPushButton, QLineEdit, QFormLayout, QComboBox, QFileDialog, QMessageBox, QScrollArea, QWidget, QApplication
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QGroupBox, QPushButton, QLineEdit, QFormLayout, QComboBox, QCheckBox, QFileDialog, QMessageBox, QScrollArea, QWidget, QApplication
 from PySide6.QtCore import QSettings
 from libs import Tools
 from testi import MyText
@@ -15,6 +15,7 @@ class SettingsDialog(QDialog):
     formGroupBox2 = None
     formGroupBox3 = None
     formGroupBox4 = None
+    formGroupBox5 = None
     language = None
     dlFolder = None
     ytConversion = None
@@ -34,6 +35,9 @@ class SettingsDialog(QDialog):
         self.addForm2()
         self.addForm3()
         self.addForm4()
+        # su Android non e' possibile
+        if not Constants.IS_ANDROID:
+            self.addForm5()
         self.addExitButtons()
 
         formsLayout = QVBoxLayout()
@@ -42,6 +46,8 @@ class SettingsDialog(QDialog):
         formsLayout.addWidget(self.formGroupBox2)
         formsLayout.addWidget(self.formGroupBox3)
         formsLayout.addWidget(self.formGroupBox4)
+        if not Constants.IS_ANDROID:
+            formsLayout.addWidget(self.formGroupBox5)
 
         mainLayout = QVBoxLayout()
         if Constants.IS_ANDROID:
@@ -152,6 +158,20 @@ class SettingsDialog(QDialog):
         layout.addRow(self.theme)
         self.formGroupBox4.setLayout(layout)
 
+    # riquadro "Browser login": checkbox per usare le credenziali salvate nel
+    # browser per forzare il download dei contenuti che richiedono login.
+    # Salvata come 'yes'/'no' in QSettings; se mai toccata il default dipende
+    # dal SO (attivo su Windows/Linux, disattivo su macOS per non far
+    # scattare un prompt di sistema inatteso) - vedi
+    # Tools.browserLoginConsentEnabled
+    def addForm5(self):
+        self.formGroupBox5 = QGroupBox(MyText().browserLoginTitle)
+        self.browserLogin = QCheckBox(MyText().browserLoginSettingLabel)
+        self.browserLogin.setChecked(Tools.browserLoginConsentEnabled())
+        layout = QVBoxLayout()
+        layout.addWidget(self.browserLogin)
+        self.formGroupBox5.setLayout(layout)
+
     # pulsanti OK/Annulla in fondo
     def addExitButtons(self):
         self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -181,6 +201,9 @@ class SettingsDialog(QDialog):
         settingTheme = self.theme.currentData()
         themeChanged = settingTheme != (self.settings.value('theme') or Constants.THEME_SYSTEM)
         self.settings.setValue('theme', settingTheme)
+        # browser login (assente su Android)
+        if not Constants.IS_ANDROID:
+            self.settings.setValue('browserLoginConsent', 'yes' if self.browserLogin.isChecked() else 'no')
         Tools.consoleLogs("Settings saved: language=%s downloadPath=%s ytConversion=%s audioFormat=%s doOpen=%s theme=%s" % (settingLang, settingDL, settingYT, settingAudioFormat, settingOpen, settingTheme))
         if languageChanged or themeChanged:
             QMessageBox.information(self, MyText().titleRestart, MyText().restartRequired)

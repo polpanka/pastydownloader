@@ -25,7 +25,7 @@ import os, sys, time, threading, multiprocessing
 
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel
-    from PySide6.QtCore import QSettings, QTimer, Signal, Qt
+    from PySide6.QtCore import QSettings, QTimer, Signal, Qt, QObject, QEvent
     from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 except ImportError:
     # nessun toolkit grafico (OS troppo vecchio): serve un dialogo nativo del SO
@@ -87,6 +87,21 @@ try:
     windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 except ImportError:
     pass
+
+
+# Conta i click su un widget di cui non possiamo fare subclass (il QLabel
+# interno di un QMessageBox): assegnare widget.mousePressEvent funziona solo
+# sui widget creati in Python, non su quelli restituiti da findChild - serve
+# un event filter.
+class _ClickCounter(QObject):
+    def __init__(self, parent, onClick):
+        super().__init__(parent)
+        self._onClick = onClick
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+            self._onClick()
+        return False
 
 
 class Pasty(QMainWindow):
@@ -341,21 +356,19 @@ class Pasty(QMainWindow):
 
     def openAboutPopup(self):
         # QMessageBox, non un QDialog custom: su Android un QDialog "nudo" (solo
-        # QLabel) non dipinge il proprio sfondo, QMessageBox si'. Icona PNG (il
-        # plugin ICO non sempre e' imbarcato su Android).
+        # QLabel) non dipinge il proprio sfondo, QMessageBox si'. L'icona si
+        # vede su desktop; su Android non rende in nessun modo.
         box = QMessageBox(self)
         box.setWindowTitle(MyText().actionAbout)
         box.setTextFormat(Qt.RichText)
-        box.setText('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
         box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        box.setText('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
         box.setIconPixmap(QIcon(MyText().pasty_icon).pixmap(64, 64))
         box.setStandardButtons(QMessageBox.Ok)
-        # tap ripetuti sull'icona: sblocco DEVEL_MODE (vedi Menu._trackDevelModeUnlock)
-        iconLabel = box.findChild(QLabel, "qt_msgboxex_icon_label")
-        if iconLabel is None:
-            iconLabel = next((lab for lab in box.findChildren(QLabel) if not lab.pixmap().isNull()), None)
-        if iconLabel is not None:
-            iconLabel.mousePressEvent = lambda event: self.menu._trackDevelModeUnlock()
+        # widget.mousePressEvent non scatta su un QLabel restituito da findChild (non creato in Python).
+        label = box.findChild(QLabel, "qt_msgbox_label")
+        if label is not None:
+            label.installEventFilter(_ClickCounter(box, self.menu._trackDevelModeUnlock))
         box.exec()
 
     def checkDownloadFolder(self):

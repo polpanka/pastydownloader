@@ -48,7 +48,7 @@ Thumbs.db
 # ~/PyCharmMiscProject - spostata qui il 2026-08-28)
 .venv/
 
-# Esperimento Android (vedi ANDROID.md)
+# Android (vedi ANDROID.md)
 .venv-android/
 *.apk
 android_build.sh

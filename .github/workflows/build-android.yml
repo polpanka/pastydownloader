@@ -122,8 +122,7 @@ jobs:
       # registrazione di DownloadForegroundService nel manifest (via
       # --native-service, vedi p4a.extra_args) per tenere il processo
       # esente dal freeze in background durante un download (vedi
-      # android_bridge.py, pythonactivity_foreground_service.patch sotto e
-      # ANDROID_HISTORY.md)
+      # android_bridge.py e pythonactivity_foreground_service.patch sotto)
       - name: "Patch 3: Foreground Service per i download in background (buildozer.py)"
         run: |
           TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
@@ -206,7 +205,7 @@ jobs:
 
       # Patch 7: stesso file ancora, piu' un file nuovo
       # (DownloadForegroundService.java) - Foreground Service per i download
-      # in background, vedi android_bridge.py e ANDROID_HISTORY.md
+      # in background, vedi android_bridge.py e pythonactivity_foreground_service.patch
       - name: "Patch 7: Foreground Service per i download in background (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
@@ -215,7 +214,7 @@ jobs:
       # Patch 8: stesso file ancora - legge una richiesta scritta da
       # Tools.openFile (libs.py) e apre il file con l'app predefinita del
       # sistema tramite un content:// URI (FileProvider, patch 9/10 sotto),
-      # vedi android_bridge.py e ANDROID_HISTORY.md
+      # vedi android_bridge.py e pythonactivity_openfile.patch
       - name: "Patch 8: apertura file scaricati dal doppio click (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"

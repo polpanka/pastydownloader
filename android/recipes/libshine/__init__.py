@@ -9,8 +9,8 @@ import sh
 # Copia della recipe p4a ufficiale (pythonforandroid/recipes/libshine), con
 # due differenze:
 #  - libshine come libreria STATICA (.a), non dinamica: la recipe ffmpeg
-#    locale la linka dentro l'unico libffmpegbin.so statico (vedi
-#    android/recipes/ffmpeg/ e ANDROID_HISTORY.md punto 18/19).
+#    locale la linka dentro l'unico libffmpegbin.so statico (vedi il blocco
+#    "MP3 su Android" in android/recipes/ffmpeg/__init__.py).
 #  - fixbuild.patch fatto via sed in prebuild_arch invece che come .patch:
 #    l'archivio shine ha alcuni file .h con CRLF e GNU patch moderno rifiuta
 #    ("different line endings"). Il patch ufficiale fa solo questa modifica.

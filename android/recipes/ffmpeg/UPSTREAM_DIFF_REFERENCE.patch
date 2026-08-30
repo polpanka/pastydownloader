@@ -19,15 +19,19 @@
 #   git clone --branch develop --depth 1 https://github.com/kivy/python-for-android.git /tmp/p4a-ref
 #   diff -u /tmp/p4a-ref/pythonforandroid/recipes/ffmpeg/__init__.py android/recipes/ffmpeg/__init__.py
 
---- ~/.pyside6_android_deploy/python-for-android/pythonforandroid/recipes/ffmpeg/__init__.py	2026-08-22 11:30:09.606940141 +0200
-+++ ~/Documents/www/pastydownloader/android/recipes/ffmpeg/__init__.py	2026-08-28 17:18:05.254813015 +0200
-@@ -4,28 +4,60 @@
+
+--- a/pythonforandroid/recipes/ffmpeg/__init__.py
++++ b/android/recipes/ffmpeg/__init__.py
+@@ -4,28 +4,75 @@
  from multiprocessing import cpu_count
  
  
 +# PATCH locale (PastyDownloader): copia della recipe ufficiale p4a
-+# (pythonforandroid/recipes/ffmpeg), unica
-+# differenza: rimosso `depends = [('sdl2', 'sdl3')]`. Nel sorgente originale
++# (pythonforandroid/recipes/ffmpeg), con diverse differenze accumulate nel
++# tempo (ognuna commentata per esteso dove compare, marcatore "PATCH
++# locale") - per il diff completo rispetto all'ufficiale, vedi
++# UPSTREAM_DIFF_REFERENCE.patch in questa stessa cartella. La prima e più
++# semplice: rimosso `depends = [('sdl2', 'sdl3')]`. Nel sorgente originale
 +# quel campo serve solo a forzare l'ordine di build ("Need this to build
 +# correct recipe order", mai referenziato in get_recipe_env/build_arch), ma
 +# essendo un depends "duro" il risolutore di dipendenze di p4a lo richiede in
@@ -39,6 +43,18 @@
 +# punta qui col --force, `deployment/` viene ripulita con shutil.rmtree()
 +# ad ogni run (vedi deploy_lib/deploy_util.py:cleanup) - una recipe li'
 +# dentro sparirebbe prima ancora che la build parta.
++#
++# --- MP3 su Android (libshine) ---
++# ffmpeg di default non porta un encoder MP3, e libmp3lame (quello del
++# desktop) e' una libreria esterna senza recipe p4a: prima di libshine la
++# conversione MP3 su Android falliva sempre a runtime. libshine e' l'unico
++# encoder MP3 con recipe p4a pronta (fixed-point, qualita' un filo sotto
++# libmp3lame ma output valido). E' linkato staticamente dentro
++# libffmpegbin.so (vedi android/recipes/libshine/), come tutto il resto
++# qui - niente .so a parte. Il wiring in build_arch sta fuori dal ramo
++# ffpyplayer_codecs/av_codecs (mai attivo per noi). Nota cross-file:
++# Tools.AUDIO_FORMAT_CODECS in libs.py mappa 'mp3' -> 'libshine' su Android
++# (non 'libmp3lame': nome encoder diverso), come gia' fatto per opus/libopus.
  class FFMpegRecipe(Recipe):
      version = '8.0.1'
      # Moved to github.com instead of ffmpeg.org to improve download speed
@@ -56,7 +72,7 @@
 +    # facendo fallire ./configure con "ld.lld: error: unable to find
 +    # library -lssl/-lcrypto" perche' openssl non era ancora compilato
 +    # PATCH locale: libshine aggiunto per l'encoder MP3 (vedi build_arch
-+    # sotto e android/recipes/libshine/) - ANDROID_HISTORY.md punto 18/19
++    # sotto, android/recipes/libshine/ e il blocco "MP3 su Android" sopra)
 +    depends = ['openssl', 'libshine']
 +    opts_depends = ['ffpyplayer_codecs', 'av_codecs']
      patches = ['patches/configure.patch', 'patches/backport-Android15-MediaCodec-fix.patch']
@@ -92,7 +108,7 @@
  
      def get_recipe_env(self, arch):
          env = super().get_recipe_env(arch)
-@@ -36,7 +68,23 @@
+@@ -36,7 +83,23 @@
          with current_directory(self.get_build_dir(arch.arch)):
              env = arch.get_env()
  
@@ -117,7 +133,7 @@
              cflags = []
              ldflags = []
  
-@@ -58,6 +106,33 @@
+@@ -58,6 +121,32 @@
                  cflags += ['-I' + build_dir + '/include/']
                  ldflags += ['-L' + build_dir, '-lssl', '-lcrypto']
  
@@ -130,9 +146,8 @@
 +            # (licenza GPL, come --enable-libx264/--enable-libvpx sotto).
 +            #
 +            # Linkato a mano via -I/-L/-lshine (come openssl qui sopra),
-+            # NON via pkg-config: due tentativi falliti prima di trovare
-+            # questo (vedi ANDROID_HISTORY.md punto 19) hanno scoperto che
-+            # patches/configure.patch - gia' esistente, scritta per bypassare
++            # NON via pkg-config: due tentativi falliti con pkg-config prima
++            # di scoprire che patches/configure.patch - gia' esistente, scritta per bypassare
 +            # pkg-config su openssl/x264 perche' inaffidabile in questo
 +            # ambiente cross-compile - aveva gia' riscritto anche la riga di
 +            # libshine nel configure di ffmpeg, da
@@ -151,7 +166,7 @@
              codecs_opts = {"ffpyplayer_codecs", "av_codecs"}
              if codecs_opts.intersection(self.ctx.recipe_build_order):
  
-@@ -96,11 +171,14 @@
+@@ -96,11 +185,14 @@
                      '--enable-demuxers',
                  ]
              else:
@@ -168,7 +183,7 @@
                      '--enable-demuxer=aac,h264,m4v,mov,mpegvideo,vc1,rtsp',
                  ]
  
-@@ -122,9 +200,9 @@
+@@ -122,9 +214,9 @@
                  '--enable-small',
                  '--enable-hwaccels',
                  '--enable-pic',
@@ -180,7 +195,7 @@
              ]
  
              if 'arm64' in arch.arch:
-@@ -143,6 +221,23 @@
+@@ -143,6 +235,23 @@
                  '--arch={}'.format(arch_flag),
                  '--strip={}'.format(self.ctx.ndk.llvm_strip),
                  '--nm={}'.format(self.ctx.ndk.llvm_nm),
@@ -204,7 +219,7 @@
                  '--sysroot={}'.format(self.ctx.ndk.sysroot),
                  '--enable-neon',
                  '--prefix={}'.format(realpath('.')),
-@@ -159,8 +254,24 @@
+@@ -159,8 +268,23 @@
              env['CFLAGS'] += ' ' + ' '.join(cflags)
              env['LDFLAGS'] += ' ' + ' '.join(ldflags)
  
@@ -214,9 +229,8 @@
 +            # "ERROR: X not found" a schermo) in un posto che sopravvive -
 +            # pyside6-android-deploy ripulisce .buildozer/ appena la build
 +            # fallisce, senza questo il log diagnostico andrebbe perso prima
-+            # di poterlo leggere (successo scoperto a caro prezzo mentre si
-+            # capiva perche' l'encoder MP3 non si linkava, vedi
-+            # ANDROID_HISTORY.md punto 19)
++            # di poterlo leggere (scoperto mentre si capiva perche' l'encoder
++            # MP3 non si linkava)
              configure = sh.Command('./configure')
 -            shprint(configure, *flags, _env=env)
 +            try:

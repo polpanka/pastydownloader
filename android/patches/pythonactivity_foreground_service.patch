@@ -24,8 +24,8 @@ index 0000000..147a079
 +// unica funzione e' tenere il processo (lo stesso di PythonActivity, non un
 +// ":servizio" separato con un secondo interprete Python) esente dal freeze
 +// che Android applica alle app normali pochi secondi/minuti dopo essere
-+// uscite dal primo piano (vedi ANDROID_HISTORY.md - scoperto dal bug della
-+// notifica di fine download in ritardo). Il vero download continua a girare
++// uscite dal primo piano (scoperto dal bug della notifica di fine download
++// in ritardo). Il vero download continua a girare
 +// nel thread Python di sempre: questo servizio si limita a mostrare la
 +// notifica persistente che Android richiede in cambio dell'esenzione, nel
 +// frattempo tenendo vivo (per via indiretta, essendo nello stesso processo)
@@ -101,7 +101,7 @@ index b33775f..11e1aaa 100644
  
 +    // PATCH locale (PastyDownloader): stessa "cassetta della posta" di
 +    // sopra, ma per il Foreground Service (vedi DownloadForegroundService,
-+    // android_bridge.py e ANDROID_HISTORY.md) - la sua sola esistenza dice
++    // android_bridge.py) - la sua sola esistenza dice
 +    // se un batch di download e' in corso lato Python. Il file contiene gia'
 +    // il testo tradotto da mostrare nella notifica persistente (scritto da
 +    // Python, letto direttamente dal servizio - vedi

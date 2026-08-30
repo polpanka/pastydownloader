@@ -65,8 +65,8 @@ a = Analysis(
     # per intero e funziona
     # secretstorage: come brotli/mutagen/ecc. sopra, importato dentro un
     # try/except di yt_dlp (cookies.py, solo per leggere i cookie salvati da
-    # browser Chromium via portachiavi di sistema - vedi build-appimage.sh e
-    # ANDROID_HISTORY.md), quindi va dichiarato a mano o PyInstaller non lo
+    # browser Chromium via portachiavi di sistema - vedi build-appimage.sh),
+    # quindi va dichiarato a mano o PyInstaller non lo
     # vede da solo con l'analisi statica
     hiddenimports=['brotli', 'certifi', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', 'secretstorage', *collect_submodules('yt_dlp_ejs')],
     hookspath=[],

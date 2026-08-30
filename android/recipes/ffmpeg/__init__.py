@@ -21,6 +21,18 @@ from multiprocessing import cpu_count
 # punta qui col --force, `deployment/` viene ripulita con shutil.rmtree()
 # ad ogni run (vedi deploy_lib/deploy_util.py:cleanup) - una recipe li'
 # dentro sparirebbe prima ancora che la build parta.
+#
+# --- MP3 su Android (libshine) ---
+# ffmpeg di default non porta un encoder MP3, e libmp3lame (quello del
+# desktop) e' una libreria esterna senza recipe p4a: prima di libshine la
+# conversione MP3 su Android falliva sempre a runtime. libshine e' l'unico
+# encoder MP3 con recipe p4a pronta (fixed-point, qualita' un filo sotto
+# libmp3lame ma output valido). E' linkato staticamente dentro
+# libffmpegbin.so (vedi android/recipes/libshine/), come tutto il resto
+# qui - niente .so a parte. Il wiring in build_arch sta fuori dal ramo
+# ffpyplayer_codecs/av_codecs (mai attivo per noi). Nota cross-file:
+# Tools.AUDIO_FORMAT_CODECS in libs.py mappa 'mp3' -> 'libshine' su Android
+# (non 'libmp3lame': nome encoder diverso), come gia' fatto per opus/libopus.
 class FFMpegRecipe(Recipe):
     version = '8.0.1'
     # Moved to github.com instead of ffmpeg.org to improve download speed
@@ -36,7 +48,7 @@ class FFMpegRecipe(Recipe):
     # facendo fallire ./configure con "ld.lld: error: unable to find
     # library -lssl/-lcrypto" perche' openssl non era ancora compilato
     # PATCH locale: libshine aggiunto per l'encoder MP3 (vedi build_arch
-    # sotto e android/recipes/libshine/) - ANDROID_HISTORY.md punto 18/19
+    # sotto, android/recipes/libshine/ e il blocco "MP3 su Android" sopra)
     depends = ['openssl', 'libshine']
     opts_depends = ['ffpyplayer_codecs', 'av_codecs']
     patches = ['patches/configure.patch', 'patches/backport-Android15-MediaCodec-fix.patch']
@@ -118,12 +130,11 @@ class FFMpegRecipe(Recipe):
             # (licenza GPL, come --enable-libx264/--enable-libvpx sotto).
             #
             # Linkato a mano via -I/-L/-lshine (come openssl qui sopra),
-            # NON via pkg-config: due tentativi falliti prima di trovare
-            # questo (vedi ANDROID_HISTORY.md punto 19) hanno scoperto che
-            # patches/configure.patch - gia' esistente, scritta per bypassare
-            # pkg-config su openssl/x264 perche' inaffidabile in questo
-            # ambiente cross-compile - aveva gia' riscritto anche la riga di
-            # libshine nel configure di ffmpeg, da
+            # NON via pkg-config: due tentativi falliti con pkg-config prima
+            # di scoprire che patches/configure.patch - gia' esistente,
+            # scritta per bypassare pkg-config su openssl/x264 perche'
+            # inaffidabile in questo ambiente cross-compile - aveva gia'
+            # riscritto anche la riga di libshine nel configure di ffmpeg, da
             # "require_pkg_config libshine shine shine/layer3.h
             # shine_encode_buffer" a
             # "require \"shine\" shine/layer3.h shine_encode_buffer -lshine
@@ -263,9 +274,8 @@ class FFMpegRecipe(Recipe):
             # "ERROR: X not found" a schermo) in un posto che sopravvive -
             # pyside6-android-deploy ripulisce .buildozer/ appena la build
             # fallisce, senza questo il log diagnostico andrebbe perso prima
-            # di poterlo leggere (successo scoperto a caro prezzo mentre si
-            # capiva perche' l'encoder MP3 non si linkava, vedi
-            # ANDROID_HISTORY.md punto 19)
+            # di poterlo leggere (scoperto mentre si capiva perche' l'encoder
+            # MP3 non si linkava)
             configure = sh.Command('./configure')
             try:
                 shprint(configure, *flags, _env=env)

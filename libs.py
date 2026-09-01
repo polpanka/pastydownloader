@@ -1472,6 +1472,13 @@ class Tools():
     def isDevMode(cls):
         return cls.runType() == 'DEV'
 
+    # sblocco a runtime per vedere i log anche in build compilato
+    _verboseLoggingEnabled = False
+
+    @classmethod
+    def enableVerboseLogging(cls):
+        cls._verboseLoggingEnabled = True
+
     # non piu' usato (recuperava i binari ffmpeg/yt-dlp imbarcati)
     @staticmethod
     def resourcePath(relative_path):
@@ -1543,7 +1550,7 @@ class Tools():
 
     @classmethod
     def consoleLogs(cls, str):
-        if cls.isDevMode():
+        if cls.isDevMode() or cls._verboseLoggingEnabled:
             logging.debug(str)
 
     @staticmethod

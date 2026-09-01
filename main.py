@@ -260,6 +260,7 @@ class Pasty(QMainWindow):
         if self.DEVEL_MODE:
             return
         self.DEVEL_MODE = True
+        Tools.enableVerboseLogging()
         self.pastyGrid.initColumns(True)
         self.pastyGrid.resizeEvent(self.width())
         self.setStatusBar('DEVEL_MODE enabled', 5)

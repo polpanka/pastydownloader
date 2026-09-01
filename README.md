@@ -62,6 +62,7 @@ Without these projects, PastyDownloader simply wouldn't exist.
 
 ## Releases
 
+- **2026-09** - version 1.6: minor bug fix
 - **2026-08** - version 1.5: Android build added
 - **2026-07** - version 1.4: complete refactor in PySide6, open-sourced on GitHub
 - **2024-04** - version 0.7: fixed too long link error and other minor bug fixes

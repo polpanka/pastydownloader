@@ -24,7 +24,7 @@
 ; come gia' fai per gli altri passi manuali della release (vedi info/info.txt) -
 ; niente di automatico qui per evitare di introdurre un parsing JSON non
 ; testato che potrebbe rompere silenziosamente la compilazione dello script
-#define MyAppVersion "1.5"
+#define MyAppVersion "1.6"
 #define MyAppName "PastyDownloader"
 #define MyAppPublisher "Pastylink"
 #define MyAppURL "https://pasty.link"

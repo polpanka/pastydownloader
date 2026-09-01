@@ -151,6 +151,18 @@ jobs:
           python /tmp/pyside-setup/tools/cross_compile_android/main.py \
             --download-only --skip-update --auto-accept-license
 
+          # niente pin di versione NDK lato nostro: lo sceglie lo script Qt
+          # sopra, e puo' cambiare a loro insaputa (era r27c quando scritto,
+          # vedi ANDROID.md - "non un pin deliberato") - risolto qui invece di
+          # tenerlo fisso, cosi' un aggiornamento upstream non rompe piu' la build
+          NDK_DIR=$(find "$HOME/.pyside6_android_deploy/android-ndk" -mindepth 1 -maxdepth 1 -type d | head -1)
+          if [ -z "$NDK_DIR" ]; then
+            echo "::error::Nessuna cartella NDK trovata sotto ~/.pyside6_android_deploy/android-ndk"
+            exit 1
+          fi
+          echo "NDK scaricato: $NDK_DIR"
+          echo "NDK_PATH=$NDK_DIR" >> "$GITHUB_ENV"
+
       # Bug dello script di download sopra (vedi ANDROID.md punto 6, "Terzo
       # tentativo"): mette cmdline-tools direttamente sotto android-sdk/
       # invece del layout cmdline-tools/latest/ atteso da sdkmanager/
@@ -257,7 +269,7 @@ jobs:
           pyside6-android-deploy --config-file pysidedeploy.spec \
             --wheel-pyside "$HOME/.pyside6_android_deploy/wheels/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
             --wheel-shiboken "$HOME/.pyside6_android_deploy/wheels/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
-            --ndk-path "$HOME/.pyside6_android_deploy/android-ndk/android-ndk-r27c" \
+            --ndk-path "$NDK_PATH" \
             --sdk-path "$HOME/.pyside6_android_deploy/android-sdk" \
             --keep-deployment-files --force 2>&1 | tee deploy.log
           # pyside6-android-deploy esce 0 anche quando la build fallisce

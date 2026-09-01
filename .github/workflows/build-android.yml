@@ -1,15 +1,10 @@
 name: Build Android APK
 
-# Manuale (Actions -> Build Android APK -> Run workflow) SOLO, di proposito:
-# a differenza degli altri build-*.yml qui NON c'e' "push: tags: v*", quindi
-# non allega automaticamente l'APK alle Release quando pushi un tag. E' una
-# scelta deliberata: questo resta un guscio sperimentale - ffmpeg (recipe
-# locale, vedi android/recipes/ffmpeg/) e yt-dlp funzionano davvero, ma la
-# build resta "debug" (chiave [buildozer] mode in pysidedeploy.spec), non
-# firmata per una vera release.
-# Quando/se si deciderà di distribuirlo davvero, aggiungere qui lo stesso
-# trigger "push: tags: v*" degli altri workflow (serve anche una release-key
-# vera al posto della firma debug automatica).
+# Manuale (Actions -> Build Android APK -> Run workflow) o automatico sui tag
+# v*, come gli altri build-*.yml: allega l'APK alla Release.
+# Nota: l'APK e' ancora "debug" (chiave [buildozer] mode in pysidedeploy.spec),
+# non firmato con una release-key vera - installabile ma senza garanzie di
+# aggiornamento in-place.
 #
 # Riproduce in CI, passo per passo, l'esperimento fatto a mano in locale
 # (vedi ANDROID.md): dieci patch locali non versionabili
@@ -19,6 +14,12 @@ name: Build Android APK
 # applicate qui da file .patch versionati in android/patches/.
 "on":
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # serve solo per allegare l'APK alla Release quando il trigger e' un tag
 
 jobs:
   build-android:
@@ -285,6 +286,12 @@ jobs:
         with:
           name: PastyDownloader-android-arm64-v8a-debug.apk
           path: PastyDownloader-android-arm64-v8a-debug.apk
+
+      - name: Allega l'APK alla Release (solo per i tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: PastyDownloader-android-arm64-v8a-debug.apk
 
       - name: Carica i log della build (per diagnosi, anche su fallimento)
         if: always()

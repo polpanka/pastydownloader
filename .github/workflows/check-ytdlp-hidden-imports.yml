@@ -1,0 +1,101 @@
+name: Check yt-dlp hidden imports
+
+# Scarica ogni giorno l'ultima yt-dlp da PyPI (check_ytdlp_hidden_imports.py) e
+# confronta i moduli che importa con quelli di ieri (check_ytdlp_hidden_imports_baseline.txt,
+# committata nel repo). Se compare qualcosa di nuovo, apre/aggiorna una issue -
+# va verificato a mano se serve aggiungerlo a hiddenimports negli
+# installer/*.spec (vedi i commenti in installer/main_appimage.spec) o se e'
+# gia' coperto da un'altra dipendenza dell'app. Quando risolto, aggiornare la
+# baseline (istruzioni nella issue stessa).
+#
+# Non sostituisce una verifica vera con PyInstaller: e' solo un campanello
+# d'allarme "e' cambiato qualcosa", per evitare di scoprirlo da un utente
+# (vedi il bug Dailymotion del 2026-09-01: optparse/xml.etree/ecc mancanti).
+"on":
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Assicura che la label esista
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create ytdlp-hidden-imports \
+            --color FBCA04 \
+            --description "Nuovi import scoperti da check_ytdlp_hidden_imports.py" \
+            --force
+
+      - name: Esegui il check e confronta con la baseline
+        id: check
+        run: |
+          python3 check_ytdlp_hidden_imports.py > /tmp/oggi.txt
+          VERSIONE=$(head -1 /tmp/oggi.txt)
+          echo "versione=$VERSIONE" >> "$GITHUB_OUTPUT"
+
+          # via la prima riga (versione, cambia sempre) prima del confronto
+          tail -n +2 /tmp/oggi.txt > /tmp/oggi_senza_versione.txt
+          tail -n +2 check_ytdlp_hidden_imports_baseline.txt > /tmp/baseline_senza_versione.txt
+
+          comm -13 <(sort /tmp/baseline_senza_versione.txt) <(sort /tmp/oggi_senza_versione.txt) > /tmp/nuove.txt
+          if [ -s /tmp/nuove.txt ]; then
+            echo "has_new=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_new=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apri o aggiorna la issue se ci sono novita'
+        if: steps.check.outputs.has_new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSIONE="${{ steps.check.outputs.versione }}"
+          cat > /tmp/issue_body.md <<EOF
+          $VERSIONE
+
+          Il controllo automatico (\`check_ytdlp_hidden_imports.py\`) ha trovato import nuovi rispetto alla baseline (\`check_ytdlp_hidden_imports_baseline.txt\`):
+
+          \`\`\`
+          $(cat /tmp/nuove.txt)
+          \`\`\`
+
+          Per ciascuno: verificare se serve aggiungerlo a \`hiddenimports\` nei 5 file \`installer/*.spec\` (vedi i commenti in \`installer/main_appimage.spec\` per il criterio - un modulo stdlib importato in modo incondizionato da yt_dlp e non referenziato altrove nell'app va quasi certamente aggiunto), oppure se e' gia' coperto da un'altra dipendenza (PySide6/aiohttp/requests/ecc).
+
+          Dopo aver sistemato (o verificato che non serve), aggiornare la baseline:
+          \`\`\`
+          python3 check_ytdlp_hidden_imports.py > check_ytdlp_hidden_imports_baseline.txt
+          \`\`\`
+          e committare - altrimenti questa issue si riapre ogni giorno con le stesse voci.
+          EOF
+
+          # assegnata al proprietario del repo: le notifiche email di GitHub per
+          # le issue assegnate sono piu' affidabili di quelle per la sola
+          # creazione/watch (dipendono dalle preferenze di notifica dell'account)
+          EXISTING=$(gh issue list --state open --label ytdlp-hidden-imports --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            gh issue edit "$EXISTING" --body-file /tmp/issue_body.md --add-assignee polpanka
+            gh issue comment "$EXISTING" --body "Nuovo controllo, corpo della issue aggiornato."
+          else
+            gh issue create --title "yt-dlp: nuovi import da verificare negli spec PyInstaller" \
+              --body-file /tmp/issue_body.md --label ytdlp-hidden-imports --assignee polpanka
+          fi
+
+      - name: Chiudi la issue se non ci sono piu' novita'
+        if: steps.check.outputs.has_new == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EXISTING=$(gh issue list --state open --label ytdlp-hidden-imports --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            gh issue comment "$EXISTING" --body "Nessuna nuova voce rispetto alla baseline: chiudo."
+            gh issue close "$EXISTING"
+          fi

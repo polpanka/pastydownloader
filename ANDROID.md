@@ -51,7 +51,19 @@ ma non trova quella di sistema solo con `java` in PATH, serve la env var.
 Nel nostro run: NDK scaricato è r27c (non r26b come suggerisce
 `pyside6-android-deploy --help` per "required version" — sembra solo testo
 informativo non aggiornato, il download automatico ha preso r27c senza
-lamentarsi).
+lamentarsi). **Non è un pin**: la versione la sceglie lo script Qt sopra e può
+cambiare a loro insaputa (successo davvero: build-android.yml è passato da
+r27c a un'altra versione senza nessun nostro commit di mezzo, rompendo
+`--ndk-path` fisso con "llvm-readobj does not exist"). Risolvi il path vero
+invece di copiare `r27c` sotto:
+
+```bash
+NDK_PATH=$(find "$HOME/.pyside6_android_deploy/android-ndk" -mindepth 1 -maxdepth 1 -type d | head -1)
+```
+
+e usa `--ndk-path "$NDK_PATH"` nei comandi sotto (qui lasciato `r27c`
+letterale solo perché era la versione vista in quel run - non copiarlo
+alla cieca).
 
 ## 3. Wheel PySide6/Shiboken6 per Android
 

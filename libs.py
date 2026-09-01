@@ -327,7 +327,7 @@ class Tools():
         try:
             import yt_dlp
         except Exception as err:
-            Tools.consoleLogs("Impossibile importare yt_dlp da %s: %s" % (packageDir, err))
+            logging.error("Impossibile importare yt_dlp da %s: %s" % (packageDir, err))
             return None
         cls._registerEmbeddedQuickJsProvider(yt_dlp)
         cls._ytDlpModule = yt_dlp
@@ -1225,14 +1225,16 @@ class Tools():
                                            'simulate': True, 'socket_timeout': timeout}) as ydl:
                         resultBox.append(ydl.extract_info(url, download=False))
                 except Exception as err:
-                    cls.consoleLogs("Error: yt-dlp simulate - " + str(err))
+                    # logging.error (non consoleLogs): deve comparire anche nei build
+                    # compilati, dove isDevMode() e' sempre False
+                    logging.error("yt-dlp simulate failed for %s: %s" % (url, err))
                     resultBox.append(None)
 
             probeThread = threading.Thread(target=_probe, daemon=True)
             probeThread.start()
             probeThread.join(timeout * 2)  # margine per richieste sequenziali lente
             if probeThread.is_alive():
-                cls.consoleLogs("yt-dlp simulate: timeout scaduto per " + url)
+                logging.error("yt-dlp simulate: timeout scaduto per " + url)
                 return False
             info = resultBox[0] if resultBox else None
             return info is not None

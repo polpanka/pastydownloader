@@ -68,7 +68,24 @@ a = Analysis(
     # browser Chromium via portachiavi di sistema - vedi build-appimage.sh),
     # quindi va dichiarato a mano o PyInstaller non lo
     # vede da solo con l'analisi statica
-    hiddenimports=['brotli', 'certifi', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', 'secretstorage', *collect_submodules('yt_dlp_ejs')],
+    # optparse/collections/fileinput/functools/io/locale/operator/sqlite3/heapq:
+    # moduli di stdlib importati (in modo incondizionato, non in un
+    # try/except) da yt_dlp/__init__.py, options.py, YoutubeDL.py e
+    # postprocessor/modify_chapters.py (quest'ultimo importato sempre da
+    # postprocessor/__init__.py, anche se l'app non usa mai quella feature).
+    # PyInstaller imbarca la stdlib solo per i moduli che vede referenziati
+    # staticamente in main.py, e nessuno di questi ci compare (verificato con
+    # un caso reale: senza optparse, l'import di yt_dlp falliva con "No
+    # module named 'optparse'" per qualunque sito, ma solo nel build
+    # compilato - stesso rischio per gli altri, verificato analizzando
+    # yt_dlp/__pyinstaller/hook-yt_dlp.py e il sorgente di yt-dlp a mano:
+    # quell'hook ufficiale non serve qui perche' scatta solo se yt_dlp e'
+    # 'pip install'ato nel venv di build, e qui non lo e' mai - vedi sopra)
+    # sqlite3 e' invece dentro un try/except in yt_dlp/dependencies
+    # (degrada, non fa fallire l'import), ma serve per davvero al login con
+    # cookie da browser (Tools.browserLoginConsentEnabled), quindi va
+    # comunque dichiarato o quella feature fallirebbe in silenzio
+    hiddenimports=['brotli', 'certifi', 'optparse', 'collections', 'fileinput', 'functools', 'io', 'locale', 'operator', 'sqlite3', 'heapq', 'collections.abc', 'html.parser', 'xml.etree.ElementTree', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', 'secretstorage', *collect_submodules('yt_dlp_ejs')],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

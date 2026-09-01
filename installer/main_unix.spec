@@ -22,7 +22,7 @@ a = Analysis(
     # il commento esteso in installer/main_appimage.spec (il suo
     # yt_dlp_ejs/yt/solver/__init__.py fa un import auto-referenziale che
     # un hiddenimports=['yt_dlp_ejs'] semplice non bundla per intero)
-    hiddenimports=['brotli', 'certifi', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', *collect_submodules('yt_dlp_ejs')],
+    hiddenimports=['brotli', 'certifi', 'optparse', 'collections', 'fileinput', 'functools', 'io', 'locale', 'operator', 'sqlite3', 'heapq', 'collections.abc', 'html.parser', 'xml.etree.ElementTree', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', *collect_submodules('yt_dlp_ejs')],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

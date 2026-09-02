@@ -1,0 +1,29 @@
+--- a/PySide6/scripts/deploy_lib/android/buildozer.py
++++ b/PySide6/scripts/deploy_lib/android/buildozer.py
+@@ -182,12 +182,25 @@
+         # quel vincolo, ma include gia' FileProvider (parte della libreria
+         # sin dalla prima versione 1.0.0, ex android.support.v4)
+         file_paths_resource = pysidedeploy_config.source_file.parent / "android" / "resources" / "xml" / "file_paths.xml"
++        # PATCH locale (PastyDownloader): --intent-filters aggiunge un
++        # <intent-filter> all'Activity principale dal file XML indicato (hook
++        # CLI ufficiale di p4a: finisce in {{ args.intent_filters }} nel
++        # template del manifest, subito dopo l'intent-filter MAIN/LAUNCHER).
++        # --activity-launch-mode=singleTop: un link httpasty:// aperto mentre
++        # l'app e' gia' viva la riusa (onNewIntent) invece di creare una
++        # seconda istanza dell'Activity (= secondo interprete Python).
++        # Tutto inerte finche' il sito pasty.link non emette link httpasty://
++        # (vedi android/resources/intent_filters.xml, pythonactivity_deeplink.patch,
++        # android_bridge.py pollIncomingUrl).
++        intent_filters_resource = pysidedeploy_config.source_file.parent / "android" / "resources" / "intent_filters.xml"
+         extra_args = (f"--qt-libs={modules} --load-local-libs={local_libs}"
+                       f" --init-classes={init_classes}"
+                       f" --native-service=org.kivy.android.DownloadForegroundService"
+                       f" --resource={file_paths_resource}:xml/file_paths.xml"
+                       f" --enable-androidx"
+-                      f" --depend=androidx.core:core:1.6.0")
++                      f" --depend=androidx.core:core:1.6.0"
++                      f" --intent-filters={intent_filters_resource}"
++                      f" --activity-launch-mode=singleTop")
+         self.set_value("app", "p4a.extra_args", extra_args)
+ 
+         # TODO: does not work atm. Seems like a bug with buildozer

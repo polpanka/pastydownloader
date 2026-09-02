@@ -197,6 +197,9 @@ class _FakeFullAppParent(FakeAppParent):
     def _updateLockState(self, wasUnlocked):
         return main.Pasty._updateLockState(self, wasUnlocked)
 
+    def _downloadWaitingRows(self):
+        return main.Pasty._downloadWaitingRows(self)
+
     # popup reale (QMessageBox modale): irrilevante per i test che non lo
     # riguardano direttamente, vedi InstallFailedPopupTest
     def showInstallFailedPopup(self, message):
@@ -933,6 +936,116 @@ class ConvertAlreadyDownloadedRowTest(unittest.TestCase):
         # entrambe le conversioni devono partire dallo stesso file video, mai
         # dall'audio prodotto dalla conversione precedente
         self.assertEqual(sourcesSeen, [videoPath, videoPath])
+
+
+def _fakeMp4Bytes(withMoov=True):
+    # box ISO-BMFF minimi: ftyp + mdat (~4KB) + moov opzionale (in fondo, come
+    # lo scrive ffmpeg con -c copy)
+    ftyp = (16).to_bytes(4, 'big') + b'ftypisom' + b'\x00' * 4
+    mdat = (0x1000).to_bytes(4, 'big') + b'mdat' + b'\x00' * (0x1000 - 8)
+    moov = (16).to_bytes(4, 'big') + b'moov' + b'\x00' * 8
+    return ftyp + mdat + (moov if withMoov else b'')
+
+
+class StoppedDownloadKeepsUsablePartialTest(unittest.TestCase):
+    """Stop dell'utente durante un download lungo/diretta: se sul disco c'e'
+    gia' un file riproducibile viene agganciato alla riga (apribile,
+    eliminabile, convertibile come un download finito) ma la riga resta
+    'Stopped' - non e' completo. Un mp4 troncato prima di scrivere 'moov' non
+    e' riproducibile: la riga resta 'Stopped' a mani vuote come prima."""
+
+    def setUp(self):
+        self.grid = makeGrid()
+        self.app = FakeAppParent(self.grid)
+        self.cleanup = []
+
+    def tearDown(self):
+        for path in self.cleanup:
+            Tools.removeFile(path)
+
+    def _runWithFakeFfmpeg(self, writer):
+        self.grid.addRow(MP4_URL)
+        self.grid.setCellConvert(0, self.app.ACTION_TO_MP4)
+
+        def fakeDownload(ffmpeg, url, referer, saveAs, onProgress=None, isStoppedFn=None):
+            writer(saveAs)
+            self.cleanup.append(saveAs)
+            return [None, 'Stop forced by the user']
+
+        worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
+        with mock.patch.object(PastedUrl, '_getContentTypeFromUrl', return_value='video/mp4'), \
+             mock.patch.object(Tools, 'downloadVideoByFFmpeg', new=AsyncMock(side_effect=fakeDownload)):
+            worker.runAllUrls()
+        return worker
+
+    def test_playable_partial_is_kept_but_row_stays_stopped(self):
+        self._runWithFakeFfmpeg(lambda p: open(p, 'wb').write(_fakeMp4Bytes(withMoov=True)))
+        self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_STOPPED)
+        saved = self.grid.getCellSaveAs(0)  # ma il file e' agganciato alla riga
+        self.assertTrue(saved.endswith('.mp4'))
+        self.assertTrue(os.path.exists(saved))
+
+    def test_truncated_mp4_without_moov_stays_stopped_with_no_file(self):
+        self._runWithFakeFfmpeg(lambda p: open(p, 'wb').write(_fakeMp4Bytes(withMoov=False)))
+        self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_STOPPED)
+        self.assertEqual(self.grid.getCellSaveAs(0), '')
+
+    def test_double_click_on_kept_partial_opens_the_file(self):
+        self._runWithFakeFfmpeg(lambda p: open(p, 'wb').write(_fakeMp4Bytes(withMoov=True)))
+        with mock.patch.object(Tools, 'openFile') as openFile:
+            main.Pasty.onRowDoubleClicked(self.app, 0, 0)
+        openFile.assert_called_once_with(self.grid.getCellSaveAs(0))
+
+    def test_ytdlp_part_file_is_renamed_and_kept(self):
+        self.grid.addRow(YOUTUBE_URL)
+        self.grid.setCellConvert(0, self.app.ACTION_TO_MP4)
+
+        async def fakeYtDlp(packageDir, ffmpeg, url, saveAs, *a, **kw):
+            with open(saveAs + '.part', 'wb') as f:
+                f.write((b'\x47' + b'\x00' * 187) * 3000)  # TS grezzo (sync byte a passo 188)
+            self.cleanup += [saveAs, saveAs + '.part']
+            return [None, 'Stop forced by the user']
+
+        worker = AsyncWorker(self.app, [0], Tools.checkFFmpeg())
+        with mock.patch.object(PastedUrl, '_getContentTypeFromUrl', return_value='text/html'), \
+             mock.patch.object(PastedUrl, '_isRealVideoOnline', return_value=False), \
+             mock.patch.object(Tools, 'isYtDlpDownloadable', return_value=True), \
+             mock.patch.object(Tools, 'checkYtDlp', return_value='/fake/ytdlp/pkgdir'), \
+             mock.patch.object(Tools, 'downloadVideoByYtDlp', new=AsyncMock(side_effect=fakeYtDlp)):
+            worker.runAllUrls()
+        self.assertEqual(self.grid.getCellStatusCode(0), self.grid.STATUS_CODE_STOPPED)
+        saved = self.grid.getCellSaveAs(0)
+        self.assertTrue(os.path.exists(saved))
+        self.assertFalse(os.path.exists(saved + '.part'))
+
+
+class IsPlayableMediaFileTest(unittest.TestCase):
+
+    def _tmp(self, name, data):
+        path = os.path.join(Tools.getTempDirectory(), name)
+        with open(path, 'wb') as f:
+            f.write(data)
+        self.addCleanup(lambda: Tools.removeFile(path))
+        return path
+
+    def test_mp4_with_moov_is_playable(self):
+        self.assertTrue(Tools.isPlayableMediaFile(self._tmp('pasty_moov.mp4', _fakeMp4Bytes(True))))
+
+    def test_mp4_without_moov_is_not_playable(self):
+        self.assertFalse(Tools.isPlayableMediaFile(self._tmp('pasty_nomoov.mp4', _fakeMp4Bytes(False))))
+
+    def test_ts_only_needs_size(self):
+        self.assertTrue(Tools.isPlayableMediaFile(self._tmp('pasty_x.ts', b'\x47' + b'\x00' * 5000)))
+
+    def test_tiny_file_is_not_playable(self):
+        self.assertFalse(Tools.isPlayableMediaFile(self._tmp('pasty_tiny.ts', b'x')))
+
+    def test_missing_file_is_not_playable(self):
+        self.assertFalse(Tools.isPlayableMediaFile('/no/such/file.mp4'))
+
+    def test_part_suffix_is_stripped_for_container_check(self):
+        self.assertFalse(Tools.isPlayableMediaFile(self._tmp('pasty_p.mp4.part', _fakeMp4Bytes(False))))
+        self.assertTrue(Tools.isPlayableMediaFile(self._tmp('pasty_p2.mp4.part', _fakeMp4Bytes(True))))
 
 
 class NonAacAudioDownloadTest(unittest.TestCase):

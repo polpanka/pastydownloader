@@ -9,6 +9,8 @@ comunica scrivendo file "cassetta della posta" nella cartella privata
 - download_active.txt: la sua esistenza dice a Java se il Foreground Service
   (anti-freeze) va attivo; il contenuto e' il testo della notifica persistente
 - open_file_request.txt: percorso del file da aprire con l'app di sistema
+- incoming_url.txt: link httpasty:// aperto da un browser (deep link) - qui
+  e' Java che scrive e Python che legge in polling (verso opposto agli altri)
 """
 
 import os
@@ -23,6 +25,7 @@ class AndroidBridge:
     NOTIFY_OUTBOX_FILENAME = 'notify_outbox.txt'
     DOWNLOAD_ACTIVE_FILENAME = 'download_active.txt'
     OPEN_FILE_REQUEST_FILENAME = 'open_file_request.txt'
+    INCOMING_URL_FILENAME = 'incoming_url.txt'
 
     @staticmethod
     def _privateDir():
@@ -78,6 +81,27 @@ class AndroidBridge:
                 os.remove(path)
         except OSError as err:
             logging.error('AndroidBridge: error removing download_active flag: ' + str(err))
+
+    @classmethod
+    def pollIncomingUrl(cls):
+        """Deep link httpasty://: Java scrive l'URI dell'intent VIEW qui
+        (rename atomico), Python lo consuma. Ritorna l'url una volta sola."""
+        if not Constants.IS_ANDROID:
+            return None
+        path = cls._pathFor(cls.INCOMING_URL_FILENAME)
+        if not path or not os.path.isfile(path):
+            return None
+        try:
+            with open(path, encoding='utf-8') as f:
+                url = f.read().strip()
+        except OSError as err:
+            logging.error('AndroidBridge: error reading incoming url: ' + str(err))
+            url = None
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        return url or None
 
     @classmethod
     def openFile(cls, filepath):

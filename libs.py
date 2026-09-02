@@ -3,7 +3,7 @@
 import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback
 from pathlib import Path
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QFile, QTextStream, QIODevice, QSettings, QStandardPaths, QLockFile
 from PySide6.QtGui import QClipboard
@@ -695,6 +695,16 @@ class Tools():
         # httpasty://BASE64{"v1" : {"ytdlp" : "https://www.youtube.com/watch?v=jNQXAC9IVRw", "referer" : "https://example.com/" }}
         return url.startswith(cls.PASTYLINK_URL_PREFIX)
 
+    # url httpasty:// passato dal SO come argomento (click su un link nel
+    # browser, scheme handler registrato dagli installer) - primo che matcha,
+    # il SO puo' aggiungere altri argomenti
+    @classmethod
+    def pastylinkArgFromArgv(cls, argv):
+        for arg in argv[1:]:
+            if arg.startswith(cls.PASTYLINK_URL_PREFIX):
+                return arg
+        return None
+
     # inizio di un manifest HLS incollato come testo (il BOM va tolto prima)
     M3U8_MANIFEST_MARKER = '#EXTM3U'
 
@@ -708,7 +718,8 @@ class Tools():
 
     @classmethod
     def _decodePastylinkV1(cls, url):
-        payload = url[len(cls.PASTYLINK_URL_PREFIX):]
+        # unquote: da <a href="httpasty://..."> il browser percent-encoda
+        payload = unquote(url[len(cls.PASTYLINK_URL_PREFIX):])
         padded = payload + '=' * (-len(payload) % 4)
         try:
             data = json.loads(base64.b64decode(padded))
@@ -975,6 +986,67 @@ class Tools():
             return False
         size = os.path.getsize(saveAs) if os.path.exists(saveAs) else 0
         return size > Tools.MIN_VALID_OUTPUT_SIZE_BYTES
+
+    _MP4_EXTENSIONS = ('.mp4', '.m4a', '.m4v', '.mov')
+
+    @staticmethod
+    def _mp4HasMoov(path):
+        """Scorre i box ISO-BMFF di primo livello cercando 'moov'. Con -c copy
+        ffmpeg lo scrive in fondo, alla chiusura: se manca, il file e' stato
+        interrotto prima di finalizzare e nessun player di sistema lo aprira'.
+        Salta 'mdat' via la sua dimensione: O(numero di box), non O(byte)."""
+        try:
+            with open(path, 'rb') as f:
+                fileSize = os.fstat(f.fileno()).st_size
+                offset = 0
+                while offset + 8 <= fileSize:
+                    f.seek(offset)
+                    header = f.read(8)
+                    if len(header) < 8:
+                        return False
+                    boxSize = int.from_bytes(header[:4], 'big')
+                    if header[4:8] == b'moov':
+                        return True
+                    if boxSize == 1:  # largesize a 64 bit dopo l'header
+                        ext = f.read(8)
+                        if len(ext) < 8:
+                            return False
+                        boxSize = int.from_bytes(ext, 'big')
+                    if boxSize < 8:  # 0 = "fino a EOF" (file non finalizzato) o valore corrotto
+                        return False
+                    offset += boxSize
+        except OSError:
+            return False
+        return False
+
+    @staticmethod
+    def _looksLikeMpegTs(path):
+        # sync byte 0x47 a passo 188: un .m3u8 live che yt-dlp concatena in un
+        # .part e' spesso TS grezzo (riproducibile) anche senza 'moov'
+        try:
+            with open(path, 'rb') as f:
+                head = f.read(377)
+        except OSError:
+            return False
+        return len(head) >= 377 and head[0] == 0x47 and head[188] == 0x47 and head[376] == 0x47
+
+    # File multimediale utilizzabile: esiste, non e' un troncone minuscolo e -
+    # se e' un container mp4/mov - e' finalizzato (box 'moov') o e' comunque TS
+    # grezzo. Usato per salvare il parziale di un download interrotto dall'utente.
+    # Un suffisso .part (yt-dlp) non conta per decidere il tipo di container.
+    @classmethod
+    def isPlayableMediaFile(cls, path):
+        if not path:
+            return False
+        try:
+            if os.path.getsize(path) <= cls.MIN_VALID_OUTPUT_SIZE_BYTES:
+                return False
+        except OSError:
+            return False
+        name = path[:-5] if path.endswith('.part') else path
+        if os.path.splitext(name)[1].lower() not in cls._MP4_EXTENSIONS:
+            return True  # ts/mkv/webm/...: nessun indice finale da attendere
+        return cls._mp4HasMoov(path) or cls._looksLikeMpegTs(path)
 
     # righe di stream di 'ffmpeg -i': "Stream #0:6[0x6]: Video: h264 ..., 1920x1080 ..."
     _FFMPEG_STREAM_LINE_RE = re.compile(r'Stream #0:(\d+).*?:\s*(Video|Audio|Subtitle):.*')

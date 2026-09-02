@@ -1,0 +1,22 @@
+<!-- PATCH locale (PastyDownloader): iniettato nell'<activity> principale del
+     manifest via p4a --intent-filters (vedi
+     android/patches/buildozer_py_config_deeplink.patch), subito dopo
+     l'intent-filter MAIN/LAUNCHER.
+
+     Registra lo scheme httpasty:// (link "apri nell'app" da pasty.link).
+     L'URI arriva come intent ACTION_VIEW, gestito da
+     PythonActivity.handleDeepLinkIntent (pythonactivity_deeplink.patch) e
+     importato lato Python da AndroidBridge.pollIncomingUrl + main.py.
+
+     Inerte finche' il sito pasty.link non emette link httpasty://.
+     BROWSABLE: necessario perche' il click parta da un browser. DEFAULT:
+     per un intent implicito senza componente esplicito. Niente autoVerify /
+     App Links su https://pasty.link: servirebbe assetlinks.json sul dominio
+     (lato sito, rimandato) - quando ci sara', si aggiunge un secondo
+     intent-filter qui con android:scheme="https" android:host="pasty.link". -->
+<intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="httpasty" />
+</intent-filter>

@@ -62,5 +62,15 @@ app = BUNDLE(
     exe,
     name='PastyDownloader.app',
     icon='../resources/paste.icns',
-    bundle_identifier=None,
+    bundle_identifier='link.pasty.pastydownloader',
+    # scheme httpasty:// (link "apri nell'app" da pasty.link): inerte finche' il
+    # sito non emette link httpasty://, ma va dichiarato ora - non si aggiunge
+    # in differita a un'app gia' installata. L'url arriva come QFileOpenEvent
+    # (gestito in main.py, _UrlOpenFilter)
+    info_plist={
+        'CFBundleURLTypes': [{
+            'CFBundleURLName': 'link.pasty.pastydownloader',
+            'CFBundleURLSchemes': ['httpasty'],
+        }],
+    },
 )

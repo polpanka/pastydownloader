@@ -103,6 +103,17 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
+; Registra lo scheme httpasty:// (link "apri nell'app" da pasty.link). Inerte
+; finche' il sito non emette link httpasty:// - va messo qui ora perche' non
+; si puo' aggiungere in differita a un'installazione gia' fatta. HKA segue
+; PrivilegesRequired (per-utente se non admin). uninsdeletekey solo sulla
+; prima riga: cancella l'intero ramo alla disinstallazione
+[Registry]
+Root: HKA; Subkey: "Software\Classes\httpasty"; ValueType: string; ValueName: ""; ValueData: "URL:PastyDownloader Protocol"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\httpasty"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKA; Subkey: "Software\Classes\httpasty\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKA; Subkey: "Software\Classes\httpasty\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 

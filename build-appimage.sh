@@ -123,15 +123,19 @@ cp -r "$BUILD_DIR/dist/PastyDownloader"/* "$APPDIR/usr/bin/"
 cp resources/paste512.png "$BUILD_DIR/pastydownloader.png"
 
 # desktop file richiesto da linuxdeploy per generare AppRun/icona nell'AppDir
+# %u + MimeType: scheme httpasty:// (link "apri nell'app" da pasty.link),
+# inerte finche' il sito non emette link httpasty://. Registrazione effettiva
+# a runtime (_registerLinuxUrlScheme in main.py): l'AppImage non ha installer
 cat > "$BUILD_DIR/pastydownloader.desktop" <<'EOF'
 [Desktop Entry]
 Type=Application
 Name=PastyDownloader
 Comment=Multimedia Discovery Engine
-Exec=PastyDownloader
+Exec=PastyDownloader %u
 Icon=pastydownloader
 Categories=Network;FileTransfer;
 Terminal=false
+MimeType=x-scheme-handler/httpasty;
 EOF
 
 # rimuovo il plugin immagini TIFF: alla dipendenza libtiff.so.5 manca sempre

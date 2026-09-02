@@ -7,7 +7,7 @@ name: Build Android APK
 # aggiornamento in-place.
 #
 # Riproduce in CI, passo per passo, l'esperimento fatto a mano in locale
-# (vedi ANDROID.md): dieci patch locali non versionabili
+# (vedi ANDROID.md): una dozzina di patch locali non versionabili
 # altrimenti (il tool pyside6-android-deploy non espone via CLI ne'
 # targetSdk/permessi/requirements/recipe custom/servizi/provider nel
 # manifest ne' un modo di riusare un checkout p4a persistente) vengono
@@ -141,6 +141,16 @@ jobs:
           TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config_fileprovider.patch
 
+      # Patch 4b: stesso file ancora - --intent-filters (scheme httpasty://
+      # nell'<activity>, da android/resources/intent_filters.xml) e
+      # --activity-launch-mode=singleTop (riuso dell'Activity per un deep link
+      # con app gia' viva). Inerte finche' il sito non emette link httpasty://
+      # (vedi pythonactivity_deeplink.patch, android_bridge.py, main.py)
+      - name: "Patch 4b: deep link httpasty:// (buildozer.py)"
+        run: |
+          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          patch -p1 "$TARGET" < android/patches/buildozer_py_config_deeplink.patch
+
       # NDK/SDK Android (vedi ANDROID.md punto 2) - JAVA_HOME e' gia' in
       # ambiente grazie a setup-java sopra
       - name: Scarica NDK/SDK Android
@@ -242,6 +252,16 @@ jobs:
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
           git apply "$GITHUB_WORKSPACE/android/patches/android_manifest_fileprovider.patch"
+
+      # Patch 9b: stesso PythonActivity.java - un link httpasty:// aperto da un
+      # browser arriva come intent VIEW (onCreate a freddo / onNewIntent con
+      # app viva): scrive l'URI in incoming_url.txt, che Python legge in polling
+      # (AndroidBridge.pollIncomingUrl, main.py). L'<intent-filter> che lo attiva
+      # e' in Patch 4b. Inerte finche' il sito non emette link httpasty://
+      - name: "Patch 9b: deep link httpasty:// (PythonActivity.java)"
+        run: |
+          cd "$HOME/.pyside6_android_deploy/python-for-android"
+          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_deeplink.patch"
 
       # Patch 10: find_recipe_dir() del tool forza sempre le recipe dentro
       # "deployment/", cartella che pyside6-android-deploy ripulisce con

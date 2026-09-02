@@ -78,6 +78,7 @@ from ytdlp_updater import YtDlpUpdater
 from ffmpeg_installer import FfmpegInstaller
 from status_queue import StatusQueue
 from toolbar import Menu
+from single_instance import SingleInstance
 import resources # x le images
 
 # evita che Windows mostri l'app come "python" nella systray
@@ -101,6 +102,32 @@ class _ClickCounter(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
             self._onClick()
+        return False
+
+
+# macOS: gli url httpasty:// arrivano come QFileOpenEvent al processo gia'
+# vivo (lo scheme non rilancia l'app). Bufferizza finche' la finestra non e'
+# pronta, poi inoltra. Innocuo sulle altre piattaforme (dove l'evento non arriva).
+class _UrlOpenFilter(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._handler = None
+        self._buffered = []
+
+    def setHandler(self, handler):
+        self._handler = handler
+        for url in self._buffered:
+            handler(url)
+        self._buffered = []
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.FileOpen:
+            url = event.url().toString() or event.file()
+            if url and self._handler:
+                self._handler(url)
+            elif url:
+                self._buffered.append(url)
+            return True
         return False
 
 
@@ -194,7 +221,24 @@ class Pasty(QMainWindow):
         # nessun check della cartella di download qui: su Android il permesso e'
         # spesso ancora "non deciso". L'unico check e' in fetchRows().
         self.initConnectivityCheck()
+        self._startAndroidDeepLinkPoll()
         QTimer.singleShot(0, lambda: self.checkUpdates(False))  # differito: finestra subito
+
+    # Android: lo scheme handler passa da Java (PythonActivity.handleDeepLinkIntent
+    # scrive incoming_url.txt); qui lo si legge in polling. Su desktop lo stesso
+    # url arriva via SingleInstance / QFileOpenEvent, non serve nulla qui.
+    def _startAndroidDeepLinkPoll(self):
+        if not Constants.IS_ANDROID:
+            return
+        self._deepLinkTimer = QTimer(self)
+        self._deepLinkTimer.timeout.connect(self._checkIncomingDeepLink)
+        self._deepLinkTimer.start(1000)
+        QTimer.singleShot(0, self._checkIncomingDeepLink)  # avvio a freddo: l'uri e' gia' scritto
+
+    def _checkIncomingDeepLink(self):
+        url = AndroidBridge.pollIncomingUrl()
+        if url:
+            self.importExternalUrl(url)
 
     def initConnectivityCheck(self):
         self.connectivityChecked.connect(self.onConnectivityChecked)
@@ -228,6 +272,7 @@ class Pasty(QMainWindow):
         self._refreshLockState()
         if not wasUnlocked and self.isUiUnlocked():
             self.statusQueue.showNow(MyText().setupCompleteMsg, 5)
+            self._downloadWaitingRows()
 
     # ffmpeg e yt-dlp si scaricano in cascata: prima ffmpeg, poi yt-dlp
     def initDependencies(self):
@@ -481,6 +526,37 @@ class Pasty(QMainWindow):
             statusMsg = MyText().msgNoValidLinks
         self.setStatusBar(statusMsg, 5)
 
+    # url httpasty:// da fuori (scheme handler del SO): aggiunge la riga, porta
+    # la finestra in primo piano e la scarica - subito se nulla e' in corso,
+    # altrimenti resta in attesa e parte col batch successivo (_downloadWaitingRows)
+    def importExternalUrl(self, url):
+        self._raiseWindow()
+        if not url:
+            return
+        count, hasInvalidPastylink = self.pastyGrid.importUrls([url])
+        Tools.consoleLogs("External url: %s valid" % count)
+        if hasInvalidPastylink:
+            self.setStatusBar(MyText().msgInvalidPastylink, 5)
+        elif count:
+            self.setStatusBar(MyText().msgFoundLinks % count, 5)
+        else:
+            self.setStatusBar(MyText().msgNoValidLinks, 5)
+        if count:
+            self._downloadWaitingRows()
+
+    def _raiseWindow(self):
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    # righe in attesa (tipico: link httpasty:// arrivato mentre un batch girava o
+    # le dipendenze si scaricavano) -> le scarica, stessa priorita' delle altre.
+    # No-op se un batch e' in corso o la UI e' bloccata: ci si ripassa a fine
+    # batch (progressFinished) e alla UI sbloccata (_updateLockState).
+    def _downloadWaitingRows(self):
+        if not self.is_running and self.isUiUnlocked() and self.pastyGrid.getAllWaitingUrlsInTable():
+            QTimer.singleShot(0, lambda: self.fetchRows(showNoLinksMessage=False))
+
     def fetchRow(self, rowId):
         if not self.is_running:
             self.pastyGrid.setCellState(rowId, self.pastyGrid.STATUS_CODE_WAITING)
@@ -488,8 +564,10 @@ class Pasty(QMainWindow):
             self.fetchRows([rowId])
 
     def onRowDoubleClicked(self, rowId, column):
-        # riga gia' scaricata -> apre il file; altrimenti la riscarica
-        if self.pastyGrid.getCellStatusCode(rowId) == self.pastyGrid.STATUS_CODE_COMPLETED:
+        # completata o interrotta con parziale tenuto -> apre il file;
+        # altrimenti la (ri)scarica
+        finished = (self.pastyGrid.STATUS_CODE_COMPLETED, self.pastyGrid.STATUS_CODE_STOPPED)
+        if self.pastyGrid.getCellStatusCode(rowId) in finished:
             myfile = self.pastyGrid.getCellSaveAs(rowId)
             if myfile and os.path.isfile(myfile):
                 Tools.openFile(myfile)
@@ -552,6 +630,7 @@ class Pasty(QMainWindow):
         if not Constants.IS_ANDROID and not self.stop and self.settings.value('doOpen') != 'nothing' and self.pastyGrid.hasAnyCompletedRow(thisBatchRows):
             Tools.openDownloadFolder()
         self.resetUi(msg)
+        self._downloadWaitingRows()  # righe rimaste in attesa (es. link httpasty:// arrivato durante il batch)
 
     def closeEvent(self, event):
         if not self.is_running:
@@ -570,6 +649,42 @@ class Pasty(QMainWindow):
         event.accept()
 
 
+# Linux AppImage: niente installer che registri lo scheme httpasty://, lo si
+# scrive a runtime (idempotente, NoDisplay=true = nessuna voce di menu, solo
+# l'associazione dello scheme). Inerte finche' il sito non emette link
+# httpasty://. Windows/macOS lo fanno gli installer.
+def _registerLinuxUrlScheme():
+    appImage = os.environ.get('APPIMAGE')
+    if not appImage or sys.platform != 'linux' or Constants.IS_ANDROID:
+        return
+    try:
+        appsDir = os.path.join(os.path.expanduser('~'), '.local', 'share', 'applications')
+        os.makedirs(appsDir, exist_ok=True)
+        desktopFile = os.path.join(appsDir, 'pastydownloader-httpasty.desktop')
+        content = (
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Name=PastyDownloader\n"
+            'Exec="%s" %%u\n'  # path fra virgolette: puo' contenere spazi
+            "Icon=pastydownloader\n"
+            "NoDisplay=true\n"
+            "Terminal=false\n"
+            "MimeType=x-scheme-handler/httpasty;\n"
+        ) % appImage
+        if os.path.isfile(desktopFile):
+            with open(desktopFile, encoding='utf-8') as f:
+                if f.read() == content:
+                    return
+        with open(desktopFile, 'w', encoding='utf-8') as f:
+            f.write(content)
+        import subprocess
+        subprocess.run(['xdg-mime', 'default', 'pastydownloader-httpasty.desktop', 'x-scheme-handler/httpasty'],
+                       check=False, capture_output=True)
+        subprocess.run(['update-desktop-database', appsDir], check=False, capture_output=True)
+    except Exception as err:
+        Tools.consoleLogs("URL scheme registration skipped: " + str(err))
+
+
 if __name__ == '__main__':
     # prima di tutto: senza, un processo figlio 'spawn' sotto PyInstaller frozen
     # rilancerebbe l'intera app invece del solo worker
@@ -578,11 +693,23 @@ if __name__ == '__main__':
     app.setApplicationName(MyText().appName)
     app.setOrganizationName(MyText().orgName)
     app.setOrganizationDomain(MyText().orgDomain)
-    if not Tools.acquireSingleInstanceLock():
-        sys.exit(0)  # un'altra istanza e' gia' in esecuzione
+    pendingUrl = Tools.pastylinkArgFromArgv(sys.argv)
+    singleInstance = SingleInstance(app)
+    if not singleInstance.tryBecomePrimary(pendingUrl):
+        sys.exit(0)  # url (se c'e') inoltrato all'istanza gia' in esecuzione
+    QTimer.singleShot(2000, _registerLinuxUrlScheme)  # differito: fuori dal percorso critico di avvio
+    urlFilter = None
+    if not Constants.IS_ANDROID:  # su Android niente scheme handler ne' seconde istanze
+        urlFilter = _UrlOpenFilter(app)  # macOS: QFileOpenEvent
+        app.installEventFilter(urlFilter)
     Constants.applyTheme(QSettings(MyText().orgName, MyText().appName).value('theme') or Constants.THEME_SYSTEM)
     Constants.applyAndroidFontScale()
     Constants.applyAndroidDarkPalette()
     Constants.onThemeChange(Constants.applyAndroidDarkPalette)
     window = Pasty()
+    singleInstance.urlReceived.connect(window.importExternalUrl)
+    if urlFilter:
+        urlFilter.setHandler(window.importExternalUrl)
+    if pendingUrl:
+        QTimer.singleShot(0, lambda: window.importExternalUrl(pendingUrl))
     sys.exit(app.exec())

@@ -169,6 +169,15 @@ class AsyncWorker(QObject):
                 host = Tools.getHostFromUrl(url)
                 referer = referers.get(host, '')
                 results = await Tools.downloadVideoByFFmpeg(self.ffmpeg, url, referer, saveAs, self.onSizeProgress, self.isStopped)
+            # stop dell'utente ma un file utilizzabile e' gia' su disco (tipico
+            # dei download lunghi / dirette): lo si aggancia alla riga - apribile,
+            # eliminabile, convertibile come un download finito - pur restando
+            # "Stopped" (non e' completo). Il tooltip mostra la dimensione tenuta.
+            if results and results[0] is None:
+                kept = self._keepUsablePartial(saveAs)
+                if kept:
+                    self.gridSaveAsUpdate.emit(self.rowId, kept)
+                    return self.smartReturn([None, Tools.getSizeDynamic(kept)])
             # results
             if results and results[0] == True:
                 self.gridSaveAsUpdate.emit(self.rowId, saveAs)
@@ -178,6 +187,20 @@ class AsyncWorker(QObject):
             if Tools.isDevMode():
                 traceback.print_exc()
             return [self.gridParent.STATUS_CODE_ERROR, 'Unexpected error #2']
+
+    def _keepUsablePartial(self, saveAs):
+        """Dopo uno Stop: se il file (o il .part di yt-dlp) e' riproducibile lo
+        tiene, rinominando il .part al nome definitivo. Ritorna il path tenuto o None."""
+        if Tools.isPlayableMediaFile(saveAs):
+            return saveAs
+        partial = saveAs + '.part'
+        if Tools.isPlayableMediaFile(partial):
+            try:
+                os.replace(partial, saveAs)
+                return saveAs
+            except OSError:
+                return partial
+        return None
 
     async def runConversion(self, myVideo):
         self.setInConvertion()

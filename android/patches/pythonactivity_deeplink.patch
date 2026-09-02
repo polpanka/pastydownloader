@@ -1,0 +1,57 @@
+--- a/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
++++ b/pythonforandroid/bootstraps/qt/build/src/main/java/org/kivy/android/PythonActivity.java
+@@ -22,6 +22,7 @@
+ import java.io.BufferedReader;
+ import java.io.File;
+ import java.io.FileReader;
++import java.io.FileWriter;
+ import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.Collections;
+@@ -71,6 +72,27 @@
+     // FileUriExposedException da API 24 in su)
+     private static final String OPEN_FILE_REQUEST_FILENAME = "open_file_request.txt";
+ 
++    // PATCH locale (PastyDownloader, vedi android_bridge.py pollIncomingUrl):
++    // un link httpasty:// aperto da un browser arriva come intent VIEW - ne
++    // scriviamo l'URI in questa "cassetta della posta" (rename atomico: Python
++    // non deve leggere un file a meta') e Python in polling lo importa. Inerte
++    // finche' il sito pasty.link non emette link httpasty://.
++    private static final String INCOMING_URL_FILENAME = "incoming_url.txt";
++
++    private void handleDeepLinkIntent(Intent intent) {
++        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
++        Uri data = intent.getData();
++        if (data == null) return;
++        File tmp = new File(getFilesDir(), INCOMING_URL_FILENAME + ".tmp");
++        try (FileWriter writer = new FileWriter(tmp)) {
++            writer.write(data.toString());
++        } catch (IOException e) {
++            Log.e(TAG, "Unable to write incoming url", e);
++            return;
++        }
++        if (!tmp.renameTo(new File(getFilesDir(), INCOMING_URL_FILENAME))) tmp.delete();
++    }
++
+     private final Handler notifyHandler = new Handler(Looper.getMainLooper());
+     private final Runnable notifyPoller = new Runnable() {
+         @Override
+@@ -260,6 +282,10 @@
+         new File(getFilesDir(), DOWNLOAD_ACTIVE_FILENAME).delete();
+         ensureNotificationChannel();
+         notifyHandler.post(notifyPoller);
++        // consuma un eventuale incoming_url.txt rimasto da una sessione
++        // precedente uccisa a meta', poi gestisce l'intent di questo avvio
++        new File(getFilesDir(), INCOMING_URL_FILENAME).delete();
++        handleDeepLinkIntent(getIntent());
+         Log.v(TAG, "Ready to unpack");
+         File app_root_file = new File(getAppRoot());
+         PythonUtil.unpackAsset(mActivity, "private", app_root_file, true);
+@@ -384,6 +410,7 @@
+ 
+     @Override
+     protected void onNewIntent(Intent intent) {
++        handleDeepLinkIntent(intent);  // PATCH locale (PastyDownloader): deep link con app gia' aperta
+         if (this.newIntentListeners == null) return;
+         this.onResume();
+         synchronized (this.newIntentListeners) {

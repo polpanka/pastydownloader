@@ -42,7 +42,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 from unittest import mock
 from unittest.mock import AsyncMock
@@ -130,10 +129,6 @@ class FakeAppParent:
         self.DEVEL_MODE = True
         self.stop = False  # letto da AsyncWorker.isStopped(), usato dal watcher di Tools.runCommand
         self.lastStatus = None
-        # letto da AsyncWorker.allProcessesFinished (vedi worker.py) per il
-        # messaggio "Processo terminato in %s secondi" - in Pasty vero
-        # (main.py) viene impostato da fetchRows() prima di avviare il thread
-        self.time_start_download = time.time()
 
     def setStatusBar(self, txt, sec=0):
         self.lastStatus = txt

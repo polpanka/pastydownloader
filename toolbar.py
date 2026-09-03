@@ -155,19 +155,13 @@ class Menu():
         add('https://streamcdnr4-cdnraivoddom6.msvdn.net/dom6/podcastcdn/teche_root/PLAYRAI_TECHE_CINEMA_HD/11745903_,1200,1800,2400,.mp4.csmil/playlist.m3u8')   # m3u8 lungo
         add('https://ms-027.host-cdn.net/hls/llzefbb2x4hnmttc2rvmpoooq7hxqi6jetco6eod7,qslsyhpz4bmzgkywnea,3alqyhpz4bmpb4u2biq,.urlset/master.m3u8')              # m3u8 buono piccolo
         add('https://vod05.msf.cdn.mediaset.net/farmunica/2024/03/1542611_18e5c175b37d01/mp4/hd_no_mpl.mp4')                                                      # mp4 buono
-        add('https://s-delivery36.mxdcontent.net/v/276b9b717172699c270cadfc1d783c8a.mp4?s=mwDENkEANjGrNswZVgT0Lw&e=1678551980&_t=1678533246')                     # mp4 scaduto
-        add('https://www.cbsnews.com/video/becker-hardly-a-week-goes-by-without-trump-administration-threatening-election-official-arrests/')                     # yt-dlp
         add('https://www.youtube.com/watch?v=jNQXAC9IVRw')                                                                                                        # youtube base senza blocchi
         add('https://www.youtube.com/watch?v=sd1Yp7uoN3s')                                                                                                        # youtube normale
-        add('https://www.dailymotion.com/video/x8ksj36')                                                                                                          # dailymotion
-        add('https://www.instagram.com/p/CrlECZoto2O/')                                                                                                           # instagram
-        add('https://www.tiktok.com/@polpanka/video/7164483565328092422')                                                                                         # tiktok
-        add('https://fb.watch/kAgUGqJP-E/')                                                                                                                       # fb
-        add('https://www.facebook.com/mirabilandia/videos/267787532351376/')                                                                                      # facebook
-        add('https://vimeo.com/822264148')                                                                                                                        # vimeo
-        add('https://ubuntu.com/engage/secure-kubernetes-at-the-edge')                                                                                            # html page
-        add('https://www.bilibili.com/video/BV13x41117TL')                                                                                                        # solo con PastyDownloader (con yt-dlp) check dell'ip che scarica
-        add('https://ok.ru/video/3205586750138')                                                                                                                  # solo con PastyDownloader (con yt-dlp) check dell'ip che scarica
+        add('https://www.dailymotion.com/video/x8ksj36')                                                                                                          # yt-dlp
+        add('https://www.instagram.com/p/CrlECZoto2O/')                                                                                                           # yt-dlp
+        add('https://fb.watch/kAgUGqJP-E/')                                                                                                                       # yt-dlp
+        add('https://www.facebook.com/mirabilandia/videos/267787532351376/')                                                                                      # yt-dlp
+        add('https://s-delivery36.mxdcontent.net/v/276b9b717172699c270cadfc1d783c8a.mp4?s=mwDENkEANjGrNswZVgT0Lw&e=1678551980&_t=1678533246')                     # ERRORE! mp4 scaduto
 
     def resetLanguage(self):
         # al prossimo avvio getLanguage() la ridetecta dal SO

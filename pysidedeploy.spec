@@ -12,10 +12,10 @@ packages = Nuitka==4.1.1
 android_packages = buildozer==1.5.0,cython==0.29.33
 
 [qt]
-qml_files =
-excluded_qml_plugins =
-modules = Core,Gui,Widgets
-plugins =
+qml_files = 
+excluded_qml_plugins = 
+modules = Core,Gui,Widgets,Network
+plugins = 
 
 [android]
 wheel_pyside =

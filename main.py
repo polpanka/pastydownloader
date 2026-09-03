@@ -21,7 +21,7 @@ Funzionalita':
 - Controllo connessione a internet e verifica aggiornamenti all'avvio
 """
 
-import os, sys, time, threading, multiprocessing
+import os, sys, threading, multiprocessing
 
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel
@@ -148,7 +148,6 @@ class Pasty(QMainWindow):
     is_running = False
     isOnline = True
     dependenciesReady = False
-    time_start_download = None
     stop = False
     settings = QSettings(MyText().orgName, MyText().appName)
 
@@ -188,6 +187,7 @@ class Pasty(QMainWindow):
         self.pastyGrid.initColumns(self.DEVEL_MODE)
         self.pastyGrid.initContextMenu(self.onContextMenu)
         self.pastyGrid.actionCopy.triggered.connect(self.copyCurrentRowLink)
+        self.pastyGrid.actionClearRow.triggered.connect(self.removeSelectedRows)
         self.pastyGrid.grid.cellDoubleClicked.connect(self.onRowDoubleClicked)
 
         # statusbar
@@ -433,7 +433,7 @@ class Pasty(QMainWindow):
                 msg = MyText().txtUpdatesHtml % onlineVersion if isDifferentVers else MyText().txtUpdatesNo
                 self.openPopup(MyText().titleUpdates, msg)
             elif isDifferentVers:
-                self.setStatusBar(MyText().txtUpdatesTxt % onlineVersion, 10)
+                self.setStatusBar(MyText().txtUpdatesTxt % onlineVersion, 15)
         except Exception:
             if forced:
                 self.setStatusBar(MyText().txtUpdatesError, 5)
@@ -441,12 +441,15 @@ class Pasty(QMainWindow):
     def onContextMenu(self, event):
         if self.pastyGrid.grid.rowCount() == 0:
             return
-        # recupero info
-        action = self.pastyGrid.contextMenu.exec(self.pastyGrid.grid.mapToGlobal(event))
-        item = self.pastyGrid.grid.itemAt(event) # self.pastyGrid.grid.currentRow() | self.pastyGrid.grid.currentIndex()
+        item = self.pastyGrid.grid.itemAt(event)
         if item is None:
             return
         rowId = item.row()
+        # click destro su una riga fuori selezione: la seleziona (come nei file
+        # manager); dentro una selezione multipla la lascia intatta
+        if rowId not in self.pastyGrid.getSelectedRowIds():
+            self.pastyGrid.grid.selectRow(rowId)
+        action = self.pastyGrid.contextMenu.exec(self.pastyGrid.grid.mapToGlobal(event))
         Tools.consoleLogs("Context menu action '%s' on row %s" % (action.text() if action else 'none', rowId))
         # ACTIONS
         # copy
@@ -473,9 +476,10 @@ class Pasty(QMainWindow):
         # stop
         elif action == self.pastyGrid.actionStopRow:
             self.stop = True
-        # clear row
+        # clear row: lo fa actionClearRow.triggered -> removeSelectedRows
+        # (menu e tasto Canc); qui niente, sennò girerebbe due volte
         elif action == self.pastyGrid.actionClearRow:
-            self.pastyGrid.removeRow(rowId)
+            pass
         # destroy both
         elif action == self.pastyGrid.actionDestroyBoth:
             myfile = self.pastyGrid.getCellSaveAs(rowId)
@@ -484,6 +488,12 @@ class Pasty(QMainWindow):
             self.pastyGrid.removeRow(rowId)
         else:
             Tools.consoleLogs("Action non gestita")
+
+    # voce "Rimuovi" / tasto Canc: toglie dalla lista tutte le righe selezionate
+    # (i file su disco restano; disabilitata durante un batch, vedi setContextMenuType)
+    def removeSelectedRows(self):
+        for rowId in self.pastyGrid.getSelectedRowIds():
+            self.pastyGrid.removeRow(rowId)
 
     def copyCurrentRowLink(self):
         rowId = self.pastyGrid.grid.currentRow()
@@ -595,7 +605,6 @@ class Pasty(QMainWindow):
             Tools.consoleLogs("Starting download thread for rows: " + str(rows))
             self.setStatusBar(MyText().msgDownloadStarted)
             AndroidBridge.startForegroundDownload(MyText().msgDownloadStarted)  # solo Android: anti-freeze in background
-            self.time_start_download = time.time()
             self.moveProcessInSeparatedThread([rows, ffmpeg])
         except Exception as err:
             Tools.consoleLogs("Error #1 unexpected: " + str(err))
@@ -615,13 +624,14 @@ class Pasty(QMainWindow):
 
     def progressInCorso(self, type, rowId):
         action = MyText().typeDownload if type == 'type_download' else MyText().typeConversion
-        self.setStatusBar(action + MyText().msgInProgress % str(rowId+1))
+        domain = Tools.displayDomain(self.pastyGrid.getCellUrl(rowId))
+        self.setStatusBar(action + (MyText().msgInProgress % domain if domain else ' ...'))
 
     def updateRowSize(self, rowId, sizeText):
         self.pastyGrid.setCellState(rowId, sizeText)
 
     def progressFinished(self):
-        msg = MyText().msgDownloadFinished % round(time.time() - self.time_start_download)
+        msg = MyText().msgDownloadFinished % Tools.getFilenameFromFullPath(Tools.downloadPath())
         Tools.consoleLogs(msg)
         # le notifiche Android sono in AsyncWorker.allProcessesFinished (questa
         # slot in coda non gira in background su Android)

@@ -82,7 +82,7 @@
 +        NotificationManager manager =
 +                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 +        if (manager == null) return;
-+        Intent openIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
++        Intent openIntent = new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS);  // tap -> cartella Download
 +        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
 +        if (android.os.Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
 +        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openIntent, flags);

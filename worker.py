@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys, time, asyncio, traceback
+import os, asyncio, traceback
 from PySide6.QtCore import QObject, Signal, QSettings
 from libs import Tools
 from testi import MyText
@@ -66,7 +66,7 @@ class AsyncWorker(QObject):
         # Pasty.progressFinished: su Android il ciclo eventi Qt del thread GUI
         # si ferma in background, quindi 'finished' (connessione in coda) non
         # verrebbe consegnato finche' l'utente non riapre l'app
-        msg = MyText().msgDownloadFinished % round(time.time() - self.appParent.time_start_download)
+        msg = MyText().msgDownloadFinished % Tools.getFilenameFromFullPath(Tools.downloadPath())
         AndroidBridge.notifyDownloadFinished(msg)
         AndroidBridge.stopForegroundDownload()
         self.finished.emit()

@@ -124,6 +124,10 @@ class PastyGrid():
         self.actionStopRow.setIcon(QIcon(":/images/list-remove"))
         self.actionClearRow = self.contextMenu.addAction(MyText().ctxRemove)
         self.actionClearRow.setIcon(QIcon(":/images/process-stop"))
+        if not Constants.IS_ANDROID:  # tasto Canc -> rimuove le righe selezionate
+            self.actionClearRow.setShortcut('Del')
+            self.actionClearRow.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+            self.grid.addAction(self.actionClearRow)  # scorciatoia attiva anche a menu chiuso
         self.actionDestroyBoth = self.contextMenu.addAction(MyText().ctxDeleteAndRemove)
         self.actionDestroyBoth.setIcon(QIcon(":/images/edit-delete"))
         self.grid.customContextMenuRequested.connect(callback)
@@ -155,6 +159,10 @@ class PastyGrid():
     
     def removeRow(self, rowId):
         self.grid.removeRow(rowId)
+
+    def getSelectedRowIds(self):
+        # decrescente: rimuovere una riga non sposta gli indici di quelle sopra
+        return sorted({i.row() for i in self.grid.selectionModel().selectedRows()}, reverse=True)
     
     def setHiddenColumns(self):
         for i, visible in enumerate([item['visible'] for item in self.COLUMNS_TABLE]):

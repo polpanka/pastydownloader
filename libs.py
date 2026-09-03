@@ -750,6 +750,27 @@ class Tools():
         parsed_uri = urlparse(url)
         return parsed_uri.netloc
 
+    # Dominio da mostrare durante il download (es. "youtube.com"): decodifica i
+    # pastylink; per una playlist #EXTM3U incollata come testo prova il primo
+    # URL assoluto al suo interno. None se non c'e' un host da mostrare.
+    @classmethod
+    def displayDomain(cls, rawUrl):
+        raw = (rawUrl or '').strip()
+        if cls.isM3u8ManifestText(raw):
+            candidates = [ln.strip() for ln in raw.splitlines() if ln.strip().startswith('http')]
+        elif cls.isPastylinkUrl(raw):
+            candidates = [cls.decodePastylinkUrl(raw) or '']
+        else:
+            candidates = [raw]
+        for candidate in candidates:
+            try:
+                host = (urlparse(candidate).hostname or '').lower()
+            except ValueError:
+                host = ''
+            if host:
+                return host[4:] if host.startswith('www.') else host
+        return None
+
     @classmethod
     def readFileJson(cls, link, timeout=10):
         if link.startswith('http'):

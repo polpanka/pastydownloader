@@ -1,10 +1,10 @@
 #!/usr/bin/python
 """Scarica l'ultima versione di yt-dlp da PyPI e stampa tutti i moduli che
 importa dall'esterno di se stesso (stdlib + terze parti), lazy/nidificati
-inclusi - la stessa cosa che gli spec PyInstaller in installer/*.spec devono
+inclusi - la stessa cosa che gli spec PyInstaller in src/*.spec devono
 elencare a mano in hiddenimports (yt-dlp non e' mai 'pip install'ato nel
 venv di build, quindi PyInstaller non vede mai i suoi import analizzando
-main.py - vedi i commenti in installer/main_appimage.spec).
+main.py - vedi i commenti in src/main_appimage.spec).
 
 USO
 ---

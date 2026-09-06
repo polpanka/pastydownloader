@@ -100,7 +100,7 @@ jobs:
 
       # Patch 1: il tool pyside6-android-deploy non espone via CLI ne'
       # targetSdk (android.api) ne' permessi extra ne' pin di versione dei
-      # requirements (incluso ffmpeg e mutagen) ne' p4a.source_dir - l'unico
+      # requirements (incluso ffmpeg) ne' p4a.source_dir - l'unico
       # modo e' patchare il suo file interno (vedi
       # android/patches/buildozer_py_config.patch, generato con "git diff"
       # contro il file pristine della stessa identica versione

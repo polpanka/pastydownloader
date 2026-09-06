@@ -63,7 +63,7 @@ a = Analysis(
     # bundla il modulo ma le funzioni core()/lib() al suo interno risultano
     # mancanti a runtime (AttributeError), mentre collect_submodules lo bundla
     # per intero e funziona
-    # secretstorage: come brotli/mutagen/ecc. sopra, importato dentro un
+    # secretstorage: come brotli/certifi/ecc. sopra, importato dentro un
     # try/except di yt_dlp (cookies.py, solo per leggere i cookie salvati da
     # browser Chromium via portachiavi di sistema - vedi build-appimage.sh),
     # quindi va dichiarato a mano o PyInstaller non lo
@@ -85,7 +85,7 @@ a = Analysis(
     # (degrada, non fa fallire l'import), ma serve per davvero al login con
     # cookie da browser (Tools.browserLoginConsentEnabled), quindi va
     # comunque dichiarato o quella feature fallirebbe in silenzio
-    hiddenimports=['brotli', 'certifi', 'optparse', 'collections', 'fileinput', 'functools', 'io', 'locale', 'operator', 'sqlite3', 'heapq', 'collections.abc', 'html.parser', 'xml.etree.ElementTree', 'mutagen', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', 'secretstorage', *collect_submodules('yt_dlp_ejs')],
+    hiddenimports=['brotli', 'certifi', 'optparse', 'collections', 'fileinput', 'functools', 'io', 'locale', 'operator', 'sqlite3', 'heapq', 'collections.abc', 'html.parser', 'xml.etree.ElementTree', 'Cryptodome', 'websockets', 'urllib3', 'curl_cffi', 'secretstorage', *collect_submodules('yt_dlp_ejs')],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

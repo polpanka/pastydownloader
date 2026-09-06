@@ -87,9 +87,6 @@ def _ytDlpDownloadWorker(packageDir, ffmpegPath, url, saveAs, referer, ejsDir, s
     # niente SponsorBlock/ModifyChapters: richiedono ffprobe (non distribuito con
     # l'app, e con ffmpeg_location impostato yt-dlp non lo cerca nel PATH) e il
     # loro errore faceva fallire l'intero download.
-    # EmbedThumbnail invece usa mutagen (imbarcato), non ffprobe: ok tenerlo.
-    ydlOpts['writethumbnail'] = True
-    postprocessors.append({'key': 'EmbedThumbnail'})
     ydlOpts['postprocessors'] = postprocessors
     if referer:
         ydlOpts['http_headers'] = {'Referer': referer}

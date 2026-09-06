@@ -24,8 +24,8 @@ Funzionalita':
 import os, sys, threading, multiprocessing
 
 try:
-    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel
-    from PySide6.QtCore import QSettings, QTimer, Signal, Qt, QObject, QEvent
+    from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
+    from PySide6.QtCore import QSettings, QTimer, QElapsedTimer, Signal, Qt, QObject, QEvent
     from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 except ImportError:
     # nessun toolkit grafico (OS troppo vecchio): serve un dialogo nativo del SO
@@ -90,19 +90,66 @@ except ImportError:
     pass
 
 
-# Conta i click su un widget di cui non possiamo fare subclass (il QLabel
-# interno di un QMessageBox): assegnare widget.mousePressEvent funziona solo
-# sui widget creati in Python, non su quelli restituiti da findChild - serve
-# un event filter.
-class _ClickCounter(QObject):
-    def __init__(self, parent, onClick):
-        super().__init__(parent)
-        self._onClick = onClick
+# QLabel che notifica ogni tap. Sottoclasse Python (non il QLabel C++ interno di
+# un QMessageBox, su cui ne' monkeypatch ne' event filter scattano su Android) e
+# WA_AcceptTouchEvents per ricevere i QTouchEvent quando Qt non sintetizza il
+# mouse. Usata per 10 taps
+class _TapLabel(QLabel):
+    _TAPS = (QEvent.MouseButtonPress, QEvent.TouchBegin)
 
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
-            self._onClick()
-        return False
+    def __init__(self, onTap, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._onTap = onTap
+        self._since = QElapsedTimer()
+        self.setAttribute(Qt.WA_AcceptTouchEvents, True)
+
+    def event(self, e):
+        # un tocco arriva come TouchBegin e/o come MouseButtonPress sintetizzato
+        # subito dopo: la finestra di 60ms evita il doppio conteggio
+        if e.type() in self._TAPS:
+            if not self._since.isValid() or self._since.elapsed() > 60:
+                self._onTap()
+            self._since.restart()
+        return super().event(e)
+
+
+# About: QDialog custom (non QMessageBox - i suoi widget interni non consegnano
+# i tap su Android). Lo sfondo lo dipinge paintEvent(): su Android ne'
+# setAutoFillBackground ne' lo stylesheet bastano per un QDialog "nudo".
+class _AboutDialog(QDialog):
+    def __init__(self, parent, iconPath, html, onTap):
+        super().__init__(parent)
+        self.setWindowTitle(MyText().actionAbout)
+
+        icon = _TapLabel(onTap)
+        icon.setPixmap(QIcon(iconPath).pixmap(64, 64))  # setPixmap: unico modo che rende un'immagine su Android
+        icon.setAlignment(Qt.AlignHCenter)
+
+        body = _TapLabel(onTap)
+        body.setText(html)
+        body.setTextFormat(Qt.RichText)
+        body.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        body.setOpenExternalLinks(True)
+        body.setWordWrap(True)
+        body.setAlignment(Qt.AlignHCenter)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+        buttons.accepted.connect(self.accept)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(icon)
+        layout.addWidget(body)
+        layout.addWidget(buttons)
+
+    def paintEvent(self, event):
+        # sfondo dipinto a mano (vedi commento sopra) + bordo: uno scostamento
+        # dal colore finestra per staccarsi dalla griglia sotto, in entrambi i temi
+        p = QPainter(self)
+        bg = self.palette().window().color()
+        bg = bg.darker(118) if bg.lightness() > 128 else bg.lighter(160)
+        p.fillRect(self.rect(), bg)
+        p.setPen(bg.darker(130))
+        p.drawRect(self.rect().adjusted(0, 0, -1, -1))
 
 
 # macOS: gli url httpasty:// arrivano come QFileOpenEvent al processo gia'
@@ -401,21 +448,8 @@ class Pasty(QMainWindow):
         QMessageBox.about(self, title, msg)
 
     def openAboutPopup(self):
-        # QMessageBox, non un QDialog custom: su Android un QDialog "nudo" (solo
-        # QLabel) non dipinge il proprio sfondo, QMessageBox si'. L'icona si
-        # vede su desktop; su Android non rende in nessun modo.
-        box = QMessageBox(self)
-        box.setWindowTitle(MyText().actionAbout)
-        box.setTextFormat(Qt.RichText)
-        box.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        box.setText('<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>')
-        box.setIconPixmap(QIcon(MyText().pasty_icon).pixmap(64, 64))
-        box.setStandardButtons(QMessageBox.Ok)
-        # widget.mousePressEvent non scatta su un QLabel restituito da findChild (non creato in Python).
-        label = box.findChild(QLabel, "qt_msgbox_label")
-        if label is not None:
-            label.installEventFilter(_ClickCounter(box, self.menu._trackDevelModeUnlock))
-        box.exec()
+        html = '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>'
+        _AboutDialog(self, MyText().pasty_icon, html, self.menu._trackDevelModeUnlock).exec()
 
     def checkDownloadFolder(self):
         path = Tools.downloadPath()

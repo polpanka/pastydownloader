@@ -98,10 +98,9 @@ PastyDownloader は、いくつかの素晴らしいオープンソースプロ�
 
 ---
 
-<p align="center">
-[GPLv3](../LICENSE) のもとでライセンスされています。名称・ロゴのポリシーについては
-[TRADEMARK.md](../TRADEMARK.md) を参照してください。
-</p>
+[GPLv3](../LICENSE) のもとでライセンスされています。名称・ロゴのポリシーについては [TRADEMARK.md](../TRADEMARK.md) を参照してください。
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

@@ -99,10 +99,9 @@ PastyDownloader стоит на плечах нескольких замечат
 
 ---
 
-<p align="center">
-Распространяется по лицензии [GPLv3](../LICENSE). Политику в отношении имени/логотипа
-см. в [TRADEMARK.md](../TRADEMARK.md).
-</p>
+Распространяется по лицензии [GPLv3](../LICENSE). Политику в отношении имени/логотипа см. в [TRADEMARK.md](../TRADEMARK.md).
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

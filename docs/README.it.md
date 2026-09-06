@@ -99,10 +99,9 @@ progetto e come compilarlo dai sorgenti.
 
 ---
 
-<p align="center">
-Distribuito con licenza [GPLv3](../LICENSE). Vedi [TRADEMARK.md](../TRADEMARK.md) per la
-politica su nome e logo.
-</p>
+Distribuito con licenza [GPLv3](../LICENSE). Vedi [TRADEMARK.md](../TRADEMARK.md) per la politica su nome e logo.
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

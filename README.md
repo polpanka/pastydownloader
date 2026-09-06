@@ -99,10 +99,9 @@ and how to build from source.
 
 ---
 
-<p align="center">
-Licensed under [GPLv3](LICENSE). See [TRADEMARK.md](TRADEMARK.md) for the
-name/logo policy.
-</p>
+Licensed under [GPLv3](LICENSE). See [TRADEMARK.md](TRADEMARK.md) for the name/logo policy.
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

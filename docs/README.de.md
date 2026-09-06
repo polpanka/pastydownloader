@@ -99,10 +99,9 @@ Projektumfang ist und wie man aus dem Quellcode baut.
 
 ---
 
-<p align="center">
-Lizenziert unter [GPLv3](../LICENSE). Siehe [TRADEMARK.md](../TRADEMARK.md) für die
-Namens- und Logo-Richtlinie.
-</p>
+Lizenziert unter [GPLv3](../LICENSE). Siehe [TRADEMARK.md](../TRADEMARK.md) für die Namens- und Logo-Richtlinie.
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

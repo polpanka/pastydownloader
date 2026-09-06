@@ -99,13 +99,13 @@ PastyDownloader تطبيق سريع ومباشر لجلب الفيديو وال�
 - **2023-04** - الإصدار 0.4: إضافة دعم تنزيل الملفات التي ليست فيديو
 - **2023-03** - الإصدار 0.3: أول إصدار، تكامل مع Pastylink
 
-</div>
+---
+
+مُرخَّص بموجب [GPLv3](../LICENSE). انظر [TRADEMARK.md](../TRADEMARK.md) لسياسة الاسم/الشعار.
 
 ---
 
-<p align="center">
-مُرخَّص بموجب [GPLv3](../LICENSE). انظر [TRADEMARK.md](../TRADEMARK.md) لسياسة الاسم/الشعار.
-</p>
+</div>
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

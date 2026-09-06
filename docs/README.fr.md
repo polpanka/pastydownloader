@@ -99,10 +99,9 @@ périmètre du projet et comment compiler depuis les sources.
 
 ---
 
-<p align="center">
-Sous licence [GPLv3](../LICENSE). Voir [TRADEMARK.md](../TRADEMARK.md) pour la politique
-concernant le nom et le logo.
-</p>
+Sous licence [GPLv3](../LICENSE). Voir [TRADEMARK.md](../TRADEMARK.md) pour la politique concernant le nom et le logo.
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

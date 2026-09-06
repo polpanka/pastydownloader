@@ -98,9 +98,9 @@ PastyDownloader 站在一些出色的开源项目的肩膀上。衷心感谢它�
 
 ---
 
-<p align="center">
 基于 [GPLv3](../LICENSE) 授权。名称/徽标政策见 [TRADEMARK.md](../TRADEMARK.md)。
-</p>
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

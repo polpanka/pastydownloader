@@ -98,10 +98,9 @@ PastyDownloader는 몇몇 훌륭한 오픈 소스 프로젝트의 어깨 위에 
 
 ---
 
-<p align="center">
-[GPLv3](../LICENSE)에 따라 라이선스가 부여됩니다. 이름/로고 정책은 [TRADEMARK.md](../TRADEMARK.md)를
-참고하세요.
-</p>
+[GPLv3](../LICENSE)에 따라 라이선스가 부여됩니다. 이름/로고 정책은 [TRADEMARK.md](../TRADEMARK.md)를 참고하세요.
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

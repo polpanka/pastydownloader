@@ -99,10 +99,9 @@ het project is en hoe je vanuit de broncode bouwt.
 
 ---
 
-<p align="center">
-Gelicentieerd onder [GPLv3](../LICENSE). Zie [TRADEMARK.md](../TRADEMARK.md) voor het
-naam-/logobeleid.
-</p>
+Gelicentieerd onder [GPLv3](../LICENSE). Zie [TRADEMARK.md](../TRADEMARK.md) voor het naam-/logobeleid.
+
+---
 
 <p align="center">
   <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>

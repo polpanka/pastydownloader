@@ -8,18 +8,26 @@
 <p align="center">Created by <b>Paolo Pancaldi</b></p>
 
 <p align="center">
+  <b>🇬🇧 English</b> ·
+  <a href="docs/README.it.md">🇮🇹 Italiano</a> ·
+  <a href="docs/README.fr.md">🇫🇷 Français</a> ·
+  <a href="docs/README.es.md">🇪🇸 Español</a> ·
+  <a href="docs/README.de.md">🇩🇪 Deutsch</a> ·
+  <a href="docs/README.zh.md">🇨🇳 简体中文</a> ·
+  <a href="docs/README.ja.md">🇯🇵 日本語</a> ·
+  <a href="docs/README.pt.md">🇵🇹 Português</a> ·
+  <a href="docs/README.ru.md">🇷🇺 Русский</a> ·
+  <a href="docs/README.ko.md">🇰🇷 한국어</a> ·
+  <a href="docs/README.nl.md">🇳🇱 Nederlands</a> ·
+  <a href="docs/README.ar.md">🇸🇦 العربية</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/polpanka/pastydownloader/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/polpanka/pastydownloader?include_prereleases&label=release"></a>
   <a href="https://github.com/polpanka/pastydownloader/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/polpanka/pastydownloader/total?label=downloads"></a>
   <a href="LICENSE"><img alt="License: GPLv3" src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-lightgrey">
   <a href="https://pasty.link"><img alt="Website" src="https://img.shields.io/badge/website-pasty.link-blue"></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>
-  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-macos.yml"><img alt="Build macOS" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-macos.yml/badge.svg"></a>
-  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-linux.yml"><img alt="Build Linux AppImage" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-linux.yml/badge.svg"></a>
-  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-android.yml"><img alt="Build Android APK" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-android.yml/badge.svg"></a>
 </p>
 
 <p align="center">
@@ -91,7 +99,16 @@ and how to build from source.
 
 ---
 
+<p align="center">
 Licensed under [GPLv3](LICENSE). See [TRADEMARK.md](TRADEMARK.md) for the
 name/logo policy.
+</p>
+
+<p align="center">
+  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml"><img alt="Build Windows" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-windows.yml/badge.svg"></a>
+  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-macos.yml"><img alt="Build macOS" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-macos.yml/badge.svg"></a>
+  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-linux.yml"><img alt="Build Linux AppImage" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-linux.yml/badge.svg"></a>
+  <a href="https://github.com/polpanka/pastydownloader/actions/workflows/build-android.yml"><img alt="Build Android APK" src="https://github.com/polpanka/pastydownloader/actions/workflows/build-android.yml/badge.svg"></a>
+</p>
 
 <p align="center">Built for <a href="https://pasty.link">pasty.link</a></p>

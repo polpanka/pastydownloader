@@ -55,7 +55,6 @@ Guidelines:
 - Never put internal engine names ("yt-dlp", "FFmpeg") in user-facing strings —
   reuse the existing generic messages.
 - Test on at least one desktop platform; note in the PR what you tested on.
-- Update `CHANGELOG.md` if the change is user-visible.
 
 By contributing you agree that your work is licensed under the project's
 [GPL-3.0](LICENSE). See [TRADEMARK.md](TRADEMARK.md) for the name and logo

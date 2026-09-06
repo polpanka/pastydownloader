@@ -51,7 +51,26 @@ PastyDownloader is een snelle, no-nonsense app om video en audio van het web te 
 
 ## 📥 Download
 
-Haal de nieuwste build voor jouw besturingssysteem op via de pagina [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Directe links naar de nieuwste release — elke link verwijst altijd naar de nieuwste build:
+
+| Systeem | Download |
+|---------|----------|
+| **Windows** — 10 (1809+), 64-bit | **[Installatieprogramma][dl-win-setup]** · [draagbare .zip][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+Op **Windows** kan SmartScreen "Uw pc wordt beschermd door Windows" tonen: klik op **Meer informatie → Toch uitvoeren**; voor de draagbare `.zip` eerst met de rechtermuisknop op het bestand klikken → **Eigenschappen → Blokkering opheffen → OK**. Op **macOS** is bij de eerste start Systeeminstellingen → Privacy en beveiliging → **Toch openen** nodig (de app is alleen ad-hoc ondertekend, niet genotariseerd door Apple). Op **Linux** maak je de AppImage uitvoerbaar (`chmod +x`) voordat je hem start.
+
+Oudere builds en release-opmerkingen staan op de [Releases](https://github.com/polpanka/pastydownloader/releases)-pagina.
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Vereisten
 

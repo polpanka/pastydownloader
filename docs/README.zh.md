@@ -51,7 +51,26 @@ PastyDownloader 是一款快速、直接的应用，用于从网络抓取视频�
 
 ## 📥 下载
 
-在 [Releases](https://github.com/polpanka/pastydownloader/releases/latest) 页面获取适用于你操作系统的最新版本。
+直接下载最新版本 — 每个链接始终指向最新的构建：
+
+| 系统 | 下载 |
+|------|------|
+| **Windows** — 10（1809+），64 位 | **[安装程序][dl-win-setup]** · [便携版 .zip][dl-win-zip] |
+| **macOS** — 11+，Apple 芯片 | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+，Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+（API 21），arm64 | [APK][dl-android] |
+
+在 **Windows** 上，SmartScreen 可能会显示“Windows 已保护你的电脑”：点击 **更多信息 → 仍要运行**；对于便携版 `.zip`，请先右键点击文件 → **属性 → 解除锁定 → 确定**。在 **macOS** 上，首次启动需要前往 系统设置 → 隐私与安全性 → **仍要打开**（该应用仅为 ad-hoc 签名，未经 Apple 公证）。在 **Linux** 上，运行前请先为 AppImage 添加可执行权限（`chmod +x`）。
+
+旧版本和发行说明请见 [Releases](https://github.com/polpanka/pastydownloader/releases) 页面。
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## 系统要求
 

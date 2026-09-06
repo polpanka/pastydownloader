@@ -51,7 +51,26 @@ PastyDownloader ist eine schnelle, unkomplizierte App, um Video und Audio aus de
 
 ## 📥 Download
 
-Hol dir den aktuellsten Build für dein Betriebssystem von der Seite [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Direkte Links zur neuesten Version — jeder zeigt immer auf den aktuellsten Build:
+
+| System | Download |
+|--------|----------|
+| **Windows** — 10 (1809+), 64-Bit | **[Installer][dl-win-setup]** · [portable .zip][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+Unter **Windows** zeigt SmartScreen eventuell „Der Computer wurde durch Windows geschützt“: auf **Weitere Informationen → Trotzdem ausführen** klicken; für die portable `.zip` zuerst mit Rechtsklick auf die Datei → **Eigenschaften → Zulassen → OK**. Unter **macOS** ist beim ersten Start Systemeinstellungen → Datenschutz & Sicherheit → **Trotzdem öffnen** nötig (die App ist nur ad-hoc signiert, nicht von Apple notarisiert). Unter **Linux** die AppImage vor dem Start ausführbar machen (`chmod +x`).
+
+Ältere Builds und Release-Notes gibt es auf der Seite [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Voraussetzungen
 

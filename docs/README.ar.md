@@ -53,7 +53,26 @@ PastyDownloader تطبيق سريع ومباشر لجلب الفيديو وال�
 
 ## 📥 التنزيل
 
-احصل على أحدث إصدار لنظام تشغيلك من صفحة [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+روابط مباشرة لأحدث إصدار — كل رابط يشير دائمًا إلى أحدث نسخة:
+
+| نظام التشغيل | التنزيل |
+|--------------|---------|
+| **Windows** — 10 (1809+)، 64 بت | **[المُثبّت][dl-win-setup]** · [نسخة محمولة .zip][dl-win-zip] |
+| **macOS** — 11+، Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+، Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21)، arm64 | [APK][dl-android] |
+
+على **Windows** قد يعرض SmartScreen رسالة «قام Windows بحماية جهاز الكمبيوتر الخاص بك»: انقر على **مزيد من المعلومات ← تشغيل على أي حال**؛ وبالنسبة إلى النسخة المحمولة `.zip`، انقر أولًا بزر الفأرة الأيمن على الملف ← **خصائص ← إلغاء الحظر ← موافق**. على **macOS** يتطلّب التشغيل الأول الذهاب إلى إعدادات النظام ← الخصوصية والأمان ← **فتح على أي حال** (التطبيق موقّع ad-hoc فقط وغير موثّق من Apple). على **Linux** اجعل ملف AppImage قابلًا للتنفيذ (`chmod +x`) قبل تشغيله.
+
+الإصدارات الأقدم وملاحظات الإصدار موجودة في صفحة [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## المتطلّبات
 

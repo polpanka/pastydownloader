@@ -51,7 +51,26 @@ PastyDownloader — это быстрое приложение без лишне
 
 ## 📥 Загрузка
 
-Возьмите последнюю сборку для вашей ОС на странице [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Прямые ссылки на последний выпуск — каждая всегда ведёт к самой свежей сборке:
+
+| ОС | Загрузка |
+|----|----------|
+| **Windows** — 10 (1809+), 64-бит | **[Установщик][dl-win-setup]** · [портативный .zip][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+В **Windows** SmartScreen может показать «Система Windows защитила ваш компьютер»: нажмите **Подробнее → Выполнить в любом случае**; для портативного `.zip` сначала щёлкните файл правой кнопкой → **Свойства → Разблокировать → OK**. В **macOS** при первом запуске нужно открыть Системные настройки → Конфиденциальность и безопасность → **Всё равно открыть** (приложение подписано только ad-hoc и не нотаризовано Apple). В **Linux** сделайте AppImage исполняемым (`chmod +x`) перед запуском.
+
+Старые сборки и примечания к выпускам — на странице [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Требования
 

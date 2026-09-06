@@ -51,7 +51,26 @@ PastyDownloader es una aplicación rápida y sin complicaciones para descargar v
 
 ## 📥 Descarga
 
-Consigue la última versión para tu sistema operativo en la página de [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Enlaces directos a la última versión: cada uno apunta siempre al build más reciente:
+
+| Sistema | Descarga |
+|---------|----------|
+| **Windows** — 10 (1809+), 64 bits | **[Instalador][dl-win-setup]** · [.zip portable][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+En **Windows**, SmartScreen puede mostrar «Windows protegió tu PC»: haz clic en **Más información → Ejecutar de todas formas**; para el `.zip` portable, primero haz clic derecho en el archivo → **Propiedades → Desbloquear → Aceptar**. En **macOS**, el primer inicio necesita Ajustes del Sistema → Privacidad y seguridad → **Abrir igualmente** (la app está firmada solo ad-hoc, sin notarizar). En **Linux**, haz que el AppImage sea ejecutable (`chmod +x`) antes de abrirlo.
+
+Las versiones anteriores y las notas de publicación están en la página [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Requisitos
 

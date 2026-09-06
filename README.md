@@ -19,15 +19,16 @@ PastyDownloader is a fast, no-nonsense app for grabbing video and audio from the
 
 ## ✨ Features
 
-- 📋 **Paste anything** — single links, multiple links at once, or a whole HLS playlist (`#EXTM3U`) pasted as raw text
-- 🎯 **Smart engine detection** — routes each link automatically to whatever handles it best: YouTube, TikTok, Instagram, Facebook, Vimeo, Dailymotion and more; direct streaming links (HLS/m3u8, raw video)
-- 📦 **Batch downloads** — queue as many links as you want, watch live progress per item, stop one or stop them all
-- 🎵 **Audio conversion** — convert to MP3 after download, keeping or discarding the source video
-- 🖱️ **Right-click power** — copy link, re-download, convert, stop, or remove, straight from the grid
-- ⚡ **Zero hassle** — everything it needs is fetched automatically on first run, no manual installs, no PATH wrangling; internal libraries keep themselves up to date in the background
-- 🌍 **Speaks your language** — detects your OS language on first launch (Deutsch, English, Español, Français, Italiano, Nederlands, Português, Русский, العربية, 日本語, 简体中文, 한국어)
-- 💻 **Cross-platform** — Windows, macOS, Linux (AppImage included), and Android, all from one PySide6 codebase (see below)
-- 🔗 **[pasty.link](https://pasty.link) integration** — send links straight from the website into the app with one click
+- 📋 **Paste anything** — a single link, dozens at once, or a whole HLS playlist (`#EXTM3U`) pasted as raw text
+- 🌐 **Hundreds of sites** — YouTube, Instagram, Facebook and hundreds more, each routed to whatever extracts it best
+- 📡 **Direct streams** — HLS/m3u8, DASH and live streams, downloaded straight from the source
+- 💬 **Automatic subtitles** — downloaded in the app's language when available
+- 🎵 **Audio extraction in 5 formats** — MP3, AAC/M4A, FLAC, WAV or Opus
+- 🔒 **Login-gated content** — can use your browser cookies to download what needs an account
+- 🌍 **Speaks your language** — Deutsch, English, Español, Français, Italiano, Nederlands, Português, Русский, العربية, 日本語, 简体中文, 한국어
+- 💻 **Cross-platform** — Windows, macOS, Linux (AppImage included), and Android, all from one codebase
+- 🔗 **Companion to [pasty.link](https://pasty.link)** — the same paste-a-link workflow as the website, on your desktop and phone
+- 🛡️ **Zero hassle** — no accounts, no ads, no tracking, no manual installs; one free app that does a single job
 
 ## 📥 Download
 

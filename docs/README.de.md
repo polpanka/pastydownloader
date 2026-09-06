@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ Hol dir den aktuellsten Build für dein Betriebssystem von der Seite [Releases](
 - **Windows** — Windows 10 (64-Bit, 1809 oder neuer) oder neuer
 - **macOS** — 11 (Big Sur) oder neuer (Apple Silicon und Intel)
 - **Linux** — eine Distribution mit glibc 2.28+ (z. B. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) oder neuer, arm64 (Details zum Build siehe [ANDROID.md](../ANDROID.md))
+- **Android** — 5.0 (Lollipop, API 21) oder neuer, arm64
 
 ## Warum PastyDownloader
 
@@ -68,7 +68,7 @@ Vollkommen sicher: kein Virus, keine Werbung, kein Nutzer-Tracking. Keine Konten
 
 PastyDownloader begann auf dem Desktop, und der Android-Build ist keine separate App — es ist dieselbe [PySide6](https://www.qt.io/qt-for-python)-Codebasis, für eine andere Plattform kompiliert. Echte yt-dlp-Downloads laufen auf dem Gerät, einschließlich echtem Zusammenführen von Audio und Video über ein nativ kompiliertes FFmpeg, kein abgespeckter Ersatz.
 
-Diese Kombination ist ungewöhnlich: Die meisten yt-dlp-Apps für Android sind native Neuentwicklungen, die keinen Code mit einer Desktop-Version teilen, und die Python-Ports, die eine vorhandene Oberfläche wiederverwenden, sind in der Regel nicht auf Qt aufgebaut. Eine vollständige PySide6-App auf Android zu bringen — Speicherzugriff, JNI-Brücken, ein Vordergrund-Download-Dienst, natives FFmpeg — erforderte anhaltende Arbeit, dokumentiert in [ANDROID.md](../ANDROID.md).
+Diese Kombination ist ungewöhnlich: Die meisten yt-dlp-Apps für Android sind native Neuentwicklungen, die keinen Code mit einer Desktop-Version teilen, und die Python-Ports, die eine vorhandene Oberfläche wiederverwenden, sind in der Regel nicht auf Qt aufgebaut. Eine vollständige PySide6-App auf Android zu bringen — Speicherzugriff, JNI-Brücken, ein Vordergrund-Download-Dienst, natives FFmpeg — erforderte anhaltende Arbeit.
 
 ## 🙏 Danksagungen
 

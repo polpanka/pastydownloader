@@ -87,8 +87,7 @@ workflows under `.github/workflows/` (each runs from `src/`).
 
 The Android build is the same code, cross-compiled. It has its own toolchain
 requirements (a Python 3.11 host, `python-for-android`, native FFmpeg) and a
-number of platform quirks. The full process is documented in
-[ANDROID.md](ANDROID.md).
+number of platform quirks.
 
 ## AI contribution policy
 

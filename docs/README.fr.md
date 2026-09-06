@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ Récupérez la dernière version pour votre système d'exploitation sur la page 
 - **Windows** — Windows 10 (64 bits, 1809 ou ultérieur) ou plus récent
 - **macOS** — 11 (Big Sur) ou plus récent (Apple Silicon et Intel)
 - **Linux** — une distribution avec glibc 2.28+ (par ex. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) ou plus récent, arm64 (voir [ANDROID.md](../ANDROID.md) pour les détails de compilation)
+- **Android** — 5.0 (Lollipop, API 21) ou plus récent, arm64
 
 ## Pourquoi PastyDownloader
 
@@ -68,7 +68,7 @@ Totalement sûr : pas de virus, pas de publicité, aucun pistage des utilisateur
 
 PastyDownloader a commencé sur le bureau, et la version Android n'est pas une application distincte : c'est la même base de code [PySide6](https://www.qt.io/qt-for-python), compilée pour une autre plateforme. De véritables téléchargements yt-dlp s'exécutent sur l'appareil, y compris la fusion réelle de l'audio et de la vidéo grâce à un FFmpeg compilé nativement, et non un substitut allégé.
 
-Cette combinaison est inhabituelle : la plupart des applis yt-dlp pour Android sont des réécritures natives qui ne partagent aucun code avec une version de bureau, et les portages Python qui réutilisent une interface existante ne sont généralement pas construits sur Qt. Amener une application PySide6 complète sur Android — accès au stockage, ponts JNI, service de téléchargement au premier plan, FFmpeg natif — a demandé un effort soutenu, documenté dans [ANDROID.md](../ANDROID.md).
+Cette combinaison est inhabituelle : la plupart des applis yt-dlp pour Android sont des réécritures natives qui ne partagent aucun code avec une version de bureau, et les portages Python qui réutilisent une interface existante ne sont généralement pas construits sur Qt. Amener une application PySide6 complète sur Android — accès au stockage, ponts JNI, service de téléchargement au premier plan, FFmpeg natif — a demandé un effort soutenu.
 
 ## 🙏 Remerciements
 

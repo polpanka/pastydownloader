@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ Baixe a versão mais recente para o seu sistema operacional na página de [Relea
 - **Windows** — Windows 10 (64 bits, 1809 ou posterior) ou mais recente
 - **macOS** — 11 (Big Sur) ou mais recente (Apple Silicon e Intel)
 - **Linux** — uma distribuição com glibc 2.28+ (ex.: Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) ou mais recente, arm64 (consulte [ANDROID.md](../ANDROID.md) para detalhes de compilação)
+- **Android** — 5.0 (Lollipop, API 21) ou mais recente, arm64
 
 ## Por que o PastyDownloader
 
@@ -68,7 +68,7 @@ Totalmente seguro: sem vírus, sem anúncios, sem rastreamento de usuários. Sem
 
 O PastyDownloader começou no desktop, e a versão Android não é um aplicativo separado — é o mesmo código-fonte [PySide6](https://www.qt.io/qt-for-python), compilado para outra plataforma. Downloads reais do yt-dlp são executados no dispositivo, incluindo a junção real de áudio e vídeo por meio de um FFmpeg compilado nativamente, e não um substituto reduzido.
 
-Essa combinação é incomum: a maioria dos aplicativos de yt-dlp para Android são reescritas nativas que não compartilham código com nenhuma versão de desktop, e os ports em Python que reaproveitam uma interface existente geralmente não são construídos sobre Qt. Levar um aplicativo PySide6 completo para o Android — acesso ao armazenamento, pontes JNI, um serviço de download em primeiro plano, FFmpeg nativo — exigiu um esforço prolongado, documentado em [ANDROID.md](../ANDROID.md).
+Essa combinação é incomum: a maioria dos aplicativos de yt-dlp para Android são reescritas nativas que não compartilham código com nenhuma versão de desktop, e os ports em Python que reaproveitam uma interface existente geralmente não são construídos sobre Qt. Levar um aplicativo PySide6 completo para o Android — acesso ao armazenamento, pontes JNI, um serviço de download em primeiro plano, FFmpeg nativo — exigiu um esforço prolongado.
 
 ## 🙏 Agradecimentos
 

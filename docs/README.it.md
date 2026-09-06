@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ Scarica l'ultima build per il tuo sistema operativo dalla pagina [Releases](http
 - **Windows** — Windows 10 (64 bit, 1809 o successivo) o versioni successive
 - **macOS** — 11 (Big Sur) o successivo (Apple Silicon e Intel)
 - **Linux** — una distribuzione con glibc 2.28+ (es. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) o successivo, arm64 (vedi [ANDROID.md](../ANDROID.md) per i dettagli di compilazione)
+- **Android** — 5.0 (Lollipop, API 21) o successivo, arm64
 
 ## Perché PastyDownloader
 
@@ -68,7 +68,7 @@ Completamente sicuro: nessun virus, nessuna pubblicità, nessun tracciamento deg
 
 PastyDownloader è nato sul desktop e la build Android non è un'app separata: è lo stesso codice [PySide6](https://www.qt.io/qt-for-python), compilato per un'altra piattaforma. I download avvengono davvero sul dispositivo, inclusa l'unione reale di audio e video tramite un FFmpeg compilato nativamente, non un surrogato ridotto all'osso.
 
-Questa combinazione è insolita: la maggior parte delle app basate su yt-dlp per Android sono riscritture native che non condividono codice con alcuna versione desktop, e i port in Python che riutilizzano un'interfaccia esistente di solito non sono costruiti su Qt. Portare un'app PySide6 completa su Android — accesso allo storage, ponti JNI, un servizio di download in primo piano, FFmpeg nativo — ha richiesto un lavoro prolungato, documentato in [ANDROID.md](../ANDROID.md).
+Questa combinazione è insolita: la maggior parte delle app basate su yt-dlp per Android sono riscritture native che non condividono codice con alcuna versione desktop, e i port in Python che riutilizzano un'interfaccia esistente di solito non sono costruiti su Qt. Portare un'app PySide6 completa su Android — accesso allo storage, ponti JNI, un servizio di download in primo piano, FFmpeg nativo — ha richiesto un lavoro prolungato.
 
 ## 🙏 Ringraziamenti
 

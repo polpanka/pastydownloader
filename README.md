@@ -58,7 +58,7 @@ Grab the latest build for your OS from the [Releases](https://github.com/polpank
 - **Windows** — Windows 10 (64-bit, 1809 or later) or later
 - **macOS** — 11 (Big Sur) or later (Apple Silicon and Intel)
 - **Linux** — a distro with glibc 2.28+ (e.g. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) or later, arm64 (see [ANDROID.md](ANDROID.md) for build details)
+- **Android** — 5.0 (Lollipop, API 21) or later, arm64
 
 ## Why PastyDownloader
 
@@ -68,7 +68,7 @@ Completely safe: no virus, no ads, no user tracking. No accounts, no browser ext
 
 PastyDownloader started on the desktop, and the Android build is not a separate app — it is the same [PySide6](https://www.qt.io/qt-for-python) codebase, cross-compiled. Real yt-dlp downloads run on-device, including genuine audio+video merging through a natively-compiled FFmpeg, not a stripped-down substitute.
 
-That combination is unusual: most yt-dlp apps for Android are native rewrites that share no code with any desktop version, and the Python ports that do reuse an existing UI generally aren't built on Qt. Bringing a full PySide6 app to Android — storage access, JNI bridges, a foreground download service, native FFmpeg — took a sustained effort documented in [ANDROID.md](ANDROID.md).
+That combination is unusual: most yt-dlp apps for Android are native rewrites that share no code with any desktop version, and the Python ports that do reuse an existing UI generally aren't built on Qt. Bringing a full PySide6 app to Android — storage access, JNI bridges, a foreground download service, native FFmpeg — took a sustained effort.
 
 ## 🙏 Acknowledgements
 

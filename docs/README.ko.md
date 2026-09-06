@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ PastyDownloader는 웹에서 영상과 오디오를 가져오는 빠르고 군�
 - **Windows** — Windows 10(64비트, 1809 이상) 이상
 - **macOS** — 11(Big Sur) 이상 (Apple Silicon 및 Intel)
 - **Linux** — glibc 2.28+ 배포판 (예: Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0(Lollipop, API 21) 이상, arm64 (빌드 세부 정보는 [ANDROID.md](../ANDROID.md) 참고)
+- **Android** — 5.0(Lollipop, API 21) 이상, arm64
 
 ## 왜 PastyDownloader인가
 
@@ -68,7 +68,7 @@ PastyDownloader는 웹에서 영상과 오디오를 가져오는 빠르고 군�
 
 PastyDownloader는 데스크톱에서 시작했으며, Android 빌드는 별도의 앱이 아니라 동일한 [PySide6](https://www.qt.io/qt-for-python) 코드베이스를 크로스 컴파일한 것입니다. 실제 yt-dlp 다운로드가 기기에서 실행되며, 네이티브로 컴파일된 FFmpeg를 통한 진짜 오디오·영상 병합도 포함됩니다. 축소된 대체물이 아닙니다.
 
-이런 조합은 드뭅니다. Android용 yt-dlp 앱 대부분은 어떤 데스크톱 버전과도 코드를 공유하지 않는 네이티브 재작성이며, 기존 UI를 재사용하는 Python 포팅도 대개 Qt 위에 만들어지지 않습니다. 완전한 PySide6 앱을 Android로 가져오는 일 — 저장소 접근, JNI 브리지, 포그라운드 다운로드 서비스, 네이티브 FFmpeg — 에는 [ANDROID.md](../ANDROID.md)에 기록된 지속적인 노력이 필요했습니다.
+이런 조합은 드뭅니다. Android용 yt-dlp 앱 대부분은 어떤 데스크톱 버전과도 코드를 공유하지 않는 네이티브 재작성이며, 기존 UI를 재사용하는 Python 포팅도 대개 Qt 위에 만들어지지 않습니다. 완전한 PySide6 앱을 Android로 가져오는 일 — 저장소 접근, JNI 브리지, 포그라운드 다운로드 서비스, 네이티브 FFmpeg — 에는 지속적인 노력이 필요했습니다.
 
 ## 🙏 감사의 말
 

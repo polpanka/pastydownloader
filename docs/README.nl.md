@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ Haal de nieuwste build voor jouw besturingssysteem op via de pagina [Releases](h
 - **Windows** — Windows 10 (64-bits, 1809 of later) of nieuwer
 - **macOS** — 11 (Big Sur) of nieuwer (Apple Silicon en Intel)
 - **Linux** — een distributie met glibc 2.28+ (bijv. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) of nieuwer, arm64 (zie [ANDROID.md](../ANDROID.md) voor bouwdetails)
+- **Android** — 5.0 (Lollipop, API 21) of nieuwer, arm64
 
 ## Waarom PastyDownloader
 
@@ -68,7 +68,7 @@ Volkomen veilig: geen virus, geen advertenties, geen gebruikers-tracking. Geen a
 
 PastyDownloader begon op de desktop, en de Android-build is geen aparte app — het is dezelfde [PySide6](https://www.qt.io/qt-for-python)-codebasis, gecompileerd voor een ander platform. Echte yt-dlp-downloads draaien op het toestel zelf, inclusief het echt samenvoegen van audio en video via een natief gecompileerde FFmpeg, geen uitgeklede vervanger.
 
-Die combinatie is ongebruikelijk: de meeste yt-dlp-apps voor Android zijn natieve herschrijvingen die geen code delen met enige desktopversie, en de Python-ports die een bestaande UI hergebruiken zijn doorgaans niet op Qt gebouwd. Een volledige PySide6-app naar Android brengen — opslagtoegang, JNI-bruggen, een voorgronddownloadservice, natieve FFmpeg — vergde een volgehouden inspanning, gedocumenteerd in [ANDROID.md](../ANDROID.md).
+Die combinatie is ongebruikelijk: de meeste yt-dlp-apps voor Android zijn natieve herschrijvingen die geen code delen met enige desktopversie, en de Python-ports die een bestaande UI hergebruiken zijn doorgaans niet op Qt gebouwd. Een volledige PySide6-app naar Android brengen — opslagtoegang, JNI-bruggen, een voorgronddownloadservice, natieve FFmpeg — vergde een volgehouden inspanning.
 
 ## 🙏 Met dank aan
 

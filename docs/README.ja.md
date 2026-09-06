@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ PastyDownloader は、ウェブから動画や音声を取得するための、�
 - **Windows** — Windows 10（64 ビット、1809 以降）以降
 - **macOS** — 11（Big Sur）以降（Apple Silicon および Intel）
 - **Linux** — glibc 2.28 以上のディストリビューション（例: Ubuntu 20.04+、Debian 11+、Fedora 29+、RHEL 8+）
-- **Android** — 5.0（Lollipop、API 21）以降、arm64（ビルドの詳細は [ANDROID.md](../ANDROID.md) を参照）
+- **Android** — 5.0（Lollipop、API 21）以降、arm64
 
 ## なぜ PastyDownloader か
 
@@ -68,7 +68,7 @@ PastyDownloader は、ウェブから動画や音声を取得するための、�
 
 PastyDownloader はデスクトップから始まりました。Android ビルドは別のアプリではなく、同じ [PySide6](https://www.qt.io/qt-for-python) のコードベースをクロスコンパイルしたものです。本物の yt-dlp によるダウンロードが端末上で実行され、ネイティブにコンパイルされた FFmpeg による本物の音声・映像の結合も行われます。簡略化された代替物ではありません。
 
-この組み合わせは珍しいものです。Android 向けのほとんどの yt-dlp アプリは、どのデスクトップ版ともコードを共有しないネイティブの書き直しであり、既存の UI を再利用する Python の移植版も、たいてい Qt の上には構築されていません。完全な PySide6 アプリを Android へ — ストレージアクセス、JNI ブリッジ、フォアグラウンドのダウンロードサービス、ネイティブ FFmpeg — 持ち込むには、[ANDROID.md](../ANDROID.md) に記録された継続的な取り組みが必要でした。
+この組み合わせは珍しいものです。Android 向けのほとんどの yt-dlp アプリは、どのデスクトップ版ともコードを共有しないネイティブの書き直しであり、既存の UI を再利用する Python の移植版も、たいてい Qt の上には構築されていません。完全な PySide6 アプリを Android へ — ストレージアクセス、JNI ブリッジ、フォアグラウンドのダウンロードサービス、ネイティブ FFmpeg — 持ち込むには、継続的な取り組みが必要でした。
 
 ## 🙏 謝辞
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>

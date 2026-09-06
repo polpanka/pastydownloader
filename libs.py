@@ -745,14 +745,20 @@ class Tools():
         except Exception:
             return False
 
+    # netloc dell'url (host + eventuale porta/credenziali): e' la chiave con cui
+    # si cercano i referer in referer.json e si costruisce il prefisso del nome
+    # file - NON cambiarne il formato. Per una semplice etichetta da mostrare
+    # all'utente usare displayDomain().
     @staticmethod
     def getHostFromUrl(url):
         parsed_uri = urlparse(url)
         return parsed_uri.netloc
 
-    # Dominio da mostrare durante il download (es. "youtube.com"): decodifica i
-    # pastylink; per una playlist #EXTM3U incollata come testo prova il primo
-    # URL assoluto al suo interno. None se non c'e' un host da mostrare.
+    # Host da mostrare nella barra di stato durante il download (es.
+    # "youtube.com"): decodifica i pastylink e, per una playlist #EXTM3U
+    # incollata come testo, usa il primo URL assoluto al suo interno.
+    # Distinta da getHostFromUrl() apposta: qui niente porta/credenziali e via
+    # un eventuale "www." iniziale, serve solo un'etichetta leggibile.
     @classmethod
     def displayDomain(cls, rawUrl):
         raw = (rawUrl or '').strip()
@@ -764,11 +770,14 @@ class Tools():
             candidates = [raw]
         for candidate in candidates:
             try:
-                host = (urlparse(candidate).hostname or '').lower()
+                host = urlparse(candidate).hostname  # gia' minuscolo, senza porta; None se assente
             except ValueError:
-                host = ''
+                host = None
             if host:
-                return host[4:] if host.startswith('www.') else host
+                # toglie SOLO un "www." iniziale (rumore); ogni altro sottodominio
+                # (chromewebstore.google.com) o dominio multi-livello
+                # (dailymail.co.uk, nhk.or.jp) resta intatto
+                return host[len('www.'):] if host.startswith('www.') else host
         return None
 
     @classmethod

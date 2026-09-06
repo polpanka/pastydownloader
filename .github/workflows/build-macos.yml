@@ -67,7 +67,7 @@ jobs:
         # avvio reale su un Mac macOS 11-13 dopo aver aggiornato questo pin.
         run: |
           python3 -m pip install --upgrade pip
-          pip install PySide6==6.7.3 aiofiles aiohttp psutil requests pyinstaller brotli certifi mutagen pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi
+          pip install PySide6==6.7.3 aiofiles aiohttp psutil requests pyinstaller brotli certifi pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi
           # quickjs-ng (motore JS embedded per risolvere le sfide di YouTube
           # senza un runtime esterno, vedi Tools._registerEmbeddedQuickJsProvider
           # in libs.py): pubblica un wheel precompilato solo per macOS

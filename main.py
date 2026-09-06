@@ -26,7 +26,7 @@ import os, sys, threading, multiprocessing
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
     from PySide6.QtCore import QSettings, QTimer, QElapsedTimer, Signal, Qt, QObject, QEvent
-    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
+    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor, QPalette
 except ImportError:
     # nessun toolkit grafico (OS troppo vecchio): serve un dialogo nativo del SO
     _startup_error_msg = (
@@ -132,6 +132,10 @@ class _AboutDialog(QDialog):
         body.setOpenExternalLinks(True)
         body.setWordWrap(True)
         body.setAlignment(Qt.AlignHCenter)
+        dark = self.palette().window().color().lightness() <= 128
+        pal = body.palette()
+        pal.setColor(QPalette.Link, QColor('#8ab4f8' if dark else '#1a56db'))
+        body.setPalette(pal)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok)
         buttons.accepted.connect(self.accept)

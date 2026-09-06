@@ -6,6 +6,10 @@ PastyDownloader - Pastylink App
 Author: Paolo Pancaldi
 Website: pasty.link
 
+Copyright (C) 2026 Paolo Pancaldi
+This program is free software under the GNU General Public License v3 or later.
+It comes with ABSOLUTELY NO WARRANTY. See the LICENSE file for details.
+
 Funzionalita':
 - Incolla dagli appunti:
    . URL (anche multipli)

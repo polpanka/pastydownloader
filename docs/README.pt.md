@@ -51,7 +51,26 @@ O PastyDownloader é um aplicativo rápido e sem complicações para baixar víd
 
 ## 📥 Download
 
-Baixe a versão mais recente para o seu sistema operacional na página de [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Links diretos para a versão mais recente — cada um sempre aponta para o build mais novo:
+
+| Sistema | Download |
+|---------|---------|
+| **Windows** — 10 (1809+), 64 bits | **[Instalador][dl-win-setup]** · [.zip portátil][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+No **Windows**, o SmartScreen pode mostrar "O Windows protegeu o computador": clique em **Mais informações → Executar assim mesmo**; para o `.zip` portátil, primeiro clique com o botão direito no arquivo → **Propriedades → Desbloquear → OK**. No **macOS**, a primeira execução precisa de Configurações do Sistema → Privacidade e Segurança → **Abrir Assim Mesmo** (o app é assinado apenas ad-hoc, sem notarização da Apple). No **Linux**, torne o AppImage executável (`chmod +x`) antes de abri-lo.
+
+Builds antigos e notas de versão estão na página [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Requisitos
 

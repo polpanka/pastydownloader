@@ -51,7 +51,26 @@ PastyDownloader è un'app veloce e senza fronzoli per scaricare video e audio da
 
 ## 📥 Download
 
-Scarica l'ultima build per il tuo sistema operativo dalla pagina [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Link diretti all'ultima release — ognuno punta sempre alla build più recente:
+
+| Sistema | Download |
+|---------|---------|
+| **Windows** — 10 (1809+), 64-bit | **[Installer][dl-win-setup]** · [.zip portable][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+Su **Windows** SmartScreen potrebbe mostrare "Windows ha protetto il PC": clicca su **Ulteriori informazioni → Esegui comunque**; per lo `.zip` portable, prima tasto destro sul file → **Proprietà → Annulla blocco → OK**. Su **macOS** al primo avvio serve Impostazioni di Sistema → Privacy e sicurezza → **Apri comunque** (l'app è firmata solo ad-hoc, non autenticata da Apple). Su **Linux** rendi eseguibile l'AppImage (`chmod +x`) prima di lanciarla.
+
+Le build più vecchie e le note di rilascio sono nella pagina [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Requisiti
 

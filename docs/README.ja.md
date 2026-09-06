@@ -51,7 +51,26 @@ PastyDownloader は、ウェブから動画や音声を取得するための、�
 
 ## 📥 ダウンロード
 
-お使いの OS 向けの最新ビルドを [Releases](https://github.com/polpanka/pastydownloader/releases/latest) ページから入手してください。
+最新リリースへの直接リンク — いずれも常に最新のビルドを指します：
+
+| OS | ダウンロード |
+|----|------------|
+| **Windows** — 10（1809 以降）、64 ビット | **[インストーラー][dl-win-setup]** · [ポータブル版 .zip][dl-win-zip] |
+| **macOS** — 11 以降、Apple シリコン | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11 以降、Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0 以降（API 21）、arm64 | [APK][dl-android] |
+
+**Windows** では SmartScreen が「Windows によって PC が保護されました」と表示することがあります。**詳細情報 → 実行** をクリックしてください。ポータブル版 `.zip` の場合は、先にファイルを右クリック → **プロパティ → 許可する → OK**。**macOS** では初回起動時に システム設定 → プライバシーとセキュリティ → **このまま開く** が必要です（このアプリは ad-hoc 署名のみで、Apple の公証は受けていません）。**Linux** では起動前に AppImage に実行権限を付与してください（`chmod +x`）。
+
+以前のビルドとリリースノートは [Releases](https://github.com/polpanka/pastydownloader/releases) ページにあります。
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## 動作要件
 

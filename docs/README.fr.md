@@ -51,7 +51,26 @@ PastyDownloader est une application rapide et sans fioritures pour récupérer d
 
 ## 📥 Téléchargement
 
-Récupérez la dernière version pour votre système d'exploitation sur la page [Releases](https://github.com/polpanka/pastydownloader/releases/latest).
+Liens directs vers la dernière version — chacun pointe toujours vers le build le plus récent :
+
+| Système | Téléchargement |
+|---------|----------------|
+| **Windows** — 10 (1809+), 64 bits | **[Installateur][dl-win-setup]** · [.zip portable][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+Sous **Windows**, SmartScreen peut afficher « Windows a protégé votre ordinateur » : cliquez sur **Informations complémentaires → Exécuter quand même** ; pour le `.zip` portable, faites d'abord un clic droit sur le fichier → **Propriétés → Débloquer → OK**. Sous **macOS**, le premier lancement nécessite Réglages Système → Confidentialité et sécurité → **Ouvrir quand même** (l'app est signée ad-hoc, pas notarisée). Sous **Linux**, rendez l'AppImage exécutable (`chmod +x`) avant de la lancer.
+
+Les anciens builds et les notes de version sont sur la page [Releases](https://github.com/polpanka/pastydownloader/releases).
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Prérequis
 

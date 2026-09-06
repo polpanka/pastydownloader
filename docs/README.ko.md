@@ -51,7 +51,26 @@ PastyDownloader는 웹에서 영상과 오디오를 가져오는 빠르고 군�
 
 ## 📥 다운로드
 
-[Releases](https://github.com/polpanka/pastydownloader/releases/latest) 페이지에서 사용 중인 운영체제용 최신 빌드를 받으세요.
+최신 릴리스 직접 다운로드 링크 — 각 링크는 항상 최신 빌드를 가리킵니다:
+
+| 운영체제 | 다운로드 |
+|----------|---------|
+| **Windows** — 10(1809+), 64비트 | **[설치 프로그램][dl-win-setup]** · [포터블 .zip][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+(API 21), arm64 | [APK][dl-android] |
+
+**Windows**에서는 SmartScreen이 "Windows의 PC 보호"를 표시할 수 있습니다. **추가 정보 → 실행**을 클릭하세요. 포터블 `.zip`의 경우 먼저 파일을 마우스 오른쪽 버튼으로 클릭 → **속성 → 차단 해제 → 확인**. **macOS**에서는 첫 실행 시 시스템 설정 → 개인정보 보호 및 보안 → **그래도 열기**가 필요합니다(이 앱은 ad-hoc 서명만 되어 있으며 Apple 공증을 받지 않았습니다). **Linux**에서는 실행 전에 AppImage에 실행 권한을 부여하세요(`chmod +x`).
+
+이전 빌드와 릴리스 노트는 [Releases](https://github.com/polpanka/pastydownloader/releases) 페이지에 있습니다.
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## 요구 사항
 

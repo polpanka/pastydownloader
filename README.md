@@ -51,7 +51,26 @@ PastyDownloader is a fast, no-nonsense app for grabbing video and audio from the
 
 ## 📥 Download
 
-Grab the latest build for your OS from the [Releases](https://github.com/polpanka/pastydownloader/releases/latest) page.
+Direct links to the latest release — each one always resolves to the newest build:
+
+| OS | Download |
+|----|----------|
+| **Windows** — 10 (1809+), 64-bit | **[Installer][dl-win-setup]** · [portable .zip][dl-win-zip] |
+| **macOS** — 11+, Apple Silicon | [PastyDownloader.app (.zip)][dl-mac-arm] |
+| **macOS** — 11+, Intel | [PastyDownloader.app (.zip)][dl-mac-x64] |
+| **Linux** — glibc 2.28+ | [AppImage][dl-linux] |
+| **Android** — 5.0+ (API 21), arm64 | [APK][dl-android] |
+
+On **Windows**, SmartScreen may show "Windows protected your PC" — click **More info → Run anyway**; for the portable `.zip`, right-click it first → **Properties → Unblock → OK**. On **macOS**, the first launch needs System Settings → Privacy & Security → **Open Anyway** (the app is ad-hoc signed, not notarized). On **Linux**, make the AppImage executable (`chmod +x`) before running it.
+
+Older builds and release notes are on the [Releases](https://github.com/polpanka/pastydownloader/releases) page.
+
+[dl-win-setup]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-Setup.exe
+[dl-win-zip]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader.exe.zip
+[dl-mac-arm]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-arm64.app.zip
+[dl-mac-x64]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-macos-x86_64.app.zip
+[dl-linux]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-x86_64.AppImage
+[dl-android]: https://github.com/polpanka/pastydownloader/releases/latest/download/PastyDownloader-android-arm64-v8a-debug.apk
 
 ## Requirements
 

@@ -452,7 +452,9 @@ class Pasty(QMainWindow):
         QMessageBox.about(self, title, msg)
 
     def openAboutPopup(self):
-        html = '<b>Pastylink</b><br><br>' + (MyText().aboutVersion % self.VERSION) + '<br>' + MyText().aboutWebsite + '<br>'
+        html = ('<b>%s</b><br>by %s<br><br>%s<br>%s<br>'
+                % (MyText().appName, MyText().orgName,
+                   MyText().aboutVersion % self.VERSION, MyText().aboutWebsite))
         _AboutDialog(self, MyText().pasty_icon, html, self.menu._trackDevelModeUnlock).exec()
 
     def checkDownloadFolder(self):

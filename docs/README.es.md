@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ Consigue la última versión para tu sistema operativo en la página de [Release
 - **Windows** — Windows 10 (64 bits, 1809 o posterior) o superior
 - **macOS** — 11 (Big Sur) o posterior (Apple Silicon e Intel)
 - **Linux** — una distribución con glibc 2.28+ (p. ej. Ubuntu 20.04+, Debian 11+, Fedora 29+, RHEL 8+)
-- **Android** — 5.0 (Lollipop, API 21) o posterior, arm64 (consulta [ANDROID.md](../ANDROID.md) para los detalles de compilación)
+- **Android** — 5.0 (Lollipop, API 21) o posterior, arm64
 
 ## Por qué PastyDownloader
 
@@ -68,7 +68,7 @@ Completamente seguro: sin virus, sin anuncios, sin seguimiento de usuarios. Sin 
 
 PastyDownloader empezó en el escritorio, y la versión de Android no es una app aparte: es el mismo código [PySide6](https://www.qt.io/qt-for-python), compilado para otra plataforma. Se ejecutan descargas reales de yt-dlp en el dispositivo, incluida la fusión real de audio y vídeo mediante un FFmpeg compilado de forma nativa, no un sustituto recortado.
 
-Esa combinación es poco habitual: la mayoría de las apps de yt-dlp para Android son reescrituras nativas que no comparten código con ninguna versión de escritorio, y los ports de Python que reutilizan una interfaz existente normalmente no están construidos sobre Qt. Llevar una app PySide6 completa a Android — acceso al almacenamiento, puentes JNI, un servicio de descarga en primer plano, FFmpeg nativo — requirió un esfuerzo sostenido, documentado en [ANDROID.md](../ANDROID.md).
+Esa combinación es poco habitual: la mayoría de las apps de yt-dlp para Android son reescrituras nativas que no comparten código con ninguna versión de escritorio, y los ports de Python que reutilizan una interfaz existente normalmente no están construidos sobre Qt. Llevar una app PySide6 completa a Android — acceso al almacenamiento, puentes JNI, un servicio de descarga en primer plano, FFmpeg nativo — requirió un esfuerzo sostenido.
 
 ## 🙏 Agradecimientos
 

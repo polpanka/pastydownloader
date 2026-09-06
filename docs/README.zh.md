@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -58,7 +58,7 @@ PastyDownloader 是一款快速、直接的应用，用于从网络抓取视频�
 - **Windows** — Windows 10（64 位，1809 或更高）或更新版本
 - **macOS** — 11（Big Sur）或更新版本（Apple Silicon 和 Intel）
 - **Linux** — 带 glibc 2.28+ 的发行版（例如 Ubuntu 20.04+、Debian 11+、Fedora 29+、RHEL 8+）
-- **Android** — 5.0（Lollipop，API 21）或更新版本，arm64（构建细节见 [ANDROID.md](../ANDROID.md)）
+- **Android** — 5.0（Lollipop，API 21）或更新版本，arm64
 
 ## 为什么选择 PastyDownloader
 
@@ -68,7 +68,7 @@ PastyDownloader 是一款快速、直接的应用，用于从网络抓取视频�
 
 PastyDownloader 起步于桌面端，而 Android 版本并不是一个独立的应用——它是同一套 [PySide6](https://www.qt.io/qt-for-python) 代码，交叉编译而来。真正的 yt-dlp 下载在设备上运行，包括通过原生编译的 FFmpeg 进行真正的音视频合并，而不是一个精简的替代品。
 
-这种组合并不常见：大多数 Android 上的 yt-dlp 应用是不与任何桌面版本共享代码的原生重写，而那些复用现有界面的 Python 移植通常不是基于 Qt 构建的。把一个完整的 PySide6 应用带到 Android——存储访问、JNI 桥接、前台下载服务、原生 FFmpeg——需要持续的努力，记录在 [ANDROID.md](../ANDROID.md) 中。
+这种组合并不常见：大多数 Android 上的 yt-dlp 应用是不与任何桌面版本共享代码的原生重写，而那些复用现有界面的 Python 移植通常不是基于 Qt 构建的。把一个完整的 PySide6 应用带到 Android——存储访问、JNI 桥接、前台下载服务、原生 FFmpeg——需要持续的努力。
 
 ## 🙏 致谢
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../resources/paste512.png" width="120" alt="PastyDownloader logo">
+  <img src="../src/resources/paste512.png" width="120" alt="PastyDownloader logo">
 </p>
 
 <h1 align="center">PastyDownloader</h1>
@@ -60,7 +60,7 @@ PastyDownloader تطبيق سريع ومباشر لجلب الفيديو وال�
 - **Windows** — Windows 10 (64 بت، 1809 أو أحدث) أو أحدث
 - **macOS** — 11 (Big Sur) أو أحدث (Apple Silicon و Intel)
 - **Linux** — توزيعة بها glibc 2.28+ (مثل Ubuntu 20.04+ و Debian 11+ و Fedora 29+ و RHEL 8+)
-- **Android** — 5.0 (Lollipop، API 21) أو أحدث، arm64 (انظر [ANDROID.md](../ANDROID.md) لتفاصيل البناء)
+- **Android** — 5.0 (Lollipop، API 21) أو أحدث، arm64
 
 ## لماذا PastyDownloader
 
@@ -70,7 +70,7 @@ PastyDownloader تطبيق سريع ومباشر لجلب الفيديو وال�
 
 بدأ PastyDownloader على سطح المكتب، وإصدار Android ليس تطبيقًا منفصلًا — إنه قاعدة الشيفرة نفسها [PySide6](https://www.qt.io/qt-for-python)، مُصرَّفة لمنصّة أخرى. تُنفَّذ عمليات تنزيل yt-dlp الحقيقية على الجهاز، بما في ذلك دمج الصوت والفيديو فعليًا عبر FFmpeg مُصرَّف أصليًا، وليس بديلًا منقوصًا.
 
-هذا المزيج غير معتاد: معظم تطبيقات yt-dlp على Android هي إعادة كتابة أصلية لا تتشارك أي شيفرة مع أي نسخة لسطح المكتب، ونُسخ Python التي تُعيد استخدام واجهة قائمة لا تكون عادةً مبنية على Qt. إحضار تطبيق PySide6 كامل إلى Android — الوصول إلى التخزين، وجسور JNI، وخدمة تنزيل في المقدّمة، و FFmpeg أصلي — تطلّب جهدًا متواصلًا موثَّقًا في [ANDROID.md](../ANDROID.md).
+هذا المزيج غير معتاد: معظم تطبيقات yt-dlp على Android هي إعادة كتابة أصلية لا تتشارك أي شيفرة مع أي نسخة لسطح المكتب، ونُسخ Python التي تُعيد استخدام واجهة قائمة لا تكون عادةً مبنية على Qt. إحضار تطبيق PySide6 كامل إلى Android — الوصول إلى التخزين، وجسور JNI، وخدمة تنزيل في المقدّمة، و FFmpeg أصلي — تطلّب جهدًا متواصلًا.
 
 ## 🙏 شكر وتقدير
 

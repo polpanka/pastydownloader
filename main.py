@@ -26,7 +26,7 @@ import os, sys, threading, multiprocessing
 try:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QMessageBox, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout, QWidget, QDialog, QLabel, QDialogButtonBox
     from PySide6.QtCore import QSettings, QTimer, QElapsedTimer, Signal, Qt, QObject, QEvent
-    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor, QPalette
+    from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor
 except ImportError:
     # nessun toolkit grafico (OS troppo vecchio): serve un dialogo nativo del SO
     _startup_error_msg = (
@@ -132,10 +132,6 @@ class _AboutDialog(QDialog):
         body.setOpenExternalLinks(True)
         body.setWordWrap(True)
         body.setAlignment(Qt.AlignHCenter)
-        dark = self.palette().window().color().lightness() <= 128
-        pal = body.palette()
-        pal.setColor(QPalette.Link, QColor('#8ab4f8' if dark else '#1a56db'))
-        body.setPalette(pal)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok)
         buttons.accepted.connect(self.accept)
@@ -452,9 +448,12 @@ class Pasty(QMainWindow):
         QMessageBox.about(self, title, msg)
 
     def openAboutPopup(self):
+        # colore link esplicito nell'html: QPalette.Link non e' affidabile su QLabel
+        linkColor = '#4fb8d9' if Constants.isDarkTheme() else '#004e63'
+        website = MyText().aboutWebsite.replace('<a ', '<a style="color:%s" ' % linkColor, 1)
         html = ('<b>%s</b><br>by %s<br><br>%s<br>%s<br>'
                 % (MyText().appName, MyText().orgName,
-                   MyText().aboutVersion % self.VERSION, MyText().aboutWebsite))
+                   MyText().aboutVersion % self.VERSION, website))
         _AboutDialog(self, MyText().pasty_icon, html, self.menu._trackDevelModeUnlock).exec()
 
     def checkDownloadFolder(self):

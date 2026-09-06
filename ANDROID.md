@@ -9,6 +9,12 @@ modalità "debug", non firmata per una vera release (vedi
 
 Richiede un host Linux o macOS (`pyside6-android-deploy` non gira su Windows).
 
+**Nota struttura**: i sorgenti, `pysidedeploy.spec`, `android/` e il venv
+`.venv-android` stanno tutti in `src/`. Tutti i comandi di questa guida vanno
+eseguiti da `src/` (`pyside6-android-deploy` pretende `main.py` nella cwd e
+risolve `android/` da lì). I percorsi `libs.py:NNN` citati nel testo sono
+relativi a `src/`.
+
 ## 1. Ambiente Python (serve 3.11, non 3.12)
 
 `buildozer` (usato sotto il cofano da `pyside6-android-deploy`) richiede

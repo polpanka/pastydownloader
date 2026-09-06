@@ -25,6 +25,14 @@ jobs:
   build-android:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    # sorgenti, pysidedeploy.spec, android/ e il venv di build stanno tutti in
+    # src/ (vedi CONTRIBUTING.md). pyside6-android-deploy pretende main.py nella
+    # cwd da cui lo si lancia e risolve android/ da li', quindi ogni step gira
+    # da src/. Gli step "uses:" e i riferimenti $GITHUB_WORKSPACE restano
+    # relativi alla root del repo (working-directory non li tocca).
+    defaults:
+      run:
+        working-directory: src
     steps:
       - uses: actions/checkout@v7
 
@@ -217,14 +225,14 @@ jobs:
           git remote add origin https://github.com/kivy/python-for-android.git
           git fetch -q --depth 1 origin "$P4A_COMMIT"
           git checkout -q FETCH_HEAD
-          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_permissions.patch"
+          git apply "$GITHUB_WORKSPACE/src/android/patches/pythonactivity_permissions.patch"
 
       # Patch 6: stesso file appena patchato sopra - notifica di sistema
       # a fine download, vedi android_bridge.py
       - name: "Patch 6: notifica di sistema a fine download (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
-          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_notify.patch"
+          git apply "$GITHUB_WORKSPACE/src/android/patches/pythonactivity_notify.patch"
 
       # Patch 7: stesso file ancora, piu' un file nuovo
       # (DownloadForegroundService.java) - Foreground Service per i download
@@ -232,7 +240,7 @@ jobs:
       - name: "Patch 7: Foreground Service per i download in background (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
-          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_foreground_service.patch"
+          git apply "$GITHUB_WORKSPACE/src/android/patches/pythonactivity_foreground_service.patch"
 
       # Patch 8: stesso file ancora - legge una richiesta scritta da
       # Tools.openFile (libs.py) e apre il file con l'app predefinita del
@@ -241,7 +249,7 @@ jobs:
       - name: "Patch 8: apertura file scaricati dal doppio click (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
-          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_openfile.patch"
+          git apply "$GITHUB_WORKSPACE/src/android/patches/pythonactivity_openfile.patch"
 
       # Patch 9: file diverso dello stesso checkout p4a (il template del
       # manifest, non PythonActivity.java) - dichiara il FileProvider usato
@@ -251,7 +259,7 @@ jobs:
       - name: "Patch 9: dichiarazione FileProvider nel manifest (AndroidManifest.tmpl.xml)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
-          git apply "$GITHUB_WORKSPACE/android/patches/android_manifest_fileprovider.patch"
+          git apply "$GITHUB_WORKSPACE/src/android/patches/android_manifest_fileprovider.patch"
 
       # Patch 9b: stesso PythonActivity.java - un link httpasty:// aperto da un
       # browser arriva come intent VIEW (onCreate a freddo / onNewIntent con
@@ -261,7 +269,7 @@ jobs:
       - name: "Patch 9b: deep link httpasty:// (PythonActivity.java)"
         run: |
           cd "$HOME/.pyside6_android_deploy/python-for-android"
-          git apply "$GITHUB_WORKSPACE/android/patches/pythonactivity_deeplink.patch"
+          git apply "$GITHUB_WORKSPACE/src/android/patches/pythonactivity_deeplink.patch"
 
       # Patch 10: find_recipe_dir() del tool forza sempre le recipe dentro
       # "deployment/", cartella che pyside6-android-deploy ripulisce con
@@ -331,9 +339,9 @@ jobs:
         with:
           name: build-logs
           path: |
-            deploy.log
-            .buildozer/**/*.log
-            .buildozer/**/*.txt
-            deployment/.buildozer/**/*.log
-            deployment/.buildozer/**/*.txt
+            src/deploy.log
+            src/.buildozer/**/*.log
+            src/.buildozer/**/*.txt
+            src/deployment/.buildozer/**/*.log
+            src/deployment/.buildozer/**/*.txt
           if-no-files-found: ignore

@@ -14,7 +14,7 @@ android_packages = buildozer==1.5.0,cython==0.29.33
 [qt]
 qml_files = 
 excluded_qml_plugins = 
-modules = Core,Gui,Widgets,Network
+modules = Network,Widgets,Core,Gui
 plugins = 
 
 [android]
@@ -23,7 +23,7 @@ wheel_shiboken =
 plugins = platforms_qtforandroid
 
 [nuitka]
-macos.permissions =
+macos.permissions = 
 mode = onefile
 extra_args = --quiet --noinclude-qt-translations
 

@@ -14,6 +14,10 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    # i sorgenti e le spec di build stanno in src/ (vedi CONTRIBUTING.md)
+    defaults:
+      run:
+        working-directory: src
     steps:
       - uses: actions/checkout@v7
 
@@ -40,7 +44,7 @@ jobs:
       #    usato finora, un solo file zippato
       # ------------------------------------------------------------------
       - name: Compila l'exe portatile (onefile)
-        run: pyinstaller installer/main_win.spec
+        run: pyinstaller main_win.spec
 
       - name: Verifica che l'exe portatile parta (nessun crash)
         shell: pwsh
@@ -65,30 +69,30 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-windows-portable
-          path: bin\PastyDownloader.exe.zip
+          path: src\bin\PastyDownloader.exe.zip
 
       # ------------------------------------------------------------------
       # 2) Installer Inno Setup (main_win_installer.spec, onedir) - vedi
       #    la conversazione sul perche' un installer serve onedir, non onefile
       # ------------------------------------------------------------------
       - name: Compila la cartella onedir per l'installer
-        run: pyinstaller installer/main_win_installer.spec
+        run: pyinstaller main_win_installer.spec
 
       - name: Compila l'installer con Inno Setup
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
-          path: installer/pastydownloader.iss
+          path: src/pastydownloader.iss
 
       - name: Carica l'installer come artefatto della run
         uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-windows-setup
-          path: bin\PastyDownloader-Setup.exe
+          path: src\bin\PastyDownloader-Setup.exe
 
       - name: Allega gli eseguibili alla Release (solo per i tag v*)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            bin/PastyDownloader.exe.zip
-            bin/PastyDownloader-Setup.exe
+            src/bin/PastyDownloader.exe.zip
+            src/bin/PastyDownloader-Setup.exe

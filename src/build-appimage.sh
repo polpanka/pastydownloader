@@ -34,7 +34,7 @@
 #     installa dentro tutte le dipendenze (PySide6, aiofiles, aiohttp,
 #     psutil, requests, PyInstaller, piu' le dipendenze opzionali di yt-dlp -
 #     brotli/certifi/mutagen/pycryptodomex/websockets/urllib3, vedi il
-#     commento su hiddenimports in installer/main_appimage.spec) - non tocca
+#     commento su hiddenimports in main_appimage.spec) - non tocca
 #     ne' l'installazione Python di sistema ne' un eventuale altro venv gia' presente
 #   - rigenera resources.py, compila con PyInstaller, scarica ed esegue
 #     linuxdeploy + appimagetool (che bundlano anche le dipendenze di sistema
@@ -100,7 +100,7 @@ echo "== 2/6: rigenero resources.py con la stessa versione di PySide6 =="
 echo "== 3/6: PyInstaller (onedir) =="
 "$BUILD_DIR/venv/bin/pyinstaller" \
     --distpath "$BUILD_DIR/dist" --workpath "$BUILD_DIR/pywork" --noconfirm \
-    installer/main_appimage.spec
+    main_appimage.spec
 
 # tool ufficiali AppImage, presi dal canale "continuous" (sempre l'ultima build)
 echo "== 4/6: scarico linuxdeploy + appimagetool =="

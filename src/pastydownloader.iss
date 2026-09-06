@@ -4,14 +4,14 @@
 ; USO
 ; ---
 ; 1. Compila prima l'app in modalita' onedir (non onefile) con PyInstaller,
-;    lanciato dalla root del progetto:
-;      pyinstaller installer/main_win_installer.spec
+;    lanciato da src/:
+;      pyinstaller main_win_installer.spec
 ;    (NON main_win.spec, che e' onefile e produce un singolo .exe - questo
 ;    script si aspetta invece dist\PastyDownloader\PastyDownloader.exe con
 ;    la cartella _internal accanto, vedi main_win_installer.spec)
 ; 2. Apri questo file con Inno Setup Compiler (o lancia da riga di comando
-;    "ISCC.exe installer\pastydownloader.iss" dalla cartella del progetto).
-; 3. Il risultato e' bin\PastyDownloader-Setup.exe
+;    "ISCC.exe pastydownloader.iss" da src/).
+; 3. Il risultato e' src\bin\PastyDownloader-Setup.exe
 ;
 ; Automatizzato in .github/workflows/build-windows.yml, che fa esattamente
 ; questi passaggi ad ogni build in CI.
@@ -69,9 +69,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2/fast
 SolidCompression=yes
 
-OutputDir=..\bin
+OutputDir=bin
 OutputBaseFilename={#MyAppName}-Setup
-SetupIconFile=..\resources\favicon.ico
+SetupIconFile=resources\favicon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 WizardStyle=modern
 
@@ -96,7 +96,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; tutta la cartella onedir di PyInstaller (exe + _internal con librerie,
 ; plugin Qt, ffmpeg.exe/yt-dlp.exe bundlati) - ignoreversion perche' sono
 ; file interni dell'app, non librerie condivise di sistema da preservare
-Source: "..\dist\{#MyAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\{#MyAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

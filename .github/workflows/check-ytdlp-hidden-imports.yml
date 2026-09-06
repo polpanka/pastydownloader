@@ -4,7 +4,7 @@ name: Check yt-dlp hidden imports
 # confronta i moduli che importa con quelli di ieri (check_ytdlp_hidden_imports_baseline.txt,
 # committata nel repo). Se compare qualcosa di nuovo, apre/aggiorna una issue -
 # va verificato a mano se serve aggiungerlo a hiddenimports negli
-# installer/*.spec (vedi i commenti in installer/main_appimage.spec) o se e'
+# src/*.spec (vedi i commenti in src/main_appimage.spec) o se e'
 # gia' coperto da un'altra dipendenza dell'app. Quando risolto, aggiornare la
 # baseline (istruzioni nella issue stessa).
 #
@@ -23,6 +23,10 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # lo script e la baseline stanno in src/ (vedi CONTRIBUTING.md)
+    defaults:
+      run:
+        working-directory: src
     steps:
       - uses: actions/checkout@v7
 
@@ -68,7 +72,7 @@ jobs:
           $(cat /tmp/nuove.txt)
           \`\`\`
 
-          Per ciascuno: verificare se serve aggiungerlo a \`hiddenimports\` nei 5 file \`installer/*.spec\` (vedi i commenti in \`installer/main_appimage.spec\` per il criterio - un modulo stdlib importato in modo incondizionato da yt_dlp e non referenziato altrove nell'app va quasi certamente aggiunto), oppure se e' gia' coperto da un'altra dipendenza (PySide6/aiohttp/requests/ecc).
+          Per ciascuno: verificare se serve aggiungerlo a \`hiddenimports\` nei 5 file \`src/*.spec\` (vedi i commenti in \`src/main_appimage.spec\` per il criterio - un modulo stdlib importato in modo incondizionato da yt_dlp e non referenziato altrove nell'app va quasi certamente aggiunto), oppure se e' gia' coperto da un'altra dipendenza (PySide6/aiohttp/requests/ecc).
 
           Dopo aver sistemato (o verificato che non serve), aggiornare la baseline:
           \`\`\`

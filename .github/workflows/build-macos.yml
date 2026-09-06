@@ -38,6 +38,10 @@ jobs:
           - arch: x86_64
             runner: macos-15-intel
     runs-on: ${{ matrix.runner }}
+    # i sorgenti e le spec di build stanno in src/ (vedi CONTRIBUTING.md)
+    defaults:
+      run:
+        working-directory: src
     steps:
       - uses: actions/checkout@v7
 
@@ -82,7 +86,7 @@ jobs:
         run: pyside6-rcc resources.qrc -o resources.py
 
       - name: Compila con PyInstaller
-        run: pyinstaller installer/main_mac.spec
+        run: pyinstaller main_mac.spec
 
       - name: Verifica che l'app parta (nessun crash)
         run: |
@@ -112,10 +116,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: PastyDownloader-macos-${{ matrix.arch }}
-          path: bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip
+          path: src/bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip
 
       - name: Allega l'app alla Release (solo per i tag v*)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip
+          files: src/bin/PastyDownloader-macos-${{ matrix.arch }}.app.zip

@@ -67,19 +67,21 @@ policy.
 
 ```sh
 git clone https://github.com/polpanka/pastydownloader
-cd pastydownloader
+cd pastydownloader/src
 python3 -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install PySide6 yt-dlp aiohttp requests certifi
 python main.py
 ```
 
-Python 3.11+ is recommended. FFmpeg is downloaded by the app on first use, so
-you do not need it on your PATH to run from source.
+The application sources, build specs and helper scripts all live under `src/`;
+the repo root keeps only docs, licensing and `.github/workflows/`. Python 3.11+
+is recommended. FFmpeg is downloaded by the app on first use, so you do not need
+it on your PATH to run from source.
 
-Packaged builds are produced with the scripts in the repo
-(`build-appimage.sh`, `pysidedeploy.spec`) and by the GitHub Actions workflows
-under `.github/workflows/`.
+Packaged builds are produced with the scripts in `src/`
+(`src/build-appimage.sh`, `src/pysidedeploy.spec`) and by the GitHub Actions
+workflows under `.github/workflows/` (each runs from `src/`).
 
 ### Android
 

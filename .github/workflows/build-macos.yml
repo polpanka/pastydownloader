@@ -29,7 +29,7 @@ jobs:
         include:
           # Apple Silicon nativo
           - arch: arm64
-            runner: macos-14
+            runner: macos-15
           # Intel nativo - "macos-15-intel" e' l'ULTIMO runner x86_64 offerto
           # da GitHub Actions per macOS, in dismissione ad agosto 2027: dopo
           # quella data questa riga andra' rimossa o sostituita (a quel punto

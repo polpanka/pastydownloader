@@ -27,7 +27,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Apple Silicon nativo
+          # Apple Silicon nativo - macos-15 (non macos-latest, che cambia
+          # versione da solo); il runner non influisce sul floor macOS del
+          # binario, deciso da Python e dai wheel PySide6 (macos-14 dismesso
+          # a novembre 2026)
           - arch: arm64
             runner: macos-15
           # Intel nativo - "macos-15-intel" e' l'ULTIMO runner x86_64 offerto

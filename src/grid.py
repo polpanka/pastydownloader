@@ -3,13 +3,33 @@
 import logging
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QTableView, QAbstractItemView, QMenu
 from PySide6.QtCore import Qt, QSettings, QTimer
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPainter, QPixmap
 from libs import Tools
 from testi import MyText
 from constants import Constants
 
 
-class _LongPressTableWidget(QTableWidget):
+class _WatermarkTableWidget(QTableWidget):
+    """Tabella con il logo molto sfumato al centro."""
+    WATERMARK_OPACITY = 0.07
+    WATERMARK_RATIO = 0.5  # lato massimo rispetto al viewport
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if not hasattr(self, '_wm'):
+            self._wm = QPixmap(':/images/paste512.png')
+        vp = self.viewport()
+        side = int(min(vp.width(), vp.height()) * self.WATERMARK_RATIO)
+        if side < 40 or self._wm.isNull():
+            return
+        p = QPainter(vp)
+        p.setOpacity(self.WATERMARK_OPACITY)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        p.drawPixmap((vp.width() - side) // 2, (vp.height() - side) // 2, side, side, self._wm)
+        p.end()
+
+
+class _LongPressTableWidget(_WatermarkTableWidget):
     """Solo Android: Qt non sintetizza il press-and-hold in click destro per i
     QWidget, quindi customContextMenuRequested non scatterebbe mai. Un timer al
     press, se non annullato da rilascio/spostamento, emette quel segnale."""
@@ -90,7 +110,7 @@ class PastyGrid():
         self.setHiddenColumns()
 
     def initUi(self):
-        self.grid = _LongPressTableWidget() if Constants.IS_ANDROID else QTableWidget()
+        self.grid = _LongPressTableWidget() if Constants.IS_ANDROID else _WatermarkTableWidget()
         self.grid.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.grid.verticalHeader().setVisible(False)
         self.grid.setEditTriggers(QTableView.NoEditTriggers)
@@ -224,13 +244,13 @@ class PastyGrid():
 
     def importUrls(self, urls):
         count = 0
-        hasInvalidPastylink = False
+        invalidMsgKey = None
         for url in urls:
             url = url.strip()
             isManifestText = Tools.isM3u8ManifestText(url)
             isPastylink = Tools.isPastylinkUrl(url)
             if isPastylink and not Tools.decodePastylinkUrl(url):
-                hasInvalidPastylink = True
+                invalidMsgKey = 'msgUnsupportedPastylink' if Tools.isPastylinkNewerVersion(url) else 'msgInvalidPastylink'
                 continue
             if url \
                 and (url.startswith('http') or url.startswith('rtmp') or url.startswith('rtsp') or isManifestText or isPastylink) \
@@ -238,7 +258,7 @@ class PastyGrid():
                 and (isManifestText or isPastylink or Tools.uriValidator(url)):
                 count += 1
                 self.addRow(url)
-        return count, hasInvalidPastylink
+        return count, invalidMsgKey
 
     def addRow(self, url):
         newRow = self.grid.rowCount()

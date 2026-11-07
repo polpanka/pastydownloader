@@ -6,8 +6,8 @@
         <!-- Pasty logo -->
 
         <file alias="favicon.ico">resources/favicon.ico</file>
+        <file alias="paste512.png">resources/paste512.png</file>
         <file alias="paste.png">resources/paste.png</file>
-        <file alias="paste_revert.png">resources/paste_revert.png</file>
 
 
         <!-- Theme -->

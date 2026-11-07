@@ -402,7 +402,6 @@ class Pasty(QMainWindow):
         self.is_running = True
         self.button.setEnabled(False)
         self.button.setText(MyText().btnReverse)
-        self.button.setIcon(QIcon(MyText().pasty_icon_rev))
         self.menu.setMenuType(Menu.TYPE_DOWNLOADING)
         self.pastyGrid.setContextMenuType(PastyGrid.TYPE_MINIMAL)
 
@@ -411,7 +410,6 @@ class Pasty(QMainWindow):
         self.is_running = False
         self._refreshLockState()
         self.button.setText(MyText().btnDefault)
-        self.button.setIcon(QIcon(MyText().pasty_icon))
         if msg is not None:
             self.statusQueue.showNow(msg, 5)  # showNow: passa davanti al "Riga N in corso"
         self.stop = False
@@ -569,10 +567,10 @@ class Pasty(QMainWindow):
         # EXTM3U: il testo intero e' un solo "link"
         pasted = Tools.stripBom(Tools.pasteFromClipboard())
         tokens = [pasted] if Tools.isM3u8ManifestText(pasted) else pasted.split()
-        count, hasInvalidPastylink = self.pastyGrid.importUrls(tokens)
+        count, invalidMsgKey = self.pastyGrid.importUrls(tokens)
         Tools.consoleLogs("Pasted %s urls, %s valid" % (len(tokens), count))
-        if hasInvalidPastylink:
-            statusMsg = MyText().msgInvalidPastylink
+        if invalidMsgKey:
+            statusMsg = getattr(MyText(), invalidMsgKey)
         elif count:
             statusMsg = MyText().msgFoundLinks % count
         else:
@@ -586,10 +584,10 @@ class Pasty(QMainWindow):
         self._raiseWindow()
         if not url:
             return
-        count, hasInvalidPastylink = self.pastyGrid.importUrls([url])
+        count, invalidMsgKey = self.pastyGrid.importUrls([url])
         Tools.consoleLogs("External url: %s valid" % count)
-        if hasInvalidPastylink:
-            self.setStatusBar(MyText().msgInvalidPastylink, 5)
+        if invalidMsgKey:
+            self.setStatusBar(getattr(MyText(), invalidMsgKey), 5)
         elif count:
             self.setStatusBar(MyText().msgFoundLinks % count, 5)
         else:

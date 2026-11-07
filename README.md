@@ -107,6 +107,7 @@ and how to build from source.
 
 ## Releases
 
+- **2026-11** - version 1.8: Android build upgraded to Python 3.14 and PySide6 6.12. New logo
 - **2026-09** - version 1.7: minor bug fix
 - **2026-08** - version 1.5: Android build added
 - **2026-07** - version 1.4: complete refactor in PySide6, open-sourced on GitHub

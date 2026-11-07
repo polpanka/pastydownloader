@@ -7,9 +7,9 @@ project_file =
 icon = resources/paste512.png
 
 [python]
-python_path = .venv-android/bin/python3.11
+python_path = .venv-android/bin/python3.14
 packages = Nuitka==4.1.1
-android_packages = buildozer==1.5.0,cython==0.29.33
+android_packages = buildozer==1.6.0,cython==0.29.33
 
 [qt]
 qml_files = 

@@ -15,7 +15,7 @@ Funzionalita':
    . URL (anche multipli)
    . playlist #EXTM3U
 - Rileva il tipo di sorgente e sceglie il motore giusto per il download:
-   . generico (aiohttp)
+   . generico (requests)
    . yt-dlp (YouTube / Dailymotion / Instagram / TikTok / ...)
    . video diretto via ffmpeg
 - Avanzamento download
@@ -71,7 +71,7 @@ from constants import Constants
 
 if Constants.IS_ANDROID:
     # il Python Android non ha un bundle CA: senza SSL_CERT_FILE ogni HTTPS
-    # fallisce. Prima di qualunque uso di ssl/aiohttp/requests.
+    # fallisce. Prima di qualunque uso di ssl/requests.
     import certifi
     os.environ.setdefault('SSL_CERT_FILE', certifi.where())
 

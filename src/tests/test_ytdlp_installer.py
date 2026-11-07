@@ -219,6 +219,70 @@ class FetchLatestReleaseTest(unittest.TestCase):
         self.assertIsNone(wheel)
 
 
+def _wheelEntry(version, requiresPython):
+    return {'packagetype': 'bdist_wheel', 'filename': 'yt_dlp-%s-py3-none-any.whl' % version,
+            'url': 'https://example.test/%s.whl' % version, 'digests': {'sha256': 'aa'},
+            'requires_python': requiresPython}
+
+
+class PythonCompatibilityTest(unittest.TestCase):
+    """Se l'ultimo yt-dlp richiede un Python piu' nuovo (es. Android su 3.11),
+    si ripiega sull'ultima release compatibile invece di installarne una rotta."""
+
+    RELEASE = {
+        'info': {'version': '2099.02.01'},
+        'urls': [_wheelEntry('2099.02.01', '>=3.99')],
+    }
+    INDEX = {
+        '2099.02.01': [_wheelEntry('2099.02.01', '>=3.99')],
+        '2099.01.15': [_wheelEntry('2099.01.15', '>=3.10')],
+        '2099.01.20.123.dev0': [_wheelEntry('2099.01.20.123.dev0', '>=3.10')],
+        '2099.01.10': [_wheelEntry('2099.01.10', '>=3.10')],
+    }
+
+    def test_specifiers(self):
+        v = (3, 11, 4)
+        self.assertTrue(Tools.pythonSatisfies('>=3.10', v))
+        self.assertTrue(Tools.pythonSatisfies('>=3.11', v))
+        self.assertFalse(Tools.pythonSatisfies('>=3.12', v))
+        self.assertTrue(Tools.pythonSatisfies('>=3.10,<3.13', v))
+        self.assertFalse(Tools.pythonSatisfies('>=3.10,<3.11', v))
+        self.assertFalse(Tools.pythonSatisfies('<=3.11', v))  # 3.11.4 > 3.11 (PEP 440)
+        self.assertTrue(Tools.pythonSatisfies('>3.11', v))
+        self.assertTrue(Tools.pythonSatisfies('<=3.11.4', v))
+        self.assertTrue(Tools.pythonSatisfies('==3.11.*', v))
+        self.assertFalse(Tools.pythonSatisfies('!=3.11.*', v))
+        self.assertTrue(Tools.pythonSatisfies('~=3.10', v))
+        self.assertFalse(Tools.pythonSatisfies('~=3.12', v))
+        self.assertTrue(Tools.pythonSatisfies('~=3.11.2', v))
+        self.assertFalse(Tools.pythonSatisfies('~=3.11.5', v))
+        self.assertFalse(Tools.pythonSatisfies('~=3.9.1', v))
+        self.assertTrue(Tools.pythonSatisfies('', v))
+        self.assertTrue(Tools.pythonSatisfies(None, v))
+        self.assertTrue(Tools.pythonSatisfies('garbage', v))
+
+    def test_latest_used_when_compatible(self):
+        release = dict(self.RELEASE, urls=[_wheelEntry('2099.02.01', '>=3.10')])
+        with mock.patch.object(Tools, 'readFileJson', return_value=release):
+            version, wheel = YtDlpUpdater()._fetchLatestRelease()
+        self.assertEqual(version, '2099.02.01')
+
+    def test_falls_back_to_newest_stable_compatible(self):
+        with mock.patch.object(Tools, 'readFileJson', return_value=self.RELEASE), \
+             mock.patch.object(YtDlpUpdater, '_fetchIndexReleases', return_value=self.INDEX):
+            version, wheel = YtDlpUpdater()._fetchLatestRelease()
+        self.assertEqual(version, '2099.01.15')  # non la dev0, piu' recente ma instabile
+        self.assertIn('2099.01.15', wheel['url'])
+
+    def test_none_when_nothing_compatible(self):
+        release = {'info': {'version': '2099.02.01'},
+                   'urls': [_wheelEntry('2099.02.01', '>=3.99')]}
+        index = {'2099.02.01': [_wheelEntry('2099.02.01', '>=3.99')]}
+        with mock.patch.object(Tools, 'readFileJson', return_value=release), \
+             mock.patch.object(YtDlpUpdater, '_fetchIndexReleases', return_value=index):
+            self.assertEqual(YtDlpUpdater()._fetchLatestRelease(), (None, None))
+
+
 class CheckYtDlpResilientToStorageDirFailureTest(unittest.TestCase):
     """Tools.checkYtDlp() non deve mai sollevare: ytDlpStorageDir() puo'
     fallire (permessi, disco pieno...), e checkYtDlp() viene chiamato senza
@@ -234,3 +298,24 @@ class CheckYtDlpResilientToStorageDirFailureTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class IndexReleasesTest(unittest.TestCase):
+    """_fetchIndexReleases(): converte l'Index API (PEP 691) nel formato del JSON API."""
+
+    def test_parses_wheels_only(self):
+        body = {'files': [
+            {'filename': 'yt_dlp-2099.01.15-py3-none-any.whl', 'url': 'https://example.test/a.whl',
+             'hashes': {'sha256': 'ab'}, 'requires-python': '>=3.10', 'yanked': False},
+            {'filename': 'yt_dlp-2099.01.15.tar.gz', 'url': 'https://example.test/a.tgz'},
+            {'filename': 'yt_dlp-2099.01.10-py3-none-any.whl', 'url': 'https://example.test/b.whl',
+             'hashes': {'sha256': 'cd'}, 'yanked': 'broken'},
+        ]}
+        resp = mock.Mock(**{'json.return_value': body})
+        with mock.patch('requests.get', return_value=resp) as get:
+            out = YtDlpUpdater()._fetchIndexReleases()
+        self.assertEqual(sorted(out), ['2099.01.10', '2099.01.15'])
+        self.assertEqual(out['2099.01.15'][0]['digests'], {'sha256': 'ab'})
+        self.assertEqual(out['2099.01.15'][0]['requires_python'], '>=3.10')
+        self.assertTrue(out['2099.01.10'][0]['yanked'])
+        self.assertIn('simple.v1+json', get.call_args.kwargs['headers']['Accept'])

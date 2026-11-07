@@ -49,7 +49,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
       # setup-java esporta gia' JAVA_HOME nell'ambiente dei passi successivi -
       # e' il requisito scoperto in locale (serve la JDK completa per javac,
@@ -78,16 +78,17 @@ jobs:
             libssl-dev \
             patch
 
-      # Venv dedicato Python 3.11 (buildozer/p4a lo richiedono sull'host, non
-      # e' il Python cross-compilato dentro l'APK) - stesso path relativo
-      # usato da pysidedeploy.spec (python_path = .venv-android/bin/python3.11),
-      # gia' committato cosi' com'e' per restare valido sia in locale che qui
-      - name: Crea il venv Python 3.11 e installa pyside6-android-deploy
+      # Venv dedicato Python 3.14 sull'host (esegue solo il toolchain; il Python
+      # cross-compilato dentro l'APK e' un altro, vedi buildozer_py_config.patch).
+      # buildozer>=1.6 (pysidedeploy.spec) non usa piu' distutils, rimosso in 3.12.
+      # Stesso path relativo usato da pysidedeploy.spec (python_path =
+      # .venv-android/bin/python3.14), valido sia in locale che qui
+      - name: Crea il venv Python 3.14 e installa pyside6-android-deploy
         run: |
-          python3.11 -m venv .venv-android
+          python3.14 -m venv .venv-android
           source .venv-android/bin/activate
-          pip install pyside6==6.11.2
-          pip install -r .venv-android/lib/python3.11/site-packages/PySide6/scripts/requirements-android.txt
+          pip install pyside6==6.12.0
+          pip install -r .venv-android/lib/python3.14/site-packages/PySide6/scripts/requirements-android.txt
 
       # resources.py e' gitignored (rigenerato ad ogni build da resources.qrc,
       # vedi .gitignore) - senza questo step nell'APK non finiscono le icone
@@ -111,11 +112,12 @@ jobs:
       # requirements (incluso ffmpeg) ne' p4a.source_dir - l'unico
       # modo e' patchare il suo file interno (vedi
       # android/patches/buildozer_py_config.patch, generato con "git diff"
-      # contro il file pristine della stessa identica versione
-      # PySide6==6.11.2 pinnata sopra, quindi deve applicarsi pulito)
+      # contro il file pristine della PySide6==6.12.0 pinnata sopra, quindi
+      # si applica pulito, senza offset/fuzz. Rigenerare le patch
+      # buildozer_py_config*.patch e android_config_* ad ogni bump di PySide6)
       - name: "Patch 1: targetSdk, permessi storage, requirements, p4a.source_dir"
         run: |
-          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          TARGET=".venv-android/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config.patch
 
       # Patch 2: stesso file appena patchato sopra, stesso motivo (nessuna
@@ -124,7 +126,7 @@ jobs:
       # pythonactivity_notify.patch sotto)
       - name: "Patch 2: permesso POST_NOTIFICATIONS (buildozer.py)"
         run: |
-          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          TARGET=".venv-android/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config_notify.patch
 
       # Patch 3: stesso file ancora - permesso FOREGROUND_SERVICE e
@@ -134,7 +136,7 @@ jobs:
       # android_bridge.py e pythonactivity_foreground_service.patch sotto)
       - name: "Patch 3: Foreground Service per i download in background (buildozer.py)"
         run: |
-          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          TARGET=".venv-android/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config_foreground_service.patch
 
       # Patch 4: stesso file ancora - copia file_paths.xml in
@@ -146,7 +148,7 @@ jobs:
       # android_manifest_fileprovider.patch sotto)
       - name: "Patch 4: FileProvider per aprire i file scaricati (buildozer.py)"
         run: |
-          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          TARGET=".venv-android/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config_fileprovider.patch
 
       # Patch 4b: stesso file ancora - --intent-filters (scheme httpasty://
@@ -156,7 +158,7 @@ jobs:
       # (vedi pythonactivity_deeplink.patch, android_bridge.py, main.py)
       - name: "Patch 4b: deep link httpasty:// (buildozer.py)"
         run: |
-          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
+          TARGET=".venv-android/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/android/buildozer.py"
           patch -p1 "$TARGET" < android/patches/buildozer_py_config_deeplink.patch
 
       # NDK/SDK Android (vedi ANDROID.md punto 2) - JAVA_HOME e' gia' in
@@ -205,8 +207,8 @@ jobs:
         run: |
           mkdir -p "$HOME/.pyside6_android_deploy/wheels"
           cd "$HOME/.pyside6_android_deploy/wheels"
-          curl -fLO https://download.qt.io/official_releases/QtForPython/pyside6/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
-          curl -fLO https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl
+          curl -fLO https://download.qt.io/official_releases/QtForPython/pyside6/pyside6-6.12.0-6.12.0-cp310-abi3-android_aarch64.whl
+          curl -fLO https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.12.0-6.12.0-cp310-abi3-android_aarch64.whl
 
       # Patch 5: python-for-android clonato in un checkout separato che
       # pysidedeploy.spec trova via p4a.source_dir (patch 1). **Pinnato a un
@@ -283,7 +285,7 @@ jobs:
       # commenti in android/recipes/ffmpeg/__init__.py)
       - name: "Patch 10: copia le recipe locali in deployment/recipes/ ad ogni run"
         run: |
-          TARGET=".venv-android/lib/python3.11/site-packages/PySide6/scripts/deploy_lib/android/android_config.py"
+          TARGET=".venv-android/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/android/android_config.py"
           patch -p1 "$TARGET" < android/patches/android_config_local_recipes.patch
 
       - name: Build APK
@@ -295,8 +297,8 @@ jobs:
           # via i log della build. In CI il runner e' effimero, li teniamo.
           set -o pipefail
           pyside6-android-deploy --config-file pysidedeploy.spec \
-            --wheel-pyside "$HOME/.pyside6_android_deploy/wheels/pyside6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
-            --wheel-shiboken "$HOME/.pyside6_android_deploy/wheels/shiboken6-6.11.2-6.11.2-cp311-cp311-android_aarch64.whl" \
+            --wheel-pyside "$HOME/.pyside6_android_deploy/wheels/pyside6-6.12.0-6.12.0-cp310-abi3-android_aarch64.whl" \
+            --wheel-shiboken "$HOME/.pyside6_android_deploy/wheels/shiboken6-6.12.0-6.12.0-cp310-abi3-android_aarch64.whl" \
             --ndk-path "$NDK_PATH" \
             --sdk-path "$HOME/.pyside6_android_deploy/android-sdk" \
             --keep-deployment-files --force 2>&1 | tee deploy.log

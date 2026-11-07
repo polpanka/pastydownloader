@@ -1,19 +1,19 @@
 --- a/PySide6/scripts/deploy_lib/android/buildozer.py
 +++ b/PySide6/scripts/deploy_lib/android/buildozer.py
-@@ -24,7 +24,27 @@
+@@ -38,7 +38,27 @@
          include_exts = f"{include_exts},qml,js"
          self.set_value("app", "source.include_exts", include_exts, raise_warning=False)
  
 -        self.set_value("app", "requirements", "python3,shiboken6,PySide6")
-+        # PATCH locale: fissa la versione della recipe python3 a 3.11 per
-+        # matchare l'ABI cp311 delle wheel PySide6/Shiboken6 Android scaricate
-+        # (default upstream e' l'ultima CPython, 3.14 - causa
-+        # "libpython3.11.so not found" a runtime se lasciato senza pin, vedi
-+        # ANDROID.md)
-+        # PATCH locale: motore di download generico (aiohttp/requests/
-+        # aiofiles, vedi Tools.downloadAsyncGeneric/downloadNotAsyncGeneric
-+        # in libs.py) - a differenza di psutil, questi hanno una recipe p4a
-+        # (aiohttp) o sono pure Python (requests/aiofiles), vedi ANDROID.md
++        # PATCH locale: fissa la recipe python3 a 3.14.2, la versione di cui le
++        # wheel PySide6/Shiboken6 6.12 (cp310-abi3) cercano la libpython
++        # (NEEDED libpython3.14.so): una versione diversa causa
++        # "libpython3.14.so not found" a runtime. Va tenuta allineata alla
++        # recipe python3 del commit p4a pinnato nel workflow (vedi ANDROID.md)
++        # PATCH locale: motore di download generico (requests, vedi
++        # Tools.downloadAsyncGeneric/downloadNotAsyncGeneric in libs.py) -
++        # pure Python, niente aiohttp: la sua recipe p4a (3.8.3) non compila
++        # con CPython 3.14. A differenza di psutil non serve una recipe
 +        # certifi: bundle CA per SSL_CERT_FILE (vedi main.py e ANDROID.md) -
 +        # senza, ogni richiesta HTTPS fallisce con SSLCertVerificationError
 +        # ffmpeg: recipe ufficiale p4a, compila il binario CLI e lo rinomina
@@ -24,14 +24,14 @@
 +        # verificare se la build lo tollera col bootstrap qt o se serve un
 +        # override locale in deployment/recipes (p4a.local_recipes)
 +        self.set_value("app", "requirements",
-+                       "python3==3.11.16,hostpython3==3.11.16,shiboken6,PySide6,"
-+                       "requests,aiohttp,aiofiles,certifi,ffmpeg")
++                       "python3==3.14.2,hostpython3==3.14.2,shiboken6,PySide6,"
++                       "requests,certifi,ffmpeg")
  
          # android platform specific
          if pysidedeploy_config.ndk_path:
-@@ -46,11 +66,40 @@
-         # TODO: remove this once the above commit is merged to master
-         self.set_value("app", "p4a.branch", "develop")
+@@ -74,11 +94,40 @@
+         self.set_value("app", "p4a.branch", P4A_BRANCH)
+         self.set_value("app", "p4a.commit", P4A_COMMIT)
  
 +        # PATCH locale: checkout persistente di python-for-android (branch
 +        # develop, patchato a mano - vedi PythonActivity.java li' dentro e

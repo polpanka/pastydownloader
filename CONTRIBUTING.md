@@ -69,7 +69,7 @@ git clone https://github.com/polpanka/pastydownloader
 cd pastydownloader/src
 python3 -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install PySide6 yt-dlp aiohttp requests certifi
+pip install PySide6 yt-dlp requests certifi
 python main.py
 ```
 
@@ -85,7 +85,7 @@ workflows under `.github/workflows/` (each runs from `src/`).
 ### Android
 
 The Android build is the same code, cross-compiled. It has its own toolchain
-requirements (a Python 3.11 host, `python-for-android`, native FFmpeg) and a
+requirements (a Python 3.14 host, `python-for-android`, native FFmpeg) and a
 number of platform quirks.
 
 ## AI contribution policy

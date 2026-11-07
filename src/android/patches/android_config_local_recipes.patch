@@ -1,6 +1,6 @@
 --- a/PySide6/scripts/deploy_lib/android/android_config.py
 +++ b/PySide6/scripts/deploy_lib/android/android_config.py
-@@ -455,4 +455,21 @@
+@@ -462,4 +462,21 @@
                            generated_files_path=self.generated_files_path)
              recipe_dir = ((self.generated_files_path
                             / "recipes").resolve())

@@ -24,8 +24,8 @@ FullMultiTrackM3u8DownloadTest.
 Uso gli stessi url (o dello stesso tipo) presenti in toolbar.py -> Menu.fakePopulate,
 il pannello "Populate" visibile in DEVEL_MODE.
 
-Esecuzione (richiede le stesse dipendenze del programma: PySide6, aiofiles,
-aiohttp, psutil, requests - nessuna libreria di test aggiuntiva, solo unittest
+Esecuzione (richiede le stesse dipendenze del programma: PySide6,
+psutil, requests - nessuna libreria di test aggiuntiva, solo unittest
 della standard library):
     python3 -m unittest discover -s tests
 

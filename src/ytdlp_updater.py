@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import re
 import os, shutil, tempfile, zipfile
 from PySide6.QtCore import QObject, Signal
 from libs import Tools
@@ -30,6 +31,8 @@ class YtDlpUpdater(QObject):
     KEEP_VERSIONS = 2
 
     PYPI_URL = 'https://pypi.org/pypi/yt-dlp/json'
+    # Index API (PEP 691): la chiave 'releases' del JSON e' deprecata da PyPI
+    PYPI_INDEX_URL = 'https://pypi.org/simple/yt-dlp/'
 
     _checking = False
 
@@ -79,7 +82,7 @@ class YtDlpUpdater(QObject):
             self.statusMessage.emit(MyText().ytDlpUpdating, 0)
             remoteVersion, wheel = self._fetchLatestRelease()
             if not remoteVersion or not wheel:
-                raise ValueError('No yt-dlp wheel found on PyPI')
+                raise ValueError('No compatible yt-dlp wheel found on PyPI')
             self._downloadAndInstall(remoteVersion, wheel['url'], (wheel.get('digests') or {}).get('sha256'))
             Tools.consoleLogs("yt-dlp installato correttamente")
             self.ready.emit(True)
@@ -87,15 +90,53 @@ class YtDlpUpdater(QObject):
             Tools.consoleLogs("Installazione yt-dlp fallita: " + str(err))
             self.ready.emit(False)
 
-    # (remoteVersion, wheel) da PyPI - wheel e' la entry .whl py3-none-any, o None
+    # (remoteVersion, wheel) da PyPI - wheel e' la entry .whl py3-none-any, o None.
+    # Se l'ultima release richiede un Python piu' nuovo di quello in uso, ripiega
+    # sulla piu' recente stabile compatibile; se non ce n'e' nessuna (None, None).
     def _fetchLatestRelease(self):
         release = Tools.readFileJson(self.PYPI_URL, timeout=10)
-        info = (release.get('info') or {}) if isinstance(release, dict) else {}
+        if not isinstance(release, dict):
+            release = {}
+        info = release.get('info') or {}
         remoteVersion = info.get('version')
-        urls = (release.get('urls') or []) if isinstance(release, dict) else []
-        wheel = next((u for u in urls if u.get('packagetype') == 'bdist_wheel'
-                      and str(u.get('filename', '')).endswith('-py3-none-any.whl')), None)
-        return remoteVersion, wheel
+        wheel = self._pickWheel(release.get('urls') or [])
+        if wheel is None or self._isCompatible(wheel, info):
+            return remoteVersion, wheel
+        releases = self._fetchIndexReleases()
+        for version in sorted((v for v in releases if Tools._VERSION_DIR_RE.match(v)),
+                              key=Tools.versionTuple, reverse=True):
+            candidate = self._pickWheel(releases[version] or [])
+            if candidate and self._isCompatible(candidate, {}):
+                Tools.consoleLogs("yt-dlp %s richiede un Python piu' nuovo, uso %s" % (remoteVersion, version))
+                return version, candidate
+        Tools.consoleLogs("Nessuna release di yt-dlp compatibile con questo Python")
+        return None, None
+
+    # {versione: [entry wheel]} dall'Index API, nello stesso formato del JSON API
+    # (url, digests, requires_python, yanked). Solo per il ripiego: la lista e' lunga.
+    def _fetchIndexReleases(self):
+        import requests  # import locale
+        req = requests.get(self.PYPI_INDEX_URL, timeout=20,
+                           headers={'Accept': 'application/vnd.pypi.simple.v1+json'})
+        req.raise_for_status()
+        releases = {}
+        for f in req.json().get('files') or []:
+            m = re.match(r'^yt_dlp-(.+)-py3-none-any\.whl$', f.get('filename', ''))
+            if m:
+                releases.setdefault(m.group(1), []).append({
+                    'packagetype': 'bdist_wheel', 'filename': f['filename'], 'url': f.get('url'),
+                    'digests': f.get('hashes') or {}, 'yanked': bool(f.get('yanked')),
+                    'requires_python': f.get('requires-python')})
+        return releases
+
+    @staticmethod
+    def _pickWheel(files):
+        return next((u for u in files if u.get('packagetype') == 'bdist_wheel' and not u.get('yanked')
+                     and str(u.get('filename', '')).endswith('-py3-none-any.whl')), None)
+
+    @staticmethod
+    def _isCompatible(wheel, info):
+        return Tools.pythonSatisfies(wheel.get('requires_python') or info.get('requires_python'))
 
     # Scarica il wheel in tmp, verifica checksum + importabilita', poi lo
     # installa in modo atomico in ytDlpStorageDir()/<version>/ (mai

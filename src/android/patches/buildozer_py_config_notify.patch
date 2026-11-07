@@ -1,6 +1,6 @@
 --- a/PySide6/scripts/deploy_lib/android/buildozer.py
 +++ b/PySide6/scripts/deploy_lib/android/buildozer.py
-@@ -81,6 +81,12 @@
+@@ -109,6 +109,12 @@
          # a mano
          permissions.add("android.permission.WRITE_EXTERNAL_STORAGE")
          permissions.add("android.permission.READ_EXTERNAL_STORAGE")

@@ -1,6 +1,6 @@
 --- a/PySide6/scripts/deploy_lib/android/buildozer.py
 +++ b/PySide6/scripts/deploy_lib/android/buildozer.py
-@@ -87,6 +87,17 @@
+@@ -115,6 +115,17 @@
          # di requestNeededPermissions() (PythonActivity.java), nessun altro
          # codice serve qui
          permissions.add("android.permission.POST_NOTIFICATIONS")
@@ -18,8 +18,8 @@
          permissions = ", ".join(permissions)
          self.set_value("app", "android.permissions", permissions)
  
-@@ -115,8 +126,18 @@
-         modules = ",".join(pysidedeploy_config.modules)
+@@ -149,8 +160,18 @@
+         modules = ",".join(qt_libs_modules)
          local_libs = ",".join(pysidedeploy_config.local_libs)
          init_classes = ",".join(init_classes)
 +        # PATCH locale: --native-service registra DownloadForegroundService

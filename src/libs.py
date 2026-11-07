@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback
+import os, sys, functools, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse, unquote
@@ -252,6 +252,30 @@ class Tools():
             digits = re.match(r'\d+', chunk)
             parts.append(int(digits.group()) if digits else 0)
         return tuple(parts)
+
+    # Evita di installare un yt-dlp che richiede un Python piu' nuovo del nostro:
+    # True se questo Python soddisfa il 'requires_python' di PyPI (es. '>=3.11').
+    # Vuoto o non riconosciuto: True.
+    @staticmethod
+    def pythonSatisfies(requiresPython, pyVersion=None):
+        current = tuple((pyVersion or sys.version_info)[:3])
+        for spec in str(requiresPython or '').split(','):
+            m = re.match(r'^(>=|<=|==|!=|~=|>|<)\s*(\d+(?:\.\d+)*)(\.\*)?$', spec.strip())
+            if not m:
+                continue  # specifier vuoto o sconosciuto: nessun vincolo
+            op, wanted, wildcard = m.group(1), tuple(int(x) for x in m.group(2).split('.')), m.group(3)
+            size = max(len(wanted), len(current))
+            cur, want = (current + (0,) * size)[:size], (wanted + (0,) * size)[:size]
+            if op == '~=':  # ~=3.10 equivale a >=3.10,==3.*
+                ok = cur >= want and current[:max(len(wanted) - 1, 1)] == wanted[:max(len(wanted) - 1, 1)]
+            elif wildcard:
+                ok = (current[:len(wanted)] == wanted) == (op == '==')
+            else:
+                ok = {'>=': cur >= want, '<=': cur <= want, '>': cur > want,
+                      '<': cur < want, '==': cur == want, '!=': cur != want}[op]
+            if not ok:
+                return False
+        return True
 
     # Cartella per-utente dove vengono installate le versioni di yt-dlp scaricate
     @staticmethod
@@ -1198,54 +1222,43 @@ class Tools():
             logging.error(str(err))
             return [False, 'Conversion error #1']
 
+    # Download generico: requests in un thread, senza aiohttp (niente estensioni C
+    # da compilare su Android). Stessa firma/ritorno di prima.
     @classmethod
     async def downloadAsyncGeneric(cls, src_url, saveAs, parentApp = None, onProgress=None, chunk_size=65536):
-        import aiohttp, aiofiles  # import locali, vedi ANDROID.md
-        connector = None
-        if Constants.IS_ANDROID:
-            # aiohttp non trova il bundle CA in automatico su Android
-            import ssl, certifi
-            connector = aiohttp.TCPConnector(ssl=ssl.create_default_context(cafile=certifi.where()))
+        isStopped = parentApp.isStopped if parentApp else None
+        # timeout: senza, un server muto bloccherebbe thread e stop (letto a ogni chunk)
+        # niente 'br' in Accept-Encoding: un pacchetto brotli incompatibile
+        # farebbe fallire il download con un errore criptico
+        job = functools.partial(cls.downloadNotAsyncGeneric, src_url, saveAs, isStopped, (10, 30),
+                                onProgress=onProgress, rejectHtml=True, chunkSize=chunk_size,
+                                headers={'Accept-Encoding': 'gzip, deflate'})
         try:
-            written = 0
-            lastUpdate = 0
-            async with aiohttp.ClientSession(connector=connector) as session:
-                # niente 'br' in Accept-Encoding: un pacchetto brotli incompatibile
-                # farebbe fallire il download con un errore criptico
-                async with session.get(src_url, headers={'Accept-Encoding': 'gzip, deflate'}) as resp:
-                    resp.raise_for_status()  # senza, una pagina d'errore verrebbe salvata come download riuscito
-                    responseContentType = resp.headers.get('Content-Type', '')
-                    if responseContentType.split(';')[0].strip().lower().startswith('text/html'):
-                        return [False, 'The content is a webpage, not a downloadable file']
-                    async with aiofiles.open(saveAs, 'wb') as fd:
-                        async for chunk in resp.content.iter_chunked(chunk_size):
-                            await fd.write(chunk)
+            return await asyncio.get_running_loop().run_in_executor(None, job)
+        except asyncio.CancelledError:
+            logging.info("Forced stop #2")
+            return [None, 'Stop forced by the user']
+
+    @staticmethod
+    def downloadNotAsyncGeneric(url, saveAs, isStopped=None, timeout=None, onProgress=None, rejectHtml=False, chunkSize=8192, headers=None):
+        import requests  # import locale, vedi ANDROID.md
+        try:
+            with requests.get(url, stream=True, allow_redirects=True, timeout=timeout, headers=headers) as r:
+                r.raise_for_status()  # senza, una pagina d'errore verrebbe salvata come download riuscito
+                if rejectHtml and r.headers.get('Content-Type', '').split(';')[0].strip().lower().startswith('text/html'):
+                    return [False, 'The content is a webpage, not a downloadable file']
+                written = 0
+                lastUpdate = 0
+                with open(saveAs, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=chunkSize):
+                        if chunk:
+                            f.write(chunk)
                             written += len(chunk)
                             if onProgress:
                                 now = time.time()
-                                if now - lastUpdate >= cls.PROGRESS_THROTTLE_SECONDS:
+                                if now - lastUpdate >= Tools.PROGRESS_THROTTLE_SECONDS:
                                     lastUpdate = now
                                     onProgress(written)
-                            if parentApp and parentApp.isStopped():
-                                raise asyncio.CancelledError
-            return [True, Tools.getSizeDynamic(saveAs)]
-        except asyncio.CancelledError as err:
-            logging.info("Forced stop #2")
-            return [None, 'Stop forced by the user']
-        except Exception as err:
-            logging.error(str(err))
-            return [False, str(err)]
-
-    @staticmethod
-    def downloadNotAsyncGeneric(url, saveAs, isStopped=None, timeout=None):
-        import requests  # import locale, vedi ANDROID.md
-        try:
-            with requests.get(url, stream=True, allow_redirects=True, timeout=timeout) as r:
-                r.raise_for_status()
-                with open(saveAs, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
                         if isStopped and isStopped():
                             raise asyncio.CancelledError
             return [True, Tools.getSizeDynamic(saveAs)]

@@ -31,7 +31,7 @@
 # COSA FA IN AUTONOMIA (non serve preparare nulla prima)
 # -------------------------------------------------------
 #   - crea un virtualenv Python usa-e-getta in una cartella temporanea e ci
-#     installa dentro tutte le dipendenze (PySide6, aiofiles, aiohttp,
+#     installa dentro tutte le dipendenze (PySide6,
 #     psutil, requests, PyInstaller, piu' le dipendenze opzionali di yt-dlp -
 #     brotli/certifi/mutagen/pycryptodomex/websockets/urllib3, vedi il
 #     commento su hiddenimports in main_appimage.spec) - non tocca
@@ -87,7 +87,7 @@ curl -sL https://bootstrap.pypa.io/get-pip.py -o "$BUILD_DIR/get-pip.py"
 # 'cryptography'/'jeepney' (pip puri, nessuna libreria di sistema tipo
 # libdbus-dev richiesta, verificato sui requires_dist di PyPI)
 "$BUILD_DIR/venv/bin/python" -m pip install --upgrade \
-    "PySide6==6.7.3" aiofiles aiohttp psutil requests pyinstaller \
+    "PySide6==6.7.3" psutil requests pyinstaller \
     brotli certifi mutagen pycryptodomex websockets urllib3 yt-dlp-ejs curl_cffi quickjs-ng secretstorage
 
 # rigenero resources.py con lo stesso PySide6 appena installato nel venv,

@@ -34,6 +34,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': 'Found %s valid links',
         'msgNoValidLinks': 'No valid links found',
         'msgInvalidPastylink': 'The link was copied incorrectly, go back to Pastylink and try again',
+        'msgUnsupportedPastylink': "This link was created by a newer version, please update {appName}",
         'msgDownloadStarted': 'Process started',
         'msgDownloadFinished': 'Process finished, files are in the "%s" folder',
         'typeDownload': 'Download',
@@ -110,6 +111,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': 'Trovati %s link validi',
         'msgNoValidLinks': 'Nessun link valido trovato',
         'msgInvalidPastylink': 'Il link è stato copiato male, torna su Pastylink e riprova',
+        'msgUnsupportedPastylink': "Questo link è stato creato da una versione più recente, aggiorna {appName}",
         'msgDownloadStarted': 'Processo avviato',
         'msgDownloadFinished': 'Processo terminato, i file sono nella cartella «%s»',
         'typeDownload': 'Download',
@@ -186,6 +188,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '%s liens valides trouvés',
         'msgNoValidLinks': 'Aucun lien valide trouvé',
         'msgInvalidPastylink': 'Le lien a été copié incorrectement, retournez sur Pastylink et réessayez',
+        'msgUnsupportedPastylink': "Ce lien a été créé par une version plus récente, mettez à jour {appName}",
         'msgDownloadStarted': 'Processus démarré ',
         'msgDownloadFinished': 'Processus terminé, les fichiers sont dans le dossier « %s »',
         'typeDownload': 'Téléchargement',
@@ -262,6 +265,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': 'Se encontraron %s enlaces válidos',
         'msgNoValidLinks': 'No se encontró ningún enlace válido',
         'msgInvalidPastylink': 'El enlace se copió incorrectamente, vuelve a Pastylink e inténtalo de nuevo',
+        'msgUnsupportedPastylink': "Este enlace fue creado por una versión más reciente, actualiza {appName}",
         'msgDownloadStarted': '¡Proceso iniciado',
         'msgDownloadFinished': 'Proceso terminado, los archivos están en la carpeta «%s»',
         'typeDownload': 'Descarga',
@@ -338,6 +342,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '%s gültige Links gefunden',
         'msgNoValidLinks': 'Kein gültiger Link gefunden',
         'msgInvalidPastylink': 'Der Link wurde falsch kopiert, gehe zurück zu Pastylink und versuche es erneut',
+        'msgUnsupportedPastylink': "Dieser Link wurde mit einer neueren Version erstellt, bitte aktualisiere {appName}",
         'msgDownloadStarted': 'Vorgang gestartet',
         'msgDownloadFinished': 'Vorgang abgeschlossen, die Dateien liegen im Ordner „%s“',
         'typeDownload': 'Download',
@@ -414,6 +419,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '找到 %s 个有效链接',
         'msgNoValidLinks': '未找到有效链接',
         'msgInvalidPastylink': '链接复制有误，请返回 Pastylink 重试',
+        'msgUnsupportedPastylink': "此链接由较新版本创建，请更新 {appName}",
         'msgDownloadStarted': '处理已开始',
         'msgDownloadFinished': '处理完成, 文件已保存到「%s」文件夹',
         'typeDownload': '下载',
@@ -490,6 +496,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '%s 件の有効なリンクが見つかりました',
         'msgNoValidLinks': '有効なリンクが見つかりませんでした',
         'msgInvalidPastylink': 'リンクのコピーに失敗しました。Pastylinkに戻ってもう一度お試しください',
+        'msgUnsupportedPastylink': "このリンクは新しいバージョンで作成されました。{appName}を更新してください",
         'msgDownloadStarted': '処理を開始しました',
         'msgDownloadFinished': '処理が完了しました, ファイルは「%s」フォルダーにあります',
         'typeDownload': 'ダウンロード',
@@ -566,6 +573,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '%s links válidos encontrados',
         'msgNoValidLinks': 'Nenhum link válido encontrado',
         'msgInvalidPastylink': 'O link foi copiado incorretamente, volte ao Pastylink e tente novamente',
+        'msgUnsupportedPastylink': "Este link foi criado por uma versão mais recente, atualize o {appName}",
         'msgDownloadStarted': 'Processo iniciado',
         'msgDownloadFinished': 'Processo concluído, os arquivos estão na pasta «%s»',
         'typeDownload': 'Download',
@@ -642,6 +650,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': 'Найдено %s действительных ссылок',
         'msgNoValidLinks': 'Действительных ссылок не найдено',
         'msgInvalidPastylink': 'Ссылка скопирована неправильно, вернитесь в Pastylink и попробуйте снова',
+        'msgUnsupportedPastylink': "Эта ссылка создана более новой версией, обновите {appName}",
         'msgDownloadStarted': 'Процесс запущен',
         'msgDownloadFinished': 'Процесс завершён, файлы в папке «%s»',
         'typeDownload': 'Загрузка',
@@ -718,6 +727,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '유효한 링크 %s개를 찾았습니다',
         'msgNoValidLinks': '유효한 링크를 찾을 수 없습니다',
         'msgInvalidPastylink': '링크가 잘못 복사되었습니다. Pastylink로 돌아가서 다시 시도하세요',
+        'msgUnsupportedPastylink': "이 링크는 더 새로운 버전에서 만들어졌습니다. {appName}을(를) 업데이트하세요",
         'msgDownloadStarted': '작업이 시작되었습니다',
         'msgDownloadFinished': '처리가 완료되었습니다, 파일은 "%s" 폴더에 있습니다',
         'typeDownload': '다운로드',
@@ -794,6 +804,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': '%s geldige links gevonden',
         'msgNoValidLinks': 'Geen geldige link gevonden',
         'msgInvalidPastylink': 'De link is verkeerd gekopieerd, ga terug naar Pastylink en probeer het opnieuw',
+        'msgUnsupportedPastylink': "Deze link is gemaakt met een nieuwere versie, werk {appName} bij",
         'msgDownloadStarted': 'Proces gestart',
         'msgDownloadFinished': 'Proces voltooid, de bestanden staan in de map %s',
         'typeDownload': 'Download',
@@ -870,6 +881,7 @@ _TRANSLATIONS = {
         'msgFoundLinks': 'تم العثور على %s روابط صالحة',
         'msgNoValidLinks': 'لم يتم العثور على أي رابط صالح',
         'msgInvalidPastylink': 'تم نسخ الرابط بشكل غير صحيح، عد إلى Pastylink وحاول مرة أخرى',
+        'msgUnsupportedPastylink': "تم إنشاء هذا الرابط بإصدار أحدث، يرجى تحديث {appName}",
         'msgDownloadStarted': 'بدأت العملية',
         'msgDownloadFinished': 'اكتملت العملية, الملفات موجودة في مجلد «%s»',
         'typeDownload': 'تنزيل',
@@ -934,7 +946,6 @@ class MyText():
 
     # files
     pasty_icon = ':/images/paste.png'
-    pasty_icon_rev = ':/images/paste_revert.png'
     pasty_favicon = ':/images/favicon.ico'
 
     LANGUAGES = sorted([

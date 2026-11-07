@@ -165,6 +165,23 @@ class ImportExternalUrlTest(unittest.TestCase):
         self.assertEqual(app.lastStatus, MyText().msgInvalidPastylink)
         self.assertEqual(app.fetchCalls, 0)
 
+    def test_newer_version_pastylink_gets_update_message_and_no_row(self):
+        app = _FakeApp(makeGrid())
+        payload = base64.b64encode(json.dumps({'v2': {'ytdlp': YOUTUBE_URL}}).encode()).decode()
+        app.importExternalUrl(Tools.PASTYLINK_URL_PREFIX + payload)
+        pumpEvents()
+        self.assertEqual(app.pastyGrid.getAllUrlsInTable(), [])
+        self.assertEqual(app.lastStatus, MyText().msgUnsupportedPastylink)
+
+    def test_v2_payload_with_v1_fallback_is_still_read(self):
+        payload = base64.b64encode(json.dumps({'v2': {}, 'v1': {'ytdlp': YOUTUBE_URL}}).encode()).decode()
+        url = Tools.PASTYLINK_URL_PREFIX + payload
+        self.assertEqual(Tools.decodePastylinkUrl(url), YOUTUBE_URL)
+        self.assertFalse(Tools.isPastylinkNewerVersion(url))
+
+    def test_corrupt_payload_is_not_newer_version(self):
+        self.assertFalse(Tools.isPastylinkNewerVersion('httpasty://payload-corrotto!!!'))
+
     def test_empty_url_only_raises_the_window(self):
         app = _FakeApp(makeGrid())
         app.importExternalUrl('')

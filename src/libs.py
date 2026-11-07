@@ -738,15 +738,25 @@ class Tools():
         return text.lstrip('﻿').strip()
 
     @classmethod
-    def _decodePastylinkV1(cls, url):
+    def _decodePastylinkPayload(cls, url):
         # unquote: da <a href="httpasty://..."> il browser percent-encoda
         payload = unquote(url[len(cls.PASTYLINK_URL_PREFIX):])
         padded = payload + '=' * (-len(payload) % 4)
         try:
             data = json.loads(base64.b64decode(padded))
-            return data.get('v1') or {}
+            return data if isinstance(data, dict) else None
         except Exception:
             return None
+
+    @classmethod
+    def _decodePastylinkV1(cls, url):
+        return ((cls._decodePastylinkPayload(url) or {}).get('v1')) or None
+
+    # payload valido ma solo di versioni sconosciute (es. "v2"): serve aggiornare l'app
+    @classmethod
+    def isPastylinkNewerVersion(cls, url):
+        data = cls._decodePastylinkPayload(url)
+        return bool(data) and not data.get('v1') and any(re.fullmatch(r'v\d+', str(k)) for k in data)
 
     @classmethod
     def decodePastylinkUrl(cls, url):

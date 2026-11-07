@@ -91,6 +91,7 @@ class AsyncWorker(QObject):
             # thread di background: un'eccezione non gestita salterebbe
             # allProcessesFinished() lasciando la UI bloccata
             try:
+                self.setBothStates(self.gridParent.STATUS_CODE_ANALYZING)
                 rawUrl = self.gridParent.getCellUrl(self.rowId)
                 self.pastedUrl = PastedUrl(self.appParent, self.rowId, rawUrl, self.ffmpeg)
                 asyncio.run(self.manageSingleUrl())
@@ -125,7 +126,8 @@ class AsyncWorker(QObject):
             Tools.consoleLogs("Action: Converting")
             result = await self.runConversion(videoPath)
         # deleting
-        if result[0] == self.gridParent.STATUS_CODE_COMPLETED and self.isToKeepOnlyInMp3():
+        convertedSame = os.path.abspath(Tools.replaceExtension(videoPath, Tools.AUDIO_FORMAT_EXTENSIONS.get(self.settings.value('audioFormat', 'mp3'), 'mp3'))) == os.path.abspath(videoPath)
+        if result[0] == self.gridParent.STATUS_CODE_COMPLETED and self.isToKeepOnlyInMp3() and not convertedSame:
             Tools.consoleLogs("Action: Deleting")
             Tools.removeFile(videoPath)
             self.gridSaveAsUpdate.emit(self.rowId, '')
@@ -207,6 +209,8 @@ class AsyncWorker(QObject):
         audioFormat = self.settings.value('audioFormat', 'mp3')
         extension = Tools.AUDIO_FORMAT_EXTENSIONS.get(audioFormat, 'mp3')
         self.saveAs = Tools.replaceExtension(myVideo, extension)
+        if os.path.abspath(self.saveAs) == os.path.abspath(myVideo):
+            return self.smartReturn([True, Tools.getSizeDynamic(myVideo)])  # gia' nel formato richiesto
         results = await Tools.ConvertAudioByFFmpeg(self.ffmpeg, self.saveAs, myVideo, audioFormat, self.onConversionSizeProgress, self.isStopped)
         return self.smartReturn(results)
 

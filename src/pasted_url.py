@@ -58,6 +58,14 @@ class PastedUrl():
         'application/epub+zip',
     )
 
+    # content-type audio -> estensione (copy dei pacchetti, niente mp4)
+    AUDIO_EXTENSIONS = {
+        'audio/mpeg': '.mp3', 'audio/mp3': '.mp3', 'audio/aac': '.aac', 'audio/aacp': '.aac',
+        'audio/mp4': '.m4a', 'audio/x-m4a': '.m4a', 'audio/ogg': '.ogg', 'audio/opus': '.opus',
+        'audio/flac': '.flac', 'audio/x-flac': '.flac', 'audio/wav': '.wav', 'audio/x-wav': '.wav',
+        'audio/webm': '.webm',
+    }
+
     PROBE_TIMEOUT_SECONDS = 15  # probe ffmpeg (_isRealVideoOnline)
     GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS = 20  # probe yt-dlp su pagina generica
 
@@ -114,6 +122,9 @@ class PastedUrl():
             ext = self.EXT_MP4
         elif ct and ct.startswith(self.GENERIC_ONLY_CONTENT_TYPES):
             pass  # resta generico
+        elif ct and ct in self.AUDIO_EXTENSIONS:
+            self.engine = self.URL_TYPE_VIDEO
+            ext = self.AUDIO_EXTENSIONS[ct]
         elif ct and ct.startswith(self.FFMPEG_DIRECT_CONTENT_TYPES):
             self.engine = self.URL_TYPE_VIDEO
             ext = self.EXT_MP4

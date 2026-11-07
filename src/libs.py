@@ -1158,7 +1158,9 @@ class Tools():
                     command += ['-c', 'copy']
             else:
                 command += ['-c', 'copy']
-            command += ['-bsf:a', 'aac_adtstoasc', saveAs]
+            if saveAs.lower().endswith(('.mp4', '.m4a')):
+                command += ['-bsf:a', 'aac_adtstoasc']
+            command += [saveAs]
             stopped, returncode, stderr = await loop.run_in_executor(None, Tools._runFFmpegWithProgress, command, saveAs, onProgress, isStoppedFn)
             if stopped:
                 return [None, 'Stop forced by the user']
@@ -1555,19 +1557,29 @@ class Tools():
     @classmethod
     def openFolder(cls, foldername):
         if cls.getOs() == 'linux':
-            try:
-                subprocess.run(['dbus-send', '--print-reply', '--dest=org.freedesktop.FileManager1',
-                                 '/org/freedesktop/FileManager1', 'org.freedesktop.FileManager1.ShowItems',
-                                 'array:string:file://%s/*' % foldername, 'string:'])
-            except Exception:
-                pass
+            # ShowFolders col file manager via D-Bus; se fallisce, xdg-open
+            uri = Path(foldername).resolve().as_uri()
+            for command in (
+                ['dbus-send', '--session', '--print-reply', '--dest=org.freedesktop.FileManager1',
+                 '/org/freedesktop/FileManager1', 'org.freedesktop.FileManager1.ShowFolders',
+                 'array:string:' + uri, 'string:'],
+                ['xdg-open', foldername],
+            ):
+                try:
+                    if subprocess.run(command, capture_output=True, timeout=10).returncode == 0:
+                        break
+                except Exception:
+                    continue
         elif cls.getOs() == 'mac':
             try:
                 subprocess.run(['open', foldername])
             except Exception:
                 pass
-        else:
-            os.startfile(foldername)
+        elif cls.getOs() == 'win':
+            try:
+                os.startfile(foldername)
+            except Exception:
+                pass
 
     # Apre il file con l'app predefinita (doppio click su una riga completata).
     # Linux: xdg-open, non il dbus/ShowItems di openFolder (che solo evidenzia).

@@ -24,6 +24,7 @@ class Constants:
     STATUS_CODE_COMPLETED   = 'Completed'
     STATUS_CODE_ERROR       = 'Error'
     STATUS_CODE_WAITING     = 'Waiting'
+    STATUS_CODE_ANALYZING   = 'Analyzing'
     STATUS_CODE_DOWNLOADING = 'Downloading'
     STATUS_CODE_STOPPED     = 'Stopped'
     STATUS_CODE_CONVERTING  = 'Converting'

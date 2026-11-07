@@ -790,11 +790,18 @@ class ContentTypeClassificationTest(unittest.TestCase):
             return PastedUrl(self.app, 0, 'https://example.test/resource', Tools.checkFFmpeg())
 
     def test_audio_and_other_media_content_types_are_routed_to_direct_video_engine(self):
-        for contentType in ['audio/mpeg', 'application/ogg', 'application/x-matroska', 'application/vnd.ms-asf']:
+        for contentType in ['application/ogg', 'application/x-matroska', 'application/vnd.ms-asf']:
             with self.subTest(contentType=contentType):
                 pastedUrl = self.classify(contentType)
                 self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_VIDEO)
                 self.assertTrue(pastedUrl.getSaveAs().endswith('.mp4'))
+
+    def test_audio_content_types_keep_their_audio_extension(self):
+        for contentType, ext in [('audio/mpeg', '.mp3'), ('audio/mp4', '.m4a'), ('audio/flac', '.flac')]:
+            with self.subTest(contentType=contentType):
+                pastedUrl = self.classify(contentType)
+                self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_VIDEO)
+                self.assertTrue(pastedUrl.getSaveAs().endswith(ext))
 
     def test_clearly_non_media_content_types_are_routed_to_generic(self):
         contentTypes = ['application/pdf', 'application/json', 'application/zip',

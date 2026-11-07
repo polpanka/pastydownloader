@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys, functools, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback
+import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse, unquote
@@ -1230,9 +1230,9 @@ class Tools():
         # timeout: senza, un server muto bloccherebbe thread e stop (letto a ogni chunk)
         # niente 'br' in Accept-Encoding: un pacchetto brotli incompatibile
         # farebbe fallire il download con un errore criptico
-        job = functools.partial(cls.downloadNotAsyncGeneric, src_url, saveAs, isStopped, (10, 30),
-                                onProgress=onProgress, rejectHtml=True, chunkSize=chunk_size,
-                                headers={'Accept-Encoding': 'gzip, deflate'})
+        job = lambda: cls.downloadNotAsyncGeneric(
+            src_url, saveAs, isStopped, (10, 30), onProgress=onProgress, rejectHtml=True,
+            chunkSize=chunk_size, headers={'Accept-Encoding': 'gzip, deflate'})
         try:
             return await asyncio.get_running_loop().run_in_executor(None, job)
         except asyncio.CancelledError:
@@ -1312,6 +1312,33 @@ class Tools():
             except Exception:
                 continue  # un browser illeggibile non deve far fallire la funzione
         return None
+
+    # Extractor di yt-dlp "specifici" (no Generic, no Known* DRM/piracy, solo
+    # funzionanti), calcolati una volta per modulo importato
+    _ytDlpExtractorsCache = (None, [])
+
+    @classmethod
+    def _specificYtDlpExtractors(cls, ytdlp):
+        if cls._ytDlpExtractorsCache[0] is not ytdlp:
+            classes = [ie for ie in ytdlp.extractor.gen_extractor_classes()
+                       if ie.ie_key() != 'Generic' and not ie.ie_key().startswith('Known') and ie.working()]
+            cls._ytDlpExtractorsCache = (ytdlp, classes)
+        return cls._ytDlpExtractorsCache[1]
+
+    # Offline e in pochi ms: un extractor specifico di yt-dlp riconosce l'url?
+    # Evita la probe di rete (isYtDlpDownloadable) per i siti noti. False anche
+    # se yt-dlp non e' installato: si ricade sulla probe.
+    @classmethod
+    def hasYtDlpExtractor(cls, url):
+        try:
+            packageDir = cls.checkYtDlp()
+            ytdlp = cls._importYtDlp(packageDir) if packageDir else None
+            if not ytdlp:
+                return False
+            return any(ie.suitable(url) for ie in cls._specificYtDlpExtractors(ytdlp))
+        except Exception as err:
+            cls.consoleLogs("Error: yt-dlp extractor match - " + str(err))
+            return False
 
     # Probe di classificazione (PastedUrl._analyze): yt-dlp trova qualcosa su
     # questa pagina generica? extract_info(download=False), in-process con

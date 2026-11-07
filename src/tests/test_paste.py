@@ -334,6 +334,7 @@ class PasteYoutubeTest(unittest.TestCase):
         lento ma l'esito finale deve restare comunque yt-dlp. Mockiamo le
         chiamate di rete per tenerlo veloce e deterministico."""
         with mock.patch.object(PastedUrl, '_getContentTypeFromUrl', return_value='text/html'), \
+             mock.patch.object(Tools, 'hasYtDlpExtractor', return_value=False), \
              mock.patch.object(PastedUrl, '_isRealVideoOnline', return_value=False), \
              mock.patch.object(Tools, 'isYtDlpDownloadable', return_value=True):
             pastedUrl = PastedUrl(self.app, 0, YOUTUBE_URL, Tools.checkFFmpeg())
@@ -684,7 +685,8 @@ class PasteGenericYtDlpFallbackTest(unittest.TestCase):
     def test_fallback_mechanism_routes_to_ytdlp_when_downloadable(self):
         # verifica il meccanismo in modo deterministico (senza dipendere dalla
         # rete): se il probe dice che yt-dlp trova qualcosa, l'engine diventa yt-dlp
-        with mock.patch.object(Tools, 'isYtDlpDownloadable', return_value=True) as mocked:
+        with mock.patch.object(Tools, 'hasYtDlpExtractor', return_value=False), \
+             mock.patch.object(Tools, 'isYtDlpDownloadable', return_value=True) as mocked:
             pastedUrl = PastedUrl(self.app, 0, GENERIC_YTDLP_PAGE_URL, Tools.checkFFmpeg())
         mocked.assert_called_once()
         self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_YT_DLP)

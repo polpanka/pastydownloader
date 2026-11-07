@@ -114,7 +114,14 @@ class PastedUrl():
             ext = self.EXT_MP4
         elif ct and ct.startswith(self.GENERIC_ONLY_CONTENT_TYPES):
             pass  # resta generico
-        elif (ct and ct.startswith(self.FFMPEG_DIRECT_CONTENT_TYPES)) or self._isRealVideoOnline():
+        elif ct and ct.startswith(self.FFMPEG_DIRECT_CONTENT_TYPES):
+            self.engine = self.URL_TYPE_VIDEO
+            ext = self.EXT_MP4
+        elif (not ct or ct.startswith('text/html')) and Tools.hasYtDlpExtractor(self.url):
+            # sito noto a yt-dlp: niente probe ffmpeg ne' extract_info di rete
+            self.engine = self.URL_TYPE_YT_DLP
+            ext = self.EXT_MP4
+        elif self._isRealVideoOnline():
             self.engine = self.URL_TYPE_VIDEO
             ext = self.EXT_MP4
         elif (not ct or ct.startswith('text/html')) and Tools.isYtDlpDownloadable(self.url, timeout=self.GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS):

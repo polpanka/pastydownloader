@@ -752,16 +752,37 @@ class Tools():
     def _decodePastylinkV1(cls, url):
         return ((cls._decodePastylinkPayload(url) or {}).get('v1')) or None
 
-    # payload valido ma solo di versioni sconosciute (es. "v2"): serve aggiornare l'app
+    _KNOWN_V1_KEYS = {'ytdlp', 'direct', 'ffmpeg'}
+
+    # payload valido ma non gestibile da questa versione: serve aggiornare l'app.
+    # Casi: solo chiavi vN sconosciute (es. "v2"), oppure v1 presente ma con solo
+    # chiavi downloader sconosciute (es. "directpippo" aggiunta in futuro).
     @classmethod
     def isPastylinkNewerVersion(cls, url):
         data = cls._decodePastylinkPayload(url)
-        return bool(data) and not data.get('v1') and any(re.fullmatch(r'v\d+', str(k)) for k in data)
+        if not data:
+            return False
+        v1 = data.get('v1')
+        if not v1:
+            return any(re.fullmatch(r'v\d+', str(k)) for k in data)
+        return isinstance(v1, dict) and not any(k in cls._KNOWN_V1_KEYS for k in v1)
 
     @classmethod
     def decodePastylinkUrl(cls, url):
         v1 = cls._decodePastylinkV1(url)
         return (v1 or {}).get('ytdlp') or None
+
+    @classmethod
+    def decodePastylinkDirectUrl(cls, url):
+        # httpasty://BASE64{"v1":{"direct":"https://cdn.example.com/file.mp4","referer":"..."}}
+        v1 = cls._decodePastylinkV1(url)
+        return (v1 or {}).get('direct') or None
+
+    @classmethod
+    def decodePastylinkFfmpegUrl(cls, url):
+        # httpasty://BASE64{"v1":{"ffmpeg":"https://cdn.example.com/stream.m3u8","referer":"..."}}
+        v1 = cls._decodePastylinkV1(url)
+        return (v1 or {}).get('ffmpeg') or None
 
     @classmethod
     def decodePastylinkReferer(cls, url):
@@ -1237,14 +1258,17 @@ class Tools():
     # Download generico: requests in un thread, senza aiohttp (niente estensioni C
     # da compilare su Android). Stessa firma/ritorno di prima.
     @classmethod
-    async def downloadAsyncGeneric(cls, src_url, saveAs, parentApp = None, onProgress=None, chunk_size=65536):
+    async def downloadAsyncGeneric(cls, src_url, saveAs, parentApp=None, onProgress=None, chunk_size=65536, referer=None):
         isStopped = parentApp.isStopped if parentApp else None
         # timeout: senza, un server muto bloccherebbe thread e stop (letto a ogni chunk)
         # niente 'br' in Accept-Encoding: un pacchetto brotli incompatibile
         # farebbe fallire il download con un errore criptico
+        headers = {'Accept-Encoding': 'gzip, deflate'}
+        if referer:
+            headers['Referer'] = referer
         job = lambda: cls.downloadNotAsyncGeneric(
             src_url, saveAs, isStopped, (10, 30), onProgress=onProgress, rejectHtml=True,
-            chunkSize=chunk_size, headers={'Accept-Encoding': 'gzip, deflate'})
+            chunkSize=chunk_size, headers=headers)
         try:
             return await asyncio.get_running_loop().run_in_executor(None, job)
         except asyncio.CancelledError:

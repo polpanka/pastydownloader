@@ -149,10 +149,11 @@ class AsyncWorker(QObject):
             url = self.pastedUrl.getUrl()
             saveAs = self.pastedUrl.getSaveAs()
             engine = self.pastedUrl.getEngine()
-            # caso generico
+            # caso generico (anche v1.direct: requests + Referer, niente ffmpeg/yt-dlp)
             if engine == PastedUrl.URL_TYPE_GENERIC:
                 Tools.consoleLogs("Used: Async generic dl")
-                results = await Tools.downloadAsyncGeneric(url, saveAs, self, self.onSizeProgress)
+                results = await Tools.downloadAsyncGeneric(url, saveAs, self, self.onSizeProgress,
+                                                           referer=self.pastedUrl.getPastylinkReferer())
                 return self.smartReturn(results)
             if engine == PastedUrl.URL_TYPE_YT_DLP:
                 Tools.consoleLogs("Used: yt-dlp direct download")
@@ -169,7 +170,8 @@ class AsyncWorker(QObject):
                 Tools.consoleLogs("Used: ffmpeg with default url")
                 referers = self.appParent.getReferers()
                 host = Tools.getHostFromUrl(url)
-                referer = referers.get(host, '')
+                # pastylink referer (v1.ffmpeg) ha priorità su referers.json
+                referer = self.pastedUrl.getPastylinkReferer() or referers.get(host, '')
                 results = await Tools.downloadVideoByFFmpeg(self.ffmpeg, url, referer, saveAs, self.onSizeProgress, self.isStopped)
             # stop dell'utente ma un file utilizzabile e' gia' su disco (tipico
             # dei download lunghi / dirette): lo si aggancia alla riga - apribile,

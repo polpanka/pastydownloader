@@ -378,6 +378,15 @@ class PastylinkUrlTest(unittest.TestCase):
         encoded = base64.b64encode(json.dumps({'v1': {'title': 'senza ytdlp'}}).encode()).decode().rstrip('=')
         self.assertIsNone(Tools.decodePastylinkUrl(Tools.PASTYLINK_URL_PREFIX + encoded))
 
+    def test_v1_with_unknown_downloader_key_is_newer_version(self):
+        # v1 presente ma con chiave downloader sconosciuta → "aggiorna l'app"
+        encoded = base64.b64encode(json.dumps({'v1': {'directpippo': 'https://x.com/'}}).encode()).decode().rstrip('=')
+        url = Tools.PASTYLINK_URL_PREFIX + encoded
+        self.assertTrue(Tools.isPastylinkNewerVersion(url))
+
+    def test_v1_with_known_key_is_not_newer_version(self):
+        self.assertFalse(Tools.isPastylinkNewerVersion(makePastylinkUrl(YOUTUBE_URL)))
+
     def test_decode_referer_key(self):
         # chiave opzionale 'referer' dentro 'v1', usata per i player embed che
         # rifiutano di servire il video senza un Referer valido (es. Vimeo)
@@ -386,6 +395,20 @@ class PastylinkUrlTest(unittest.TestCase):
         url = Tools.PASTYLINK_URL_PREFIX + encoded
         self.assertEqual(Tools.decodePastylinkUrl(url), YOUTUBE_URL)
         self.assertEqual(Tools.decodePastylinkReferer(url), 'https://www.cinematheque.fr/')
+
+    def test_decode_ffmpeg_key(self):
+        HLS_URL = 'https://cdn.example.net/stream.m3u8?tok=x'
+        payload = {'v1': {'ffmpeg': HLS_URL, 'referer': 'https://example.net/'}}
+        url = Tools.PASTYLINK_URL_PREFIX + base64.b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+        self.assertEqual(Tools.decodePastylinkFfmpegUrl(url), HLS_URL)
+        self.assertIsNone(Tools.decodePastylinkUrl(url))
+
+    def test_decode_direct_key(self):
+        CDN_URL = 'https://cdn.example.net/file.mp4?tok=x'
+        payload = {'v1': {'direct': CDN_URL, 'referer': 'https://example.net/'}}
+        url = Tools.PASTYLINK_URL_PREFIX + base64.b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+        self.assertEqual(Tools.decodePastylinkDirectUrl(url), CDN_URL)
+        self.assertIsNone(Tools.decodePastylinkUrl(url))  # ytdlp key assente
 
     def test_decode_referer_missing_returns_none(self):
         url = makePastylinkUrl(YOUTUBE_URL)
@@ -410,6 +433,28 @@ class PastylinkUrlTest(unittest.TestCase):
         self.assertEqual(pastedUrl.getOriginalUrl(), pastylinkUrl)  # il grezzo resta comunque disponibile
         self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_YT_DLP)
         self.assertTrue(pastedUrl.getSaveAs().endswith('.mp4'))
+
+    def test_pastylink_ffmpeg_key_is_routed_to_video(self):
+        """v1.ffmpeg → URL_TYPE_VIDEO (ffmpeg con Referer); senza content-type probe."""
+        HLS_URL = 'https://cdn.example.net/stream.m3u8?tok=x'
+        payload = {'v1': {'ffmpeg': HLS_URL, 'referer': 'https://example.net/'}}
+        pastylinkUrl = Tools.PASTYLINK_URL_PREFIX + base64.b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+        self.app.pastyGrid.addRow(pastylinkUrl)
+        pastedUrl = PastedUrl(self.app, 0, pastylinkUrl, Tools.checkFFmpeg())
+        self.assertEqual(pastedUrl.getUrl(), HLS_URL)
+        self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_VIDEO)
+        self.assertIsNone(pastedUrl.contentType)
+
+    def test_pastylink_direct_key_is_routed_to_generic(self):
+        """v1.direct → download generico con Referer; senza content-type probe."""
+        CDN_URL = 'https://cdn.example.net/v2/file.mp4?s=tok&e=9999999999'
+        payload = {'v1': {'direct': CDN_URL, 'referer': 'https://example.net/'}}
+        pastylinkUrl = Tools.PASTYLINK_URL_PREFIX + base64.b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+        self.app.pastyGrid.addRow(pastylinkUrl)
+        pastedUrl = PastedUrl(self.app, 0, pastylinkUrl, Tools.checkFFmpeg())
+        self.assertEqual(pastedUrl.getUrl(), CDN_URL)
+        self.assertEqual(pastedUrl.getEngine(), PastedUrl.URL_TYPE_GENERIC)
+        self.assertIsNone(pastedUrl.contentType)  # nessuna probe HTTP
 
     def test_pastylink_url_is_replaced_in_the_grid_once_decoded(self):
         # cosi' un "Copia link"/ri-download successivo usa l'url vero, non

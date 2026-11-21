@@ -249,7 +249,7 @@ class PastyGrid():
             url = url.strip()
             isManifestText = Tools.isM3u8ManifestText(url)
             isPastylink = Tools.isPastylinkUrl(url)
-            if isPastylink and not Tools.decodePastylinkUrl(url):
+            if isPastylink and not Tools.decodePastylinkUrl(url) and not Tools.decodePastylinkDirectUrl(url) and not Tools.decodePastylinkFfmpegUrl(url):
                 invalidMsgKey = 'msgUnsupportedPastylink' if Tools.isPastylinkNewerVersion(url) else 'msgInvalidPastylink'
                 continue
             if url \

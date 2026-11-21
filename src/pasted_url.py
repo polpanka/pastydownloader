@@ -74,11 +74,16 @@ class PastedUrl():
         self.rowId = rowId
         self.ffmpeg = ffmpeg
         self.originalUrl = rawUrl
-        decodedPastylinkUrl = Tools.decodePastylinkUrl(rawUrl) if Tools.isPastylinkUrl(rawUrl) else None
-        self.isPastylink = bool(decodedPastylinkUrl)
+        _isPl = Tools.isPastylinkUrl(rawUrl)
+        _ytdlpUrl  = Tools.decodePastylinkUrl(rawUrl)        if _isPl else None
+        _directUrl = Tools.decodePastylinkDirectUrl(rawUrl)  if _isPl else None
+        _ffmpegUrl = Tools.decodePastylinkFfmpegUrl(rawUrl)  if _isPl else None
+        self.isPastylink = bool(_ytdlpUrl or _directUrl or _ffmpegUrl)
+        self._pastylinkUseDirect = bool(_directUrl)
+        self._pastylinkUseFfmpeg = bool(_ffmpegUrl)
         self.pastylinkReferer = Tools.decodePastylinkReferer(rawUrl) if self.isPastylink else None
         if self.isPastylink:
-            self.url = decodedPastylinkUrl
+            self.url = _directUrl or _ffmpegUrl or _ytdlpUrl
             self.appParent.pastyGrid.setCellUrl(self.rowId, self.url)
         elif Tools.isM3u8ManifestText(rawUrl):
             self.url = Tools.writeM3u8InFile(Tools.stripBom(rawUrl))
@@ -112,35 +117,44 @@ class PastedUrl():
             return
         tools = Tools()
         ext = ''
-        self.contentType = self._getContentTypeFromUrl(self.url)
-        ct = self.contentType
         if self.url.startswith(tools.getTempDirectory()):
+            self.contentType = self._getContentTypeFromUrl(self.url)
             self.engine = self.URL_TYPE_VIDEO
             ext = self.EXT_MP4
         elif self.isPastylink:
-            self.engine = self.URL_TYPE_YT_DLP
+            # routing già noto; non fare GET al CDN senza il referer corretto.
+            # v1.direct → requests+Referer; v1.ffmpeg → ffmpeg+Referer; v1.ytdlp → yt-dlp.
+            if self._pastylinkUseDirect:
+                self.engine = self.URL_TYPE_GENERIC
+            elif self._pastylinkUseFfmpeg:
+                self.engine = self.URL_TYPE_VIDEO
+            else:
+                self.engine = self.URL_TYPE_YT_DLP
             ext = self.EXT_MP4
-        elif ct and ct.startswith(self.GENERIC_ONLY_CONTENT_TYPES):
-            pass  # resta generico
-        elif ct and ct in self.AUDIO_EXTENSIONS:
-            self.engine = self.URL_TYPE_VIDEO
-            ext = self.AUDIO_EXTENSIONS[ct]
-        elif ct and ct.startswith(self.FFMPEG_DIRECT_CONTENT_TYPES):
-            self.engine = self.URL_TYPE_VIDEO
-            ext = self.EXT_MP4
-        elif (not ct or ct.startswith('text/html')) and Tools.hasYtDlpExtractor(self.url):
-            # sito noto a yt-dlp: niente probe ffmpeg ne' extract_info di rete
-            self.engine = self.URL_TYPE_YT_DLP
-            ext = self.EXT_MP4
-        elif self._isRealVideoOnline():
-            self.engine = self.URL_TYPE_VIDEO
-            ext = self.EXT_MP4
-        elif (not ct or ct.startswith('text/html')) and Tools.isYtDlpDownloadable(self.url, timeout=self.GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS):
-            # pagina generica che magari nasconde un video: yt-dlp lo trova?
-            self.engine = self.URL_TYPE_YT_DLP
-            ext = self.EXT_MP4
-        if ct and not ext:
-            ext = '.' + ct.split('/')[-1]  # text/html
+        else:
+            self.contentType = self._getContentTypeFromUrl(self.url)
+            ct = self.contentType
+            if ct and ct.startswith(self.GENERIC_ONLY_CONTENT_TYPES):
+                pass  # resta generico
+            elif ct and ct in self.AUDIO_EXTENSIONS:
+                self.engine = self.URL_TYPE_VIDEO
+                ext = self.AUDIO_EXTENSIONS[ct]
+            elif ct and ct.startswith(self.FFMPEG_DIRECT_CONTENT_TYPES):
+                self.engine = self.URL_TYPE_VIDEO
+                ext = self.EXT_MP4
+            elif (not ct or ct.startswith('text/html')) and Tools.hasYtDlpExtractor(self.url):
+                # sito noto a yt-dlp: niente probe ffmpeg ne' extract_info di rete
+                self.engine = self.URL_TYPE_YT_DLP
+                ext = self.EXT_MP4
+            elif self._isRealVideoOnline():
+                self.engine = self.URL_TYPE_VIDEO
+                ext = self.EXT_MP4
+            elif (not ct or ct.startswith('text/html')) and Tools.isYtDlpDownloadable(self.url, timeout=self.GENERIC_YTDLP_FALLBACK_TIMEOUT_SECONDS):
+                # pagina generica che magari nasconde un video: yt-dlp lo trova?
+                self.engine = self.URL_TYPE_YT_DLP
+                ext = self.EXT_MP4
+            if ct and not ext:
+                ext = '.' + ct.split('/')[-1]  # text/html
         self.saveAs = tools.getBestFilenameToSaveAs(self.url, ext)
 
     def _getContentTypeFromUrl(self, url):

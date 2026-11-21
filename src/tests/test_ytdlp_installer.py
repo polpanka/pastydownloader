@@ -319,3 +319,54 @@ class IndexReleasesTest(unittest.TestCase):
         self.assertEqual(out['2099.01.15'][0]['requires_python'], '>=3.10')
         self.assertTrue(out['2099.01.10'][0]['yanked'])
         self.assertIn('simple.v1+json', get.call_args.kwargs['headers']['Accept'])
+
+
+class CheckYtDlpPythonCompatibilityTest(unittest.TestCase):
+    """checkYtDlp() deve saltare versioni installate incompatibili con il Python
+    in uso (caso reale: wheel installato da PyCharm con Python 3.11+, AppImage
+    con Python 3.10 o precedente lo trovava e tentava di importarlo)."""
+
+    def _makeInstalled(self, root, version, requiresPython):
+        vdir = os.path.join(root, version)
+        distInfo = os.path.join(vdir, 'yt_dlp-%s.dist-info' % version)
+        os.makedirs(os.path.join(vdir, 'yt_dlp'), exist_ok=True)
+        os.makedirs(distInfo)
+        open(os.path.join(vdir, 'yt_dlp', '__init__.py'), 'w').close()
+        with open(os.path.join(distInfo, 'METADATA'), 'w') as f:
+            f.write('Metadata-Version: 2.1\nName: yt-dlp\n')
+            if requiresPython:
+                f.write('Requires-Python: %s\n' % requiresPython)
+        return vdir
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_incompatible_version_is_skipped_older_compatible_returned(self):
+        self._makeInstalled(self.tmp.name, '2099.01.10', '>=3.1')   # compatibile
+        self._makeInstalled(self.tmp.name, '2099.02.01', '>=3.99')  # incompatibile
+        with mock.patch.object(Tools, 'ytDlpStorageDir', return_value=self.tmp.name):
+            result = Tools.checkYtDlp()
+        self.assertIsNotNone(result)
+        self.assertIn('2099.01.10', result)
+
+    def test_all_incompatible_returns_none(self):
+        self._makeInstalled(self.tmp.name, '2099.01.10', '>=3.99')
+        self._makeInstalled(self.tmp.name, '2099.02.01', '>=3.99')
+        with mock.patch.object(Tools, 'ytDlpStorageDir', return_value=self.tmp.name):
+            result = Tools.checkYtDlp()
+        self.assertIsNone(result)
+
+    def test_compatible_latest_returned_as_before(self):
+        self._makeInstalled(self.tmp.name, '2099.01.10', '>=3.1')
+        self._makeInstalled(self.tmp.name, '2099.02.01', '>=3.1')
+        with mock.patch.object(Tools, 'ytDlpStorageDir', return_value=self.tmp.name):
+            result = Tools.checkYtDlp()
+        self.assertIn('2099.02.01', result)
+
+    def test_no_requires_python_in_metadata_is_treated_as_compatible(self):
+        self._makeInstalled(self.tmp.name, '2099.01.10', None)
+        with mock.patch.object(Tools, 'ytDlpStorageDir', return_value=self.tmp.name):
+            result = Tools.checkYtDlp()
+        self.assertIsNotNone(result)

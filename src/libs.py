@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback
+import os, sys, socket, subprocess, platform, unicodedata, re, shlex, json, asyncio, base64, tempfile, hashlib, time, threading, shutil, multiprocessing, queue, zipfile, traceback, glob
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse, unquote
@@ -277,6 +277,22 @@ class Tools():
                 return False
         return True
 
+    # Legge 'Requires-Python' dal dist-info dentro una cartella wheel estratta
+    # o una versione gia' installata; None se non trovato o illeggibile.
+    @staticmethod
+    def requiresPythonFromDistInfo(directory):
+        try:
+            meta = glob.glob(os.path.join(directory, 'yt_dlp-*.dist-info', 'METADATA'))
+            if not meta:
+                return None
+            with open(meta[0], encoding='utf-8') as f:
+                for line in f:
+                    if line.startswith('Requires-Python:'):
+                        return line.split(':', 1)[1].strip()
+        except Exception:
+            pass
+        return None
+
     # Cartella per-utente dove vengono installate le versioni di yt-dlp scaricate
     @staticmethod
     def ytDlpStorageDir():
@@ -322,14 +338,19 @@ class Tools():
                 versions.append(name)
         return sorted(versions, key=cls.versionTuple)
 
-    # Cartella-pacchetto yt-dlp piu' recente installata (da aggiungere a sys.path
-    # prima di 'import yt_dlp'), o None. Non deve mai sollevare.
+    # Cartella-pacchetto yt-dlp piu' recente installata compatibile con questo
+    # Python (da aggiungere a sys.path prima di 'import yt_dlp'), o None.
+    # Non deve mai sollevare.
     @classmethod
     def checkYtDlp(cls):
         try:
             versions = cls.installedYtDlpVersions()
-            if versions:
-                return os.path.join(cls.ytDlpStorageDir(), versions[-1])
+            root = cls.ytDlpStorageDir()
+            for version in reversed(versions):
+                vdir = os.path.join(root, version)
+                requires = cls.requiresPythonFromDistInfo(vdir)
+                if cls.pythonSatisfies(requires):
+                    return vdir
         except Exception as err:
             Tools.consoleLogs("Impossibile risolvere ytDlpStorageDir: " + str(err))
         return None

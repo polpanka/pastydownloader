@@ -3,8 +3,8 @@ import os
 
 class Constants:
     # da allineare a mano col file .../api/checkUpdates/ sul server
-    APP_VERSION = '1.9'
-    APP_VERSION_DATE = '2026.11.21'
+    APP_VERSION = '2.0'
+    APP_VERSION_DATE = '2026.11.22'
 
     # ANDROID_ARGUMENT e' impostata da python-for-android per ogni app
     IS_ANDROID = 'ANDROID_ARGUMENT' in os.environ

@@ -57,6 +57,10 @@ jobs:
             libxcb-xinerama0 \
             libxcb-xkb1
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Compila l'AppImage
         # "bash build-appimage.sh" e non "./build-appimage.sh": non richiede il
         # bit eseguibile sul file, che si perde facilmente se lo si ricarica a
